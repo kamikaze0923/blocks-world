@@ -15,9 +15,9 @@ import c_swm.modules as modules
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--batch-size', type=int, default=64,
+parser.add_argument('--batch-size', type=int, default=128,
                     help='Batch size.')
-parser.add_argument('--epochs', type=int, default=100,
+parser.add_argument('--epochs', type=int, default=5000,
                     help='Number of training epochs.')
 parser.add_argument('--learning-rate', type=float, default=5e-4,
                     help='Learning rate.')
@@ -33,7 +33,7 @@ parser.add_argument('--hidden-dim', type=int, default=512,
                     help='Number of hidden units in transition MLP.')
 parser.add_argument('--embedding-dim', type=int, default=2,
                     help='Dimensionality of embedding.')
-parser.add_argument('--action-dim', type=int, default=4,
+parser.add_argument('--action-dim', type=int, default=12,
                     help='Dimensionality of action space.')
 parser.add_argument('--num-objects', type=int, default=5,
                     help='Number of object slots in model.')
