@@ -3,6 +3,7 @@ from symbolic_rep.block import Block, prefix, extract_predicate, objs
 import matplotlib.pyplot as plt
 import numpy as np
 from c_swm.utils import save_list_dict_h5py
+from skimage.transform import resize
 
 NUM_EPISODE = 100
 EPISODE_LENGTH = 10
@@ -47,10 +48,12 @@ def gen_episode(num_episode, episode_length, save_file):
 
         replay_buffer[i]['action'].append(action)
         replay_buffer[i]['obs'].append(
-            np.transpose(plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2])), (2,0,1))
+            resize(np.transpose(plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2])), (2,0,1)), (4, 100, 150))
         )
+        # plt.imshow(resize(np.transpose(plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2])), (2,0,1)), (4, 100, 150)).transpose(1,2,0))
+        plt.show()
         replay_buffer[i]['next_obs'].append(
-            np.transpose(plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2+1])), (2,0,1))
+            resize(np.transpose(plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2+1])), (2,0,1)), (4, 100, 150))
         )
 
 
