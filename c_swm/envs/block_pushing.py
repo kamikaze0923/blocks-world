@@ -2,7 +2,7 @@
 
 import numpy as np
 
-import utils
+import c_swm.utils as utils
 import gym
 from gym import spaces
 from gym.utils import seeding
