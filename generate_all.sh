@@ -19,15 +19,15 @@ objs=${1:-2}
 stacks=${2:-2}
 distributed=${3:-false}
 num_images=${4:-200}
-prefix="blocks-$objs-$stacks"
+prefix="blocks-$objs-$stacks-det"
 proj=$(date +%Y%m%d%H%M)-render-$prefix
 
 submit="jbsub -mem 4g -cores 1+1 -queue x86_1h -proj $proj"
 
 blender="blender -noaudio --background --python render_images.py -- \
       --output-dir      $prefix                   \
-      --initial-objects $prefix-init.json                \
-      --statistics      $prefix-stat.json                \
+      --initial-objects $prefix/$prefix-init.json                \
+      --statistics      $prefix/$prefix-stat.json                \
       --render-num-samples 300                           \
       --width 300                                        \
       --height 200                                       \
@@ -43,8 +43,9 @@ if $distributed
 then
     parallel "$submit $blender --use-gpu 1 --start-idx {} --num-images $num_images" ::: $(seq 0 $num_images $states)
     echo "Run the following command when all jobs have finished:"
-    echo "./extract_all_regions_binary.py --out $prefix.npz $prefix/"
+    echo "./extract_all_regions_binary.py --out $prefix/$prefix.npz $prefix/"
 else
-    $blender --use-gpu 1
-    ./extract_all_regions_binary.py --out $prefix.npz $prefix/
+    echo "Not using parallel"
+    $blender
+    ./extract_all_regions_binary.py --out $prefix/$prefix.npz $prefix/
 fi

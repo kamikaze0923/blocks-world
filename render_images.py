@@ -23,6 +23,7 @@ This file expects to be run from Blender like this:
 blender --background --python render_images.py -- [arguments to this script]
 """
 
+random.seed(0)
 INSIDE_BLENDER = True
 try:
   import bpy, bpy_extras
@@ -52,7 +53,7 @@ def initialize_parser():
   parser.add_argument('--base-scene-blendfile', default='data/base_scene.blend',
                       help="Base blender file on which all scenes are based; includes " +
                       "ground plane, lights, and camera.")
-  parser.add_argument('--properties-json', default='data/properties.json',
+  parser.add_argument('--properties-json', default='data/properties_single_material.json',
                       help="JSON file defining objects, materials, sizes, and colors. " +
                       "The \"colors\" field maps from CLEVR color names to RGB values; " +
                       "The \"sizes\" field maps from CLEVR size names to scalars used to " +
@@ -76,7 +77,7 @@ def initialize_parser():
   parser.add_argument('--max-stacks', default=4, type=int,
                       help="the maximum number of stacks.")
   
-  parser.add_argument('--object-jitter', default=0.2, type=int,
+  parser.add_argument('--object-jitter', default=0, type=int,
                       help="The magnitude of random jitter to add to the x,y position of each block.")
   parser.add_argument('--initial-objects', default=None,
                       help="The path for dumping the initial set of objects and stack positions."+
@@ -125,13 +126,13 @@ def initialize_parser():
                       help="The width (in pixels) for the rendered images")
   parser.add_argument('--height', default=240, type=int,
                       help="The height (in pixels) for the rendered images")
-  parser.add_argument('--key-light-jitter', default=1.0, type=float,
+  parser.add_argument('--key-light-jitter', default=.0, type=float,
                       help="The magnitude of random jitter to add to the key light position.")
-  parser.add_argument('--fill-light-jitter', default=1.0, type=float,
+  parser.add_argument('--fill-light-jitter', default=.0, type=float,
                       help="The magnitude of random jitter to add to the fill light position.")
-  parser.add_argument('--back-light-jitter', default=1.0, type=float,
+  parser.add_argument('--back-light-jitter', default=.0, type=float,
                       help="The magnitude of random jitter to add to the back light position.")
-  parser.add_argument('--camera-jitter', default=0.5, type=float,
+  parser.add_argument('--camera-jitter', default=.0, type=float,
                       help="The magnitude of random jitter to add to the camera position")
   parser.add_argument('--render-num-samples', default=512, type=int,
                       help="The number of samples to use when rendering. Larger values will " +
@@ -140,7 +141,7 @@ def initialize_parser():
                       help="The minimum number of bounces to use for rendering.")
   parser.add_argument('--render-max-bounces', default=8, type=int,
                       help="The maximum number of bounces to use for rendering.")
-  parser.add_argument('--render-tile-size', default=256, type=int,
+  parser.add_argument('--render-tile-size', default=16, type=int,
                       help="The tile size to use for rendering. This should not affect the " +
                       "quality of the rendered image but may affect the speed; CPU-based " +
                       "rendering may achieve better performance using smaller tile sizes " +
@@ -221,6 +222,8 @@ def main(args):
   # set up objects (except locations)
   objects = initialize_objects(args)
   stack_x = initialize_stack_x(args)
+  print(stack_x)
+  exit(0)
   if args.initial_objects:
     if os.path.isfile(args.initial_objects):
       with open(args.initial_objects, 'r') as f:
@@ -232,7 +235,9 @@ def main(args):
         init = {"objects":objects, "stack_x":stack_x}
         json.dump(init, f, indent=4)
 
-  print(objects,stack_x)
+  for o in objects:
+    print(o)
+  # print(stack_x)
   
   states = -1
   hashtable = dict()
@@ -263,6 +268,7 @@ def main(args):
                  output_scene=scene_path,
                  # output_blendfile=blend_path,
                  objects=objects)
+
   print(states+1,"states")
   
   states = -1
@@ -472,8 +478,14 @@ def render_scene(args,
   if output_blendfile is not None:
     bpy.ops.wm.save_as_mainfile(filepath=output_blendfile)
 
-def random_dict(dict):
-  return random.choice(list(dict.items()))
+def random_dict(dict, nth_obj=None):
+  if nth_obj is not None:
+    choice_index = nth_obj % len(dict)
+    key = list(sorted(dict.keys()))[choice_index]
+    choice = (key, dict[key])
+  else:
+    choice = random.choice(list(sorted(dict.items())))
+  return choice
 
 def stack_height(stack):
   z = 0
@@ -493,7 +505,7 @@ def initialize_objects(args):
   objects         = []
   for i in range(args.num_objects):
     while True:
-      shape_name, shape_path = random_dict(properties['shapes'])
+      shape_name, shape_path = random_dict(properties['shapes'], nth_obj=i)
       _, rgba                = random_dict(color_name_to_rgba)
       _, r                   = random_dict(properties['sizes'])
       rotation               = 360.0 * random.random()
