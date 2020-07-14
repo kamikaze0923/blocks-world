@@ -44,7 +44,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument('--env_id', type=str, default='ShapesTrain-v0',
                         help='Select the environment to run.')
-    parser.add_argument('--fname', type=str, default='c_swm/data/shapes_train.h5',
+    parser.add_argument('--fname', type=str, default='data/shapes_train.h5',
                         help='Save path for replay buffer.')
     parser.add_argument('--num_episodes', type=int, default=1000,
                         help='Total number of episodes to simulate.')

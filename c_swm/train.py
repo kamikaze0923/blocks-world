@@ -11,11 +11,11 @@ import logging
 from torch.utils import data
 import torch.nn.functional as F
 
-import modules
+import c_swm.modules as modules
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--batch-size', type=int, default=1024,
+parser.add_argument('--batch-size', type=int, default=64,
                     help='Batch size.')
 parser.add_argument('--epochs', type=int, default=100,
                     help='Number of training epochs.')
