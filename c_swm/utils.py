@@ -56,7 +56,7 @@ def save_list_dict_h5py(array_dict, fname):
                 grp.create_dataset(key, data=array_dict[i][key])
 
 
-def load_list_dict_h5py(fname):
+def load_list_dict_h5py(fname, truncate=float('inf')):
     """Restore list of dictionaries containing numpy arrays from h5py file."""
     array_dict = list()
     with h5py.File(fname, 'r') as hf:
@@ -64,6 +64,8 @@ def load_list_dict_h5py(fname):
             array_dict.append(dict())
             for key in hf[grp].keys():
                 array_dict[i][key] = hf[grp][key][:]
+            if i ==truncate:
+                break
     return array_dict
 
 
@@ -128,13 +130,13 @@ def unsorted_segment_sum(tensor, segment_ids, num_segments):
 class StateTransitionsDataset(data.Dataset):
     """Create dataset of (o_t, a_t, o_{t+1}) transitions from replay buffer."""
 
-    def __init__(self, hdf5_file):
+    def __init__(self, hdf5_file, truncate=float('inf')):
         """
         Args:
             hdf5_file (string): Path to the hdf5 file that contains experience
                 buffer
         """
-        self.experience_buffer = load_list_dict_h5py(hdf5_file)
+        self.experience_buffer = load_list_dict_h5py(hdf5_file, truncate=truncate)
 
         # Build table for conversion between linear idx -> episode/step idx
         self.idx2episode = list()

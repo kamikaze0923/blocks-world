@@ -35,7 +35,7 @@ parser.add_argument('--embedding-dim', type=int, default=2,
                     help='Dimensionality of embedding.')
 parser.add_argument('--action-dim', type=int, default=12,
                     help='Dimensionality of action space.')
-parser.add_argument('--num-objects', type=int, default=5,
+parser.add_argument('--num-objects', type=int, default=4,
                     help='Number of object slots in model.')
 parser.add_argument('--ignore-action', action='store_true', default=False,
                     help='Ignore action in GNN transition model.')
