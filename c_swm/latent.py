@@ -3,11 +3,10 @@ import torch
 import utils
 import os
 import pickle
-
+from c_swm.plot import TransitionPlot
 
 from torch.utils import data
 import numpy as np
-import matplotlib.pyplot as plt
 
 import c_swm.modules as modules
 
@@ -43,7 +42,7 @@ if args.cuda:
 
 device = torch.device('cuda' if args.cuda else 'cpu')
 
-dataset = utils.StateTransitionsDataset(hdf5_file=args.dataset)
+dataset = utils.StateTransitionsDataset(hdf5_file=args.dataset, truncate=50)
 eval_loader = data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4)
 
 # Get data sample
@@ -60,73 +59,36 @@ model = modules.ContrastiveSWM(
     hinge=args.hinge,
     ignore_action=args.ignore_action,
     copy_action=args.copy_action,
-    encoder=args.encoder).to(device)
+    encoder=args.encoder
+).to(device)
 
 model.load_state_dict(torch.load(model_file,  map_location='cpu'))
 model.eval()
 
-
 with torch.no_grad():
-    fig, axs = plt.subplots(2, 3, figsize=(10,6))
-    axs[0,0].axis('off')
-    axs[0,1].axis('off')
-    axs[0,2].axis('off')
-    colors = ['y', 'r', 'g', 'b']
+    tr_plot = TransitionPlot()
+
     for batch_idx, data_batch in enumerate(eval_loader):
+        tr_plot.reset()
 
         obs = data_batch[0]
         action = data_batch[1]
         next_obs = data_batch[-1]
+        tr_plot.plt_observations(obs, next_obs)
 
-        state = model.obj_encoder(model.obj_extractor(obs))
-        next_state = model.obj_encoder(model.obj_extractor(next_obs))
+        objs = model.obj_extractor(obs)
+        next_objs = model.obj_extractor(next_obs)
+        tr_plot.plt_objects(objs, next_objs)
+
+        state = model.obj_encoder(objs)
+        next_state = model.obj_encoder(next_objs)
 
         pred_trans = model.transition_model(state, action)
         pred_state = state + pred_trans
 
+        tr_plot.plt_latent(state, next_state, pred_state)
+        tr_plot.show()
 
-        n_obj = args.num_objects
-        assert n_obj == state.size()[1]
-
-        np_obs = np.transpose(obs[0].cpu().numpy(), (1,2,0))
-        np_next_obs = np.transpose(next_obs[0].cpu().numpy(), (1,2,0))
-        print(np_obs.shape, np_next_obs.shape)
-        axs[0,0].imshow(np_obs)
-        axs[0,0].set_title("Pre State", fontsize=8)
-        axs[0,1].imshow(np_next_obs)
-        axs[0,1].set_title("Next State", fontsize=8)
-        axs[0,2].imshow(np_next_obs)
-        axs[0,2].set_title("Next State", fontsize=8)
-        axs[1,0].cla()
-        axs[1,1].cla()
-        axs[1,2].cla()
-        axs[1,0].set_title("Pre State Latent", fontsize=8)
-        axs[1,1].set_title("Next State Latent", fontsize=8)
-        axs[1,2].set_title("Pre State Latent +\n Transition", fontsize=8)
-        axs[1,0].set_xlim(-15, 15)
-        axs[1,0].set_ylim(-5, 15)
-        axs[1,1].set_xlim(-15, 15)
-        axs[1,1].set_ylim(-5, 15)
-        axs[1,2].set_xlim(-15, 15)
-        axs[1,2].set_ylim(-5, 15)
-
-        for i in range(n_obj):
-            np_state = state[0][i].cpu().numpy()
-            np_next_state = next_state[0][i].cpu().numpy()
-            np_pred_state = pred_state[0][i].cpu().numpy()
-            if i == 0:
-                print(np_state, np_next_state, np_pred_state)
-                print("-*40")
-
-            axs[1,0].scatter(np_state[0], np_state[1], color=colors[i], marker='x', s=10)
-            axs[1,1].scatter(np_next_state[0], np_next_state[1], color=colors[i], marker='x', s=10)
-            axs[1,2].scatter(np_pred_state[0], np_pred_state[1], color=colors[i], marker='x', s=10)
-
-
-        axs[1,0].legend(['Object {}'.format(i) for i,_ in enumerate(colors)], prop={'size': 6}, loc=2, ncol=2)
-        axs[1,1].legend(['Object {}'.format(i) for i,_ in enumerate(colors)], prop={'size': 6}, loc=2, ncol=2)
-        axs[1,2].legend(['Object {}'.format(i) for i,_ in enumerate(colors)], prop={'size': 6}, loc=2, ncol=2)
-        plt.pause(0.5)
-    plt.close()
+    tr_plot.close()
 
 
