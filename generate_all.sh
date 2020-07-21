@@ -19,6 +19,19 @@ objs=${1:-2}
 stacks=${2:-2}
 distributed=${3:-false}
 num_images=${4:-200}
+
+nvidia-smi > /dev/null
+gpu=$(($? == 0))
+echo $gpu
+exit 0
+if $gpu
+then
+    use_gpu="--use-gpu 1"
+else
+    use_gpu=""
+fi
+
+
 prefix="blocks-$objs-$stacks-det"
 proj=$(date +%Y%m%d%H%M)-render-$prefix
 
@@ -45,7 +58,6 @@ then
     echo "Run the following command when all jobs have finished:"
     echo "./extract_all_regions_binary.py --out $prefix/$prefix.npz $prefix/"
 else
-    echo "Not using parallel"
-    $blender
+    $blender $use_gpu
     ./extract_all_regions_binary.py --out $prefix/$prefix.npz $prefix/
 fi
