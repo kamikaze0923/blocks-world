@@ -223,7 +223,6 @@ def main(args):
   objects = initialize_objects(args)
   stack_x = initialize_stack_x(args)
   print(stack_x)
-  exit(0)
   if args.initial_objects:
     if os.path.isfile(args.initial_objects):
       with open(args.initial_objects, 'r') as f:

@@ -23,7 +23,6 @@ num_images=${4:-200}
 nvidia-smi > /dev/null
 gpu=$(($? == 0))
 echo $gpu
-exit 0
 if $gpu
 then
     use_gpu="--use-gpu 1"
