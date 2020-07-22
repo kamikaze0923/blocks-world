@@ -187,11 +187,12 @@ def main(args):
   with open(args.properties_json, 'r') as f:
     properties = json.load(f)
     properties["materials"] = sorted(properties["materials"].values())
+    properties["pad_colors"] = sorted(properties["pad_colors"].values())
     color_name_to_rgba = {
       name : [float(c) / 255.0 for c in rgb] + [1.0] \
       for name, rgb in properties['colors'].items()
     }
-  
+
   num_digits = 6
   prefix = '%s_%s_' % (args.filename_prefix, args.split)
   template = '%s%%0%dd' % (prefix, num_digits)
@@ -221,6 +222,8 @@ def main(args):
   
   # set up objects (except locations)
   objects = initialize_objects(args)
+
+
   stack_x = initialize_stack_x(args)
   print(stack_x)
   if args.initial_objects:
@@ -241,9 +244,14 @@ def main(args):
   states = -1
   hashtable = dict()
   for objects, stacks in enumerate_stack(objects, stack_x):
+    for o in objects:
+        print(o)
+
+
     key = scene_hashkey(objects)
     if key in hashtable:
       continue
+
     
     states +=1
     if 0 == (states%10000):
@@ -259,7 +267,21 @@ def main(args):
       continue
     if args.dry_run:
       continue
-    
+
+    for x, color in zip(stack_x, properties['pad_colors'][:2]):
+        _, r = random_dict(properties['sizes'])
+        objects.append(
+            {
+                'shape': 'SmoothBottomPad',
+                'color': [float(c) / 255.0 for c in color] + [1.0],
+                'material': properties['materials'][0],
+                'stackable': True,
+                'size': r,
+                'rotation': 0,
+                'location': (x, 0, 0)
+            }
+        )
+
     render_scene(args,
                  output_index=states,
                  output_split=args.split,
@@ -267,6 +289,7 @@ def main(args):
                  output_scene=scene_path,
                  # output_blendfile=blend_path,
                  objects=objects)
+    exit(0)
 
   print(states+1,"states")
   
@@ -459,7 +482,7 @@ def render_scene(args,
       bpy.data.objects['Lamp_Fill'].location[i] += rand(args.fill_light_jitter)
 
   # Now make some random objects
-  blender_objects = add_objects(scene_struct, camera, objects)
+  add_objects(scene_struct, camera, objects)
 
   # Render the scene and dump the scene data structure
   scene_struct['objects'] = objects
@@ -511,8 +534,8 @@ def initialize_objects(args):
       _, r                   = random_dict(properties['sizes'])
       rotation               = 360.0 * random.random()
       # For cube, adjust the size a bit
-      if shape_name == 'cube':
-        r /= math.sqrt(2)
+      # if shape_name == 'cube':
+      #   r /= math.sqrt(2)
 
       obj = {
         'shape': shape_path,
@@ -530,6 +553,7 @@ def initialize_objects(args):
         break
     
     objects.append(obj)
+
   return objects
 
 def initialize_stack_x(args):
@@ -553,7 +577,7 @@ def update_locations(stacks, stack_x):
     for obj in stack:
       x = x_base
       y = 0
-      z = stack_height(tmp_stack) + obj["size"]
+      z = stack_height(tmp_stack) + obj["size"] + obj["size"]
       obj["location"] = (x,y,z)
       tmp_stack.append(obj)
     

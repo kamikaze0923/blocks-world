@@ -60,5 +60,5 @@ then
     echo "./extract_all_regions_binary.py --out $prefix/$prefix.npz $prefix/"
 else
     $blender $use_gpu
-    ./extract_all_regions_binary.py --out $prefix/$prefix.npz $prefix/
+    # ./extract_all_regions_binary.py --out $prefix/$prefix.npz $prefix/
 fi
