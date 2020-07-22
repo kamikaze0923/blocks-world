@@ -23,7 +23,7 @@ num_images=${4:-200}
 nvidia-smi > /dev/null
 gpu=$?
 
-if $gpu
+if [ $gpu -eq 0 ]
 then
     use_gpu="--use-gpu 1"
     render_tile_size="256"
@@ -31,8 +31,6 @@ else
     use_gpu=""
     render_tile_size="16"
 fi
-
-exit 0
 
 prefix="blocks-$objs-$stacks-det"
 proj=$(date +%Y%m%d%H%M)-render-$prefix
