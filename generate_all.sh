@@ -26,10 +26,10 @@ gpu=$?
 if [ $gpu -eq 0 ]
 then
     use_gpu="--use-gpu 1"
-    render_tile_size="256"
+    render_tile_size="512"
 else
     use_gpu=""
-    render_tile_size="16"
+    render_tile_size="8"
 fi
 
 prefix="blocks-$objs-$stacks-det"
