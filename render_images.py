@@ -464,12 +464,14 @@ def render_scene(args,
   # Render the scene and dump the scene data structure
   scene_struct['objects'] = objects
   scene_struct['relationships'] = compute_all_relationships(scene_struct)
+
   while True:
     try:
       bpy.ops.render.render(write_still=True)
       break
     except Exception as e:
       print(e)
+      exit(0)
 
   with open(output_scene, 'w') as f:
     json.dump(scene_struct, f, indent=2)

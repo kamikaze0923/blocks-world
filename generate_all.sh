@@ -21,15 +21,15 @@ distributed=${3:-false}
 num_images=${4:-200}
 
 nvidia-smi > /dev/null
-gpu=$(($? == 0))
-echo $gpu
-if $gpu
+
+if [ $(($? == 0)) ]
 then
     use_gpu="--use-gpu 1"
+    render_tile_size="256"
 else
     use_gpu=""
+    render_tile_size="16"
 fi
-
 
 prefix="blocks-$objs-$stacks-det"
 proj=$(date +%Y%m%d%H%M)-render-$prefix
@@ -44,7 +44,8 @@ blender="blender -noaudio --background --python render_images.py -- \
       --width 300                                        \
       --height 200                                       \
       --num-objects $objs                                \
-      --max-stacks $stacks                               "
+      --max-stacks $stacks                               \
+      --render-tile-size  $render_tile_size"
 
 $blender --dry-run || exit 1      # necessary for init-o-s.json
 
