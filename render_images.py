@@ -69,9 +69,9 @@ def initialize_parser():
   parser.add_argument('--num-objects', default=4, type=int,
                       help="The number of objects to place in each scene")
   
-  parser.add_argument('--max-margin', default=2.0, type=float,
+  parser.add_argument('--max-margin', default=4, type=float,
                       help="the maximum margin between the stacks")
-  parser.add_argument('--min-margin', default=1.5, type=float,
+  parser.add_argument('--min-margin', default=3, type=float,
                       help="the minimum margin between the stacks")
   
   parser.add_argument('--max-stacks', default=4, type=int,
@@ -198,25 +198,31 @@ def main(args):
   template = '%s%%0%dd' % (prefix, num_digits)
 
   img_dir         = os.path.join(args.output_dir,"image")
+  mask_img_dir = os.path.join(args.output_dir, "mask_image")
   scene_dir       = os.path.join(args.output_dir,"scene")
   blend_dir       = os.path.join(args.output_dir,"blend")
   trans_img_dir   = os.path.join(args.output_dir,"image_tr")
+  trans_mask_img_dir = os.path.join(args.output_dir, "mask_image_tr")
   trans_scene_dir = os.path.join(args.output_dir,"scene_tr")
   trans_blend_dir = os.path.join(args.output_dir,"blend_tr")
 
   for d in [img_dir,
+            mask_img_dir,
             scene_dir,
             blend_dir,
             trans_img_dir,
+            trans_mask_img_dir,
             trans_scene_dir,
             trans_blend_dir]:
     if not os.path.isdir(d):
       os.makedirs(d)
 
   img_template         = os.path.join(img_dir,  template)
+  mask_img_template    = os.path.join(mask_img_dir, template)
   scene_template       = os.path.join(scene_dir,template)
   blend_template       = os.path.join(blend_dir,template)
   trans_img_template   = os.path.join(trans_img_dir,  template)
+  trans_mask_img_template = os.path.join(trans_mask_img_dir,  template)
   trans_scene_template = os.path.join(trans_scene_dir,template)
   trans_blend_template = os.path.join(trans_blend_dir,template)
   
@@ -258,6 +264,7 @@ def main(args):
       print(states)
 
     img_path = img_template % states +".png"
+    mask_img_path = mask_img_template % states+".png"
     scene_path = scene_template % states+".json"
     blend_path = blend_template % states
     
@@ -287,6 +294,7 @@ def main(args):
                  output_index=states,
                  output_split=args.split,
                  output_image=img_path,
+                 output_mask_image=mask_img_path,
                  output_scene=scene_path,
                  # output_blendfile=blend_path,
                  objects=objects_with_pad)
@@ -352,14 +360,19 @@ def main(args):
       i_pre, s_pre, b_pre = hashtable[scene_hashkey(objects_pre)]
       i_suc, s_suc, b_suc = hashtable[scene_hashkey(objects_suc)]
 
+
+      i_pre_mask = os.path.join("..","mask_image",os.path.basename(i_pre))
+
       i_pre = os.path.join("..","image",os.path.basename(i_pre))
       s_pre = os.path.join("..","scene",os.path.basename(s_pre))
       b_pre = os.path.join("..","blend",os.path.basename(b_pre))
+
       i_suc = os.path.join("..","image",os.path.basename(i_suc))
       s_suc = os.path.join("..","scene",os.path.basename(s_suc))
       b_suc = os.path.join("..","blend",os.path.basename(b_suc))
       
       i_pre2 = trans_img_template   % transitions+"_pre.png"
+      i_pre2_mask = trans_mask_img_template % transitions+"_pre.png"
       s_pre2 = trans_scene_template % transitions+"_pre.json"
       b_pre2 = trans_blend_template % transitions+"_pre"
       i_suc2 = trans_img_template   % transitions+"_suc.png"
@@ -369,6 +382,7 @@ def main(args):
       # link
       import subprocess
       subprocess.run(["ln", "-s", i_pre, i_pre2])
+      subprocess.run(["ln", "-s", i_pre_mask, i_pre2_mask])
       subprocess.run(["ln", "-s", s_pre, s_pre2])
       # subprocess.run(["ln", "-s", b_pre, b_pre2])
       subprocess.run(["ln", "-s", i_suc, i_suc2])
@@ -386,6 +400,7 @@ def render_scene(args,
     output_index=0,
     output_split='none',
     output_image='render.png',
+    output_mask_image='render_mask.png',
     output_scene='render_json',
     output_blendfile=None,
     objects=[],
@@ -481,8 +496,10 @@ def render_scene(args,
     for i in range(3):
       bpy.data.objects['Lamp_Fill'].location[i] += rand(args.fill_light_jitter)
 
+
+
   # Now make some random objects
-  add_objects(scene_struct, camera, objects)
+  blender_objects = add_objects(scene_struct, camera, objects)
 
   # Render the scene and dump the scene data structure
   scene_struct['objects'] = objects
@@ -491,6 +508,7 @@ def render_scene(args,
   while True:
     try:
       bpy.ops.render.render(write_still=True)
+      object_colors = render_shadeless(blender_objects, path=output_mask_image, objects_dict_list=objects)
       break
     except Exception as e:
       print(e)
@@ -534,8 +552,8 @@ def initialize_objects(args):
       _, r                   = random_dict(properties['sizes'])
       rotation               = 360.0 * random.random()
       # For cube, adjust the size a bit
-      if shape_name == 'cube':
-        r /= math.sqrt(2)
+      # if shape_name == 'cube':
+      #   r /= math.sqrt(2)
 
       obj = {
         'shape': shape_path,
@@ -577,7 +595,7 @@ def update_locations(stacks, stack_x):
     for obj in stack:
       x = x_base
       y = 0
-      z = stack_height(tmp_stack) + obj["size"] + obj["size"]
+      z = stack_height(tmp_stack) + obj["size"]*2
       obj["location"] = (x,y,z)
       tmp_stack.append(obj)
     
@@ -672,6 +690,8 @@ def add_objects(scene_struct, camera, objects):
                      obj["location"],
                      theta=obj["rotation"])
     bobj = bpy.context.object
+
+
     blender_objects.append(bobj)
     utils.add_material(obj["material"], Color=obj["color"])
     obj["pixel_coords"] = utils.get_camera_coords(camera, bobj.location)
@@ -693,6 +713,7 @@ def add_objects(scene_struct, camera, objects):
     import mathutils
     corners_camera_coords = np.array([ utils.get_camera_coords(camera, mathutils.Vector(tuple(corner)))
                                        for corner in corners ])
+
     xmax = np.amax(corners_camera_coords[:,0])
     ymax = np.amax(corners_camera_coords[:,1])
     xmin = np.amin(corners_camera_coords[:,0])
@@ -753,7 +774,7 @@ def check_visibility(blender_objects, min_pixels_per_object):
   return True
 
 
-def render_shadeless(blender_objects, path='flat.png'):
+def render_shadeless(blender_objects, path='flat.png', objects_dict_list=None):
   """
   Render a version of the scene with shading disabled and unique materials
   assigned to all objects, and return a set of all colors that should be in the
@@ -782,12 +803,14 @@ def render_shadeless(blender_objects, path='flat.png'):
   object_colors = set()
   old_materials = []
   for i, obj in enumerate(blender_objects):
+    color = objects_dict_list[i]['color']
     old_materials.append(obj.data.materials[0])
     bpy.ops.material.new()
     mat = bpy.data.materials['Material']
     mat.name = 'Material_%d' % i
     while True:
-      r, g, b = [random.random() for _ in range(3)]
+      # r, g, b = [random.random() for _ in range(3)]
+      r, g, b, _ = color
       if (r, g, b) not in object_colors: break
     object_colors.add((r, g, b))
     mat.diffuse_color = [r, g, b]
