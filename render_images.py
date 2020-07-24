@@ -268,9 +268,10 @@ def main(args):
     if args.dry_run:
       continue
 
-    for x, color in zip(stack_x, properties['pad_colors'][:2]):
+    objects_with_pad = copy(objects)
+    for x, color in zip(stack_x, properties['pad_colors'][:len(stack_x)]):
         _, r = random_dict(properties['sizes'])
-        objects.append(
+        objects_with_pad.append(
             {
                 'shape': 'SmoothBottomPad',
                 'color': [float(c) / 255.0 for c in color] + [1.0],
@@ -288,8 +289,7 @@ def main(args):
                  output_image=img_path,
                  output_scene=scene_path,
                  # output_blendfile=blend_path,
-                 objects=objects)
-    exit(0)
+                 objects=objects_with_pad)
 
   print(states+1,"states")
   
@@ -534,8 +534,8 @@ def initialize_objects(args):
       _, r                   = random_dict(properties['sizes'])
       rotation               = 360.0 * random.random()
       # For cube, adjust the size a bit
-      # if shape_name == 'cube':
-      #   r /= math.sqrt(2)
+      if shape_name == 'cube':
+        r /= math.sqrt(2)
 
       obj = {
         'shape': shape_path,
