@@ -362,6 +362,7 @@ def main(args):
 
 
       i_pre_mask = os.path.join("..","mask_image",os.path.basename(i_pre))
+      i_suc_mask = os.path.join("..", "mask_image", os.path.basename(i_suc))
 
       i_pre = os.path.join("..","image",os.path.basename(i_pre))
       s_pre = os.path.join("..","scene",os.path.basename(s_pre))
@@ -387,7 +388,7 @@ def main(args):
       subprocess.run(["ln", "-s", s_pre, s_pre2])
       # subprocess.run(["ln", "-s", b_pre, b_pre2])
       subprocess.run(["ln", "-s", i_suc, i_suc2])
-      subprocess.run(["ln", "-s", i_suc2_mask, i_suc2])
+      subprocess.run(["ln", "-s", i_suc_mask, i_suc2])
       subprocess.run(["ln", "-s", s_suc, s_suc2])
       # subprocess.run(["ln", "-s", b_suc, b_suc2])
       
