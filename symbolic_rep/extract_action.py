@@ -17,7 +17,7 @@ def gen_episode(num_episode, episode_length):
     n_tr = len(tr_files) // 2
     assert N_TRAIN + N_EVAL == n_tr
 
-    img_tr_files = os.listdir(os.path.join(prefix, "image_tr"))
+    img_tr_files = os.listdir(os.path.join(prefix, "mask_image_tr"))
     img_tr_files.sort()
 
     ACTIONS = [(i, j) for i in range(objs) for j in range(objs) if j != i]  # (SOURCE, TARGET)
@@ -34,8 +34,8 @@ def gen_episode(num_episode, episode_length):
             replay_buffer = replay_buffer_eval
         pre_json = os.path.join(prefix, "scene_tr", tr_files[i*2])
         suc_json = os.path.join(prefix, "scene_tr", tr_files[i*2+1])
-        pre_objs, pre_relations = extract_predicate(pre_json)
-        suc_objs, suc_relations = extract_predicate(suc_json)
+        pre_objs, _ = extract_predicate(pre_json)
+        suc_objs, _ = extract_predicate(suc_json)
         action = None
         for pre_obj, suc_obj in zip(pre_objs, suc_objs):
             assert pre_obj.id == suc_obj.id
