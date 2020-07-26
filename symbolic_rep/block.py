@@ -53,7 +53,8 @@ def extract_predicate(json_file):
     for obj in state_json['objects']:
         b = Block(obj)
         scene_objs.append(b)
-        b.set_id(SCENE_OBJS.index(b))
+        if b in SCENE_OBJS:
+            b.set_id(SCENE_OBJS.index(b))
         scene_stacks_ys[b.n_stack].append(b.z)
     for k, v in scene_stacks_ys.items():
         scene_stacks_ys[k] = sorted(v)
