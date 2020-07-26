@@ -56,12 +56,12 @@ def gen_episode(num_episode, episode_length):
 
         replay['action'].append(action)
         replay['obs'].append(
-            resize(np.transpose(plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2])), (2,0,1)), (4, 100, 150))
+            resize(np.transpose(plt.imread(os.path.join(prefix, "mask_image_tr", img_tr_files[i*2])), (2,0,1)), (4, 100, 150))
         )
         # plt.imshow(resize(np.transpose(plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2])), (2,0,1)), (4, 100, 150)).transpose(1,2,0))
         # plt.show()
         replay['next_obs'].append(
-            resize(np.transpose(plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2+1])), (2,0,1)), (4, 100, 150))
+            resize(np.transpose(plt.imread(os.path.join(prefix, "mask_image_tr", img_tr_files[i*2+1])), (2,0,1)), (4, 100, 150))
         )
 
         replay_buffer.append(replay)
