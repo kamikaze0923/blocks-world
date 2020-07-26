@@ -388,7 +388,7 @@ def main(args):
       subprocess.run(["ln", "-s", s_pre, s_pre2])
       # subprocess.run(["ln", "-s", b_pre, b_pre2])
       subprocess.run(["ln", "-s", i_suc, i_suc2])
-      subprocess.run(["ln", "-s", i_suc_mask, i_suc2])
+      subprocess.run(["ln", "-s", i_suc_mask, i_suc2_mask])
       subprocess.run(["ln", "-s", s_suc, s_suc2])
       # subprocess.run(["ln", "-s", b_suc, b_suc2])
       
