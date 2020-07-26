@@ -290,14 +290,14 @@ def main(args):
             }
         )
 
-    render_scene(args,
-                 output_index=states,
-                 output_split=args.split,
-                 output_image=img_path,
-                 output_mask_image=mask_img_path,
-                 output_scene=scene_path,
-                 # output_blendfile=blend_path,
-                 objects=objects_with_pad)
+    # render_scene(args,
+    #              output_index=states,
+    #              output_split=args.split,
+    #              output_image=img_path,
+    #              output_mask_image=mask_img_path,
+    #              output_scene=scene_path,
+    #              # output_blendfile=blend_path,
+    #              objects=objects_with_pad)
 
   print(states+1,"states")
   
@@ -376,6 +376,7 @@ def main(args):
       s_pre2 = trans_scene_template % transitions+"_pre.json"
       b_pre2 = trans_blend_template % transitions+"_pre"
       i_suc2 = trans_img_template   % transitions+"_suc.png"
+      i_suc2_mask = trans_mask_img_template % transitions + "_suc.png"
       s_suc2 = trans_scene_template % transitions+"_suc.json"
       b_suc2 = trans_blend_template % transitions+"_suc"
       
@@ -386,6 +387,7 @@ def main(args):
       subprocess.run(["ln", "-s", s_pre, s_pre2])
       # subprocess.run(["ln", "-s", b_pre, b_pre2])
       subprocess.run(["ln", "-s", i_suc, i_suc2])
+      subprocess.run(["ln", "-s", i_suc2_mask, i_suc2])
       subprocess.run(["ln", "-s", s_suc, s_suc2])
       # subprocess.run(["ln", "-s", b_suc, b_suc2])
       
