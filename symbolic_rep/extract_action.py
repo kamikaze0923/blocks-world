@@ -58,8 +58,8 @@ def gen_episode(num_episode, episode_length):
                 # print("Block {} does not move".format(pre_obj.id))
                 pass
             else:
-                print("Pick up block {} from stack {},  Drop it on stack {}".format(pre_obj.id, pre_obj.n_stack, suc_obj.n_stack))
-                print("Moving object {}".format(pre_obj))
+                # print("Pick up block {} from stack {},  Drop it on stack {}".format(pre_obj.id, pre_obj.n_stack, suc_obj.n_stack))
+                # print("Moving object {}".format(pre_obj))
                 moving_obj = pre_obj
                 if suc_obj.floor == 0:
                     target_obj = bottom_pads[suc_obj.n_stack]
@@ -68,7 +68,7 @@ def gen_episode(num_episode, episode_length):
                         if obj.floor == suc_obj.floor - 1:
                             target_obj = obj
                             break
-                print("Target object {}".format(target_obj))
+                # print("Target object {}".format(target_obj))
                 action = ACTIONS.index((pre_obj.n_stack, suc_obj.n_stack))
                 break
         assert action is not None
