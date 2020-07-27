@@ -21,6 +21,8 @@ parser.add_argument('--dataset', type=str,
                     help='Dataset string.')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disable CUDA training.')
+parser.add_argument('--action-encoding', type=str, default='action_one_hot',
+                    help='Ways to encode the action')
 
 args_eval = parser.parse_args()
 
@@ -33,6 +35,7 @@ args = pickle.load(open(meta_file, 'rb'))['args']
 args.cuda = not args_eval.no_cuda and torch.cuda.is_available()
 args.batch_size = 100
 args.dataset = args_eval.dataset
+args.action_encoding = args_eval.action_encoding
 args.seed = 0
 
 np.random.seed(args.seed)
@@ -42,7 +45,7 @@ if args.cuda:
 
 device = torch.device('cuda' if args.cuda else 'cpu')
 
-dataset = utils.StateTransitionsDataset(hdf5_file=args.dataset, truncate=50)
+dataset = utils.StateTransitionsDataset(hdf5_file=args.dataset, act_encoding=args.action_encoding, truncate=50)
 eval_loader = data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4)
 
 # Get data sample

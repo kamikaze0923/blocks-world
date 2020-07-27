@@ -18,7 +18,7 @@ class ContrastiveSWM(nn.Module):
     """
     def __init__(self, embedding_dim, input_dims, hidden_dim, action_dim,
                  num_objects, hinge=1., sigma=0.5, encoder='large',
-                 ignore_action=False, copy_action=False):
+                 ignore_action=False, copy_action=False, act_encoding='one_hot'):
         super(ContrastiveSWM, self).__init__()
 
         self.hidden_dim = hidden_dim
@@ -29,6 +29,7 @@ class ContrastiveSWM(nn.Module):
         self.sigma = sigma
         self.ignore_action = ignore_action
         self.copy_action = copy_action
+
         
         self.pos_loss = 0
         self.neg_loss = 0
@@ -66,11 +67,13 @@ class ContrastiveSWM(nn.Module):
 
         self.transition_model = TransitionGNN(
             input_dim=embedding_dim,
+            act_input_dim=np.prod(width_height),
             hidden_dim=hidden_dim,
             action_dim=action_dim,
             num_objects=num_objects,
             ignore_action=ignore_action,
-            copy_action=copy_action)
+            copy_action=copy_action,
+            act_encoding=act_encoding)
 
         self.width = width_height[0]
         self.height = width_height[1]
@@ -122,8 +125,8 @@ class ContrastiveSWM(nn.Module):
 
 class TransitionGNN(torch.nn.Module):
     """GNN-based transition function."""
-    def __init__(self, input_dim, hidden_dim, action_dim, num_objects,
-                 ignore_action=False, copy_action=False, act_fn='relu'):
+    def __init__(self, input_dim, act_input_dim, hidden_dim, action_dim, num_objects,
+                 ignore_action=False, copy_action=False, act_fn='relu', act_encoding='one_hot'):
         super(TransitionGNN, self).__init__()
 
         self.input_dim = input_dim
@@ -131,6 +134,19 @@ class TransitionGNN(torch.nn.Module):
         self.num_objects = num_objects
         self.ignore_action = ignore_action
         self.copy_action = copy_action
+        self.action_type = act_encoding
+
+        if self.action_type == "image":
+            self.act_extractor = EncoderCNNLarge(
+                input_dim=2,
+                hidden_dim=hidden_dim // 16,
+                num_objects=num_objects)
+
+            self.act_encoder = EncoderMLP(
+            input_dim=act_input_dim,
+            hidden_dim=hidden_dim,
+            output_dim=action_dim,
+            num_objects=num_objects)
 
         if self.ignore_action:
             self.action_dim = 0
@@ -233,6 +249,9 @@ class TransitionGNN(torch.nn.Module):
                 action_vec = utils.to_one_hot(
                     action, self.action_dim * num_nodes)
                 action_vec = action_vec.view(-1, self.action_dim)
+            print(node_attr.size(), action_vec.size())
+            print(node_attr[0], action_vec[0])
+            exit(0)
 
             # Attach action to each state
             node_attr = torch.cat([node_attr, action_vec], dim=-1)

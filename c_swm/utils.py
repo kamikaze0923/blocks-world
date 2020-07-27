@@ -130,19 +130,20 @@ def unsorted_segment_sum(tensor, segment_ids, num_segments):
 class StateTransitionsDataset(data.Dataset):
     """Create dataset of (o_t, a_t, o_{t+1}) transitions from replay buffer."""
 
-    def __init__(self, hdf5_file, truncate=float('inf')):
+    def __init__(self, hdf5_file, act_encoding, truncate=float('inf')):
         """
         Args:
             hdf5_file (string): Path to the hdf5 file that contains experience
                 buffer
         """
         self.experience_buffer = load_list_dict_h5py(hdf5_file, truncate=truncate)
+        self.action_type = act_encoding
 
         # Build table for conversion between linear idx -> episode/step idx
         self.idx2episode = list()
         step = 0
         for ep in range(len(self.experience_buffer)):
-            num_steps = len(self.experience_buffer[ep]['action'])
+            num_steps = len(self.experience_buffer[ep][self.action_type])
             idx_tuple = [(ep, idx) for idx in range(num_steps)]
             self.idx2episode.extend(idx_tuple)
             step += num_steps
@@ -156,7 +157,7 @@ class StateTransitionsDataset(data.Dataset):
         ep, step = self.idx2episode[idx]
 
         obs = to_float(self.experience_buffer[ep]['obs'][step])
-        action = self.experience_buffer[ep]['action'][step]
+        action = self.experience_buffer[ep][self.action_type][step]
         next_obs = to_float(self.experience_buffer[ep]['next_obs'][step])
 
         return obs, action, next_obs

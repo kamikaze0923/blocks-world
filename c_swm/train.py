@@ -24,6 +24,9 @@ parser.add_argument('--learning-rate', type=float, default=5e-4,
 
 parser.add_argument('--encoder', type=str, default='small',
                     help='Object extrator CNN size (e.g., `small`).')
+
+parser.add_argument('--action-encoding', type=str, default='action_one_hot',
+                    help='Ways to encode the action')
 parser.add_argument('--sigma', type=float, default=0.5,
                     help='Energy scale.')
 parser.add_argument('--hinge', type=float, default=1.,
@@ -96,7 +99,7 @@ pickle.dump({'args': args}, open(meta_file, "wb"))
 device = torch.device('cuda' if args.cuda else 'cpu')
 
 dataset = utils.StateTransitionsDataset(
-    hdf5_file=args.dataset)
+    hdf5_file=args.dataset, act_encoding=args.action_encoding)
 train_loader = data.DataLoader(
     dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
 
@@ -114,7 +117,8 @@ model = modules.ContrastiveSWM(
     hinge=args.hinge,
     ignore_action=args.ignore_action,
     copy_action=args.copy_action,
-    encoder=args.encoder).to(device)
+    encoder=args.encoder,
+    act_encoding=args.action_encoding).to(device)
 
 model.apply(utils.weights_init)
 

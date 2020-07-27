@@ -50,11 +50,11 @@ def gen_episode(num_episode, episode_length):
 
         replay = {
             'obs': [],
-            'action': [],
+            'action_one_hot': [],
             'next_obs': [],
         }
 
-        replay['action'].append(action)
+        replay['action_one_hot'].append(action)
         replay['obs'].append(
             resize(np.transpose(plt.imread(os.path.join(prefix, "mask_image_tr", img_tr_files[i*2])), (2,0,1)), (4, 100, 150))
         )
