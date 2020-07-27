@@ -3,9 +3,20 @@ import json
 from collections import defaultdict
 from symbolic_rep.relation import SceneRelation
 
-class Block:
+objs = 4
+stacks = 4
+det = True
+prefix = "blocks-{}-{}-{}".format(objs, stacks, "det" if det else "")
+print(prefix)
 
-    BLCOK_NAMES = ["A", "B", "C", "D"]
+with open((os.path.join(prefix, "{}-init.json".format(prefix)))) as f:
+    init_json = json.load(f)
+
+STACK_XS = init_json['stack_x']
+BLCOK_NAMES = ["A", "B", "C", "D"]
+
+
+class Block:
 
     def __init__(self, object_config):
         self.shape = object_config['shape']
@@ -32,7 +43,7 @@ class Block:
         )
 
     def set_id(self, id):
-        self.id = self.BLCOK_NAMES[id]
+        self.id = BLCOK_NAMES[id]
 
     def set_floor(self, floor):
         self.floor = floor
@@ -43,6 +54,8 @@ class Block:
     def print_block_scene_position(self):
         print("Block on {}th stack and {}th floor".format(self.n_stack, self.floor))
 
+SCENE_OBJS = [Block(config) for config in init_json['objects']]
+
 def extract_predicate(json_file):
     # print(json_file)
     with open(json_file) as f:
@@ -50,12 +63,16 @@ def extract_predicate(json_file):
     scene_stacks_ys = defaultdict(lambda: [])
     scene_objs = []
     relation = SceneRelation()
+    bottom_pads_objs = []
     for obj in state_json['objects']:
         b = Block(obj)
         if b in SCENE_OBJS:
             scene_objs.append(b)
             b.set_id(SCENE_OBJS.index(b))
             scene_stacks_ys[b.n_stack].append(b.z)
+        else:
+            assert b.shape == "SmoothBottomPad"
+            bottom_pads_objs.append(b)
     for k, v in scene_stacks_ys.items():
         scene_stacks_ys[k] = sorted(v)
     for b in scene_objs:
@@ -72,16 +89,6 @@ def extract_predicate(json_file):
                 clear = False
         if clear:
             relation.clear.add(b.id)
-    return scene_objs, relation
+    return scene_objs, sorted(bottom_pads_objs, key=lambda x: x.n_stack), relation
 
-objs = 4
-stacks = 4
-det = True
-prefix = "blocks-{}-{}-{}".format(objs, stacks, "det" if det else "")
-print(prefix)
 
-with open((os.path.join(prefix, "{}-init.json".format(prefix)))) as f:
-    init_json = json.load(f)
-
-STACK_XS = init_json['stack_x']
-SCENE_OBJS = [Block(config) for config in init_json['objects']]
