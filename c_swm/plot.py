@@ -4,11 +4,12 @@ import numpy as np
 class TransitionPlot:
 
     COLORS = ['y', 'r', 'g', 'b']
-    N_ROW = 3
+    N_ROW = 4
     N_COL = 3
-    FIGURE_SIZE = (12, 12)
+    FIGURE_SIZE = (12, 16)
 
-    def __init__(self):
+    def __init__(self, num_obj_slots):
+        assert num_obj_slots in (4,8)
         plt.subplots(figsize=self.FIGURE_SIZE)
         self.obs_axs = []
         self.act_axs = []
@@ -25,23 +26,23 @@ class TransitionPlot:
         for i in range(2):
             self.act_axs.append(
                 plt.subplot2grid(
-                    shape=(2*self.N_ROW, 2*self.N_COL), loc=(i*2, 2*2), colspan=2, rowspan=2
+                    shape=(2*self.N_ROW, 2*self.N_COL), loc=(2, i*2), colspan=2, rowspan=2
                 )
             )
 
-        for i in range(2):
+        for i in range(4):
             for j in range(2):
                 self.obj_axs.append(
-                    plt.subplot2grid(shape=(2*self.N_ROW, 2*self.N_COL), loc=(2 + i, 0 + j), colspan=1, rowspan=1)
+                    plt.subplot2grid(shape=(2*self.N_ROW, 2*self.N_COL), loc=(4 + i, 0 + j), colspan=1, rowspan=1)
                 )
                 self.next_obj_axs.append(
-                    plt.subplot2grid(shape=(2*self.N_ROW, 2*self.N_COL), loc=(2 + i, 2 + j), colspan=1, rowspan=1)
+                    plt.subplot2grid(shape=(2*self.N_ROW, 2*self.N_COL), loc=(4 + i, 2 + j), colspan=1, rowspan=1)
                 )
 
         for i in range(3):
             self.latent_axs.append(
                 plt.subplot2grid(
-                    shape=(2*self.N_ROW, 2*self.N_COL), loc=(2*2, i*2), colspan=2, rowspan=2
+                    shape=(2*self.N_ROW, 2*self.N_COL), loc=(4 + num_obj_slots // 2, i*2), colspan=2, rowspan=2
                 )
             )
 
@@ -53,13 +54,13 @@ class TransitionPlot:
             self.latent_axs[i].cla()
             self.latent_axs[i].set_xlim(-15, 15)
             self.latent_axs[i].set_ylim(-5, 15)
-        self.latent_axs[0].set_title("Pre State Latent", fontsize=8)
-        self.latent_axs[1].set_title("Next State Latent", fontsize=8)
-        self.latent_axs[2].set_title("Pre State Latent +\n Transition", fontsize=8)
-        self.obs_axs[0].set_title("Pre State Latent", fontsize=8)
-        self.obs_axs[1].set_title("Next State Latent", fontsize=8)
-        self.act_axs[0].set_title("Action Moving Object", fontsize=8)
-        self.act_axs[1].set_title("Action Target Object", fontsize=8)
+        self.latent_axs[0].set_title("Pre State Latent", fontsize=6)
+        self.latent_axs[1].set_title("Next State Latent", fontsize=6)
+        self.latent_axs[2].set_title("Pre State Latent +\n Transition", fontsize=6)
+        self.obs_axs[0].set_title("Pre State Latent", fontsize=6)
+        self.obs_axs[1].set_title("Next State Latent", fontsize=6)
+        self.act_axs[0].set_title("Action Moving Object", fontsize=6)
+        self.act_axs[1].set_title("Action Target Object", fontsize=6)
 
     def plt_observations(self, obs, next_obs):
         np_obs = np.transpose(obs[0].cpu().numpy(), (1,2,0))

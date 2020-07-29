@@ -69,7 +69,7 @@ def gen_episode(num_episode, episode_length):
                     target_obj = bottom_pads[suc_obj.n_stack]
                 else:
                     for obj in suc_objs:
-                        if obj.floor == suc_obj.floor - 1:
+                        if obj.floor == suc_obj.floor - 1 and obj.n_stack == suc_obj.n_stack:
                             target_obj = obj
                             break
                 # print("Target object {}".format(target_obj))

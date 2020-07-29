@@ -66,7 +66,7 @@ model.load_state_dict(torch.load(model_file,  map_location=device))
 model.eval()
 
 with torch.no_grad():
-    tr_plot = TransitionPlot()
+    tr_plot = TransitionPlot(args.num_objects)
 
     for batch_idx, data_batch in enumerate(eval_loader):
         data_batch = [tensor.to(device) for tensor in data_batch]
