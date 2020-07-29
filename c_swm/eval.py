@@ -45,10 +45,8 @@ if args.cuda:
 
 device = torch.device('cuda' if args.cuda else 'cpu')
 
-dataset = utils.PathDataset(
-    hdf5_file=args.dataset, path_length=args_eval.num_steps)
-eval_loader = data.DataLoader(
-    dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
+dataset = utils.PathDataset(hdf5_file=args.dataset, action_encoding=args.action_encoding, path_length=args_eval.num_steps, truncate=50)
+eval_loader = data.DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
 # Get data sample
 obs = eval_loader.__iter__().next()[0]
@@ -64,7 +62,9 @@ model = modules.ContrastiveSWM(
     hinge=args.hinge,
     ignore_action=args.ignore_action,
     copy_action=args.copy_action,
-    encoder=args.encoder).to(device)
+    encoder=args.encoder,
+    action_encoding=args.action_encoding
+).to(device)
 
 model.load_state_dict(torch.load(model_file))
 model.eval()

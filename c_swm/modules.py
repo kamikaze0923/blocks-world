@@ -18,7 +18,7 @@ class ContrastiveSWM(nn.Module):
     """
     def __init__(self, embedding_dim, input_dims, hidden_dim, action_dim,
                  num_objects, hinge=1., sigma=0.5, encoder='large',
-                 ignore_action=False, copy_action=False, act_encoding='one_hot'):
+                 ignore_action=False, copy_action=False, action_encoding='action_one_hot'):
         super(ContrastiveSWM, self).__init__()
 
         self.hidden_dim = hidden_dim
@@ -73,7 +73,7 @@ class ContrastiveSWM(nn.Module):
             num_objects=num_objects,
             ignore_action=ignore_action,
             copy_action=copy_action,
-            act_encoding=act_encoding)
+            action_encoding=action_encoding)
 
         self.width = width_height[0]
         self.height = width_height[1]
@@ -126,7 +126,7 @@ class ContrastiveSWM(nn.Module):
 class TransitionGNN(torch.nn.Module):
     """GNN-based transition function."""
     def __init__(self, input_dim, act_input_dim, hidden_dim, action_dim, num_objects,
-                 ignore_action=False, copy_action=False, act_fn='relu', act_encoding='one_hot'):
+                 ignore_action=False, copy_action=False, act_fn='relu', action_encoding='action_one_hot'):
         super(TransitionGNN, self).__init__()
 
         self.input_dim = input_dim
@@ -134,7 +134,7 @@ class TransitionGNN(torch.nn.Module):
         self.num_objects = num_objects
         self.ignore_action = ignore_action
         self.copy_action = copy_action
-        self.action_type = act_encoding
+        self.action_type = action_encoding
 
         if self.action_type == "action_image":
             self.act_extractor = EncoderCNNLarge(

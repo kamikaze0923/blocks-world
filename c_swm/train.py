@@ -118,7 +118,7 @@ model = modules.ContrastiveSWM(
     ignore_action=args.ignore_action,
     copy_action=args.copy_action,
     encoder=args.encoder,
-    act_encoding=args.action_encoding).to(device)
+    action_encoding=args.action_encoding).to(device)
 
 model.apply(utils.weights_init)
 

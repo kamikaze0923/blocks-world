@@ -130,14 +130,14 @@ def unsorted_segment_sum(tensor, segment_ids, num_segments):
 class StateTransitionsDataset(data.Dataset):
     """Create dataset of (o_t, a_t, o_{t+1}) transitions from replay buffer."""
 
-    def __init__(self, hdf5_file, act_encoding, truncate=float('inf')):
+    def __init__(self, hdf5_file, action_encoding, truncate=float('inf')):
         """
         Args:
             hdf5_file (string): Path to the hdf5 file that contains experience
                 buffer
         """
         self.experience_buffer = load_list_dict_h5py(hdf5_file, truncate=truncate)
-        self.action_type = act_encoding
+        self.action_type = action_encoding
 
         # Build table for conversion between linear idx -> episode/step idx
         self.idx2episode = list()
@@ -167,14 +167,15 @@ class PathDataset(data.Dataset):
     """Create dataset of {(o_t, a_t)}_{t=1:N} paths from replay buffer.
     """
 
-    def __init__(self, hdf5_file, path_length=5):
+    def __init__(self, hdf5_file, action_encoding, path_length=5, truncate=float('inf')):
         """
         Args:
             hdf5_file (string): Path to the hdf5 file that contains experience
                 buffer
         """
-        self.experience_buffer = load_list_dict_h5py(hdf5_file)
+        self.experience_buffer = load_list_dict_h5py(hdf5_file, truncate=truncate)
         self.path_length = path_length
+        self.action_type = action_encoding
 
     def __len__(self):
         return len(self.experience_buffer)
@@ -184,7 +185,7 @@ class PathDataset(data.Dataset):
         actions = []
         for i in range(self.path_length):
             obs = to_float(self.experience_buffer[idx]['obs'][i])
-            action = self.experience_buffer[idx]['action'][i]
+            action = self.experience_buffer[idx][self.action_type][i]
             observations.append(obs)
             actions.append(action)
         obs = to_float(

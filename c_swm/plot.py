@@ -11,20 +11,24 @@ class TransitionPlot:
     def __init__(self):
         plt.subplots(figsize=self.FIGURE_SIZE)
         self.obs_axs = []
+        self.act_axs = []
         self.latent_axs = []
         self.obj_axs = []
         self.next_obj_axs = []
-        for i in range(self.N_COL):
+        for i in range(2):
             self.obs_axs.append(
                 plt.subplot2grid(
                     shape=(2*self.N_ROW, 2*self.N_COL), loc=(0, i*2), colspan=2, rowspan=2
                 )
             )
-            self.latent_axs.append(
+
+        for i in range(2):
+            self.act_axs.append(
                 plt.subplot2grid(
-                    shape=(2*self.N_ROW, 2*self.N_COL), loc=(2*2, i*2), colspan=2, rowspan=2
+                    shape=(2*self.N_ROW, 2*self.N_COL), loc=(i*2, 2*2), colspan=2, rowspan=2
                 )
             )
+
         for i in range(2):
             for j in range(2):
                 self.obj_axs.append(
@@ -34,21 +38,28 @@ class TransitionPlot:
                     plt.subplot2grid(shape=(2*self.N_ROW, 2*self.N_COL), loc=(2 + i, 2 + j), colspan=1, rowspan=1)
                 )
 
+        for i in range(3):
+            self.latent_axs.append(
+                plt.subplot2grid(
+                    shape=(2*self.N_ROW, 2*self.N_COL), loc=(2*2, i*2), colspan=2, rowspan=2
+                )
+            )
+
+
     def reset(self):
-        for i in range(self.N_COL):
-            self.obs_axs[i].axis('off')
-            self.obs_axs[i].axis('off')
+        for ax in self.obj_axs + self.next_obj_axs + self.act_axs + self.obs_axs:
+            ax.axis('off')
+        for i in range(3):
             self.latent_axs[i].cla()
             self.latent_axs[i].set_xlim(-15, 15)
             self.latent_axs[i].set_ylim(-5, 15)
-        for ax in self.obj_axs + self.next_obj_axs:
-            ax.axis('off')
         self.latent_axs[0].set_title("Pre State Latent", fontsize=8)
         self.latent_axs[1].set_title("Next State Latent", fontsize=8)
         self.latent_axs[2].set_title("Pre State Latent +\n Transition", fontsize=8)
         self.obs_axs[0].set_title("Pre State Latent", fontsize=8)
         self.obs_axs[1].set_title("Next State Latent", fontsize=8)
-        self.obs_axs[2].set_title("Next State Latent", fontsize=8)
+        self.act_axs[0].set_title("Action Moving Object", fontsize=8)
+        self.act_axs[1].set_title("Action Target Object", fontsize=8)
 
     def plt_observations(self, obs, next_obs):
         np_obs = np.transpose(obs[0].cpu().numpy(), (1,2,0))
@@ -56,7 +67,13 @@ class TransitionPlot:
         # print(np_obs.shape, np_next_obs.shape)
         self.obs_axs[0].imshow(np_obs)
         self.obs_axs[1].imshow(np_next_obs)
-        self.obs_axs[2].imshow(np_next_obs)
+
+    def plt_action(self, action):
+        np_mov_obj = action[0][0].cpu().numpy()
+        np_tar_obj = action[0][1].cpu().numpy()
+        # print(np_obs.shape, np_next_obs.shape)
+        self.act_axs[0].imshow(np_mov_obj)
+        self.act_axs[1].imshow(np_tar_obj)
 
     def plt_objects(self, objs, next_objs):
         for i in range(objs.size()[1]):
@@ -82,7 +99,7 @@ class TransitionPlot:
         for ax in self.latent_axs:
             ax.legend(['Object {}'.format(i) for i,_ in enumerate(self.COLORS)], prop={'size': 6}, loc=2, ncol=2)
 
-    def show(self, interval=0.5):
+    def show(self, interval=5):
         plt.pause(interval)
 
     def close(self):

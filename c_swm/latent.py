@@ -21,11 +21,8 @@ parser.add_argument('--dataset', type=str,
                     help='Dataset string.')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disable CUDA training.')
-parser.add_argument('--action-encoding', type=str, default='action_image',
-                    help='Ways to encode the action')
 
 args_eval = parser.parse_args()
-
 
 meta_file = os.path.join(args_eval.save_folder, 'metadata.pkl')
 model_file = os.path.join(args_eval.save_folder, 'model.pt')
@@ -35,7 +32,6 @@ args = pickle.load(open(meta_file, 'rb'))['args']
 args.cuda = not args_eval.no_cuda and torch.cuda.is_available()
 args.batch_size = 100
 args.dataset = args_eval.dataset
-args.action_encoding = args_eval.action_encoding
 args.seed = 0
 
 np.random.seed(args.seed)
@@ -45,7 +41,7 @@ if args.cuda:
 
 device = torch.device('cuda' if args.cuda else 'cpu')
 
-dataset = utils.StateTransitionsDataset(hdf5_file=args.dataset, act_encoding=args.action_encoding, truncate=50)
+dataset = utils.StateTransitionsDataset(hdf5_file=args.dataset, action_encoding=args.action_encoding, truncate=50)
 eval_loader = data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4)
 
 # Get data sample
@@ -63,26 +59,30 @@ model = modules.ContrastiveSWM(
     ignore_action=args.ignore_action,
     copy_action=args.copy_action,
     encoder=args.encoder,
-    act_encoding=args.action_encoding
+    action_encoding=args.action_encoding
 ).to(device)
 
 model.load_state_dict(torch.load(model_file,  map_location=device))
 model.eval()
 
 with torch.no_grad():
-    # tr_plot = TransitionPlot()
+    tr_plot = TransitionPlot()
 
     for batch_idx, data_batch in enumerate(eval_loader):
-        # tr_plot.reset()
+        data_batch = [tensor.to(device) for tensor in data_batch]
+        tr_plot.reset()
 
         obs = data_batch[0]
         action = data_batch[1]
         next_obs = data_batch[-1]
-        # tr_plot.plt_observations(obs, next_obs)
+        tr_plot.plt_observations(obs, next_obs)
+
+        if args.action_encoding == "action_image":
+            tr_plot.plt_action(action)
 
         objs = model.obj_extractor(obs)
         next_objs = model.obj_extractor(next_obs)
-        # tr_plot.plt_objects(objs, next_objs)
+        tr_plot.plt_objects(objs, next_objs)
 
         state = model.obj_encoder(objs)
         next_state = model.obj_encoder(next_objs)
@@ -90,9 +90,9 @@ with torch.no_grad():
         pred_trans = model.transition_model(state, action)
         pred_state = state + pred_trans
 
-        # tr_plot.plt_latent(state, next_state, pred_state)
-        # tr_plot.show()
+        tr_plot.plt_latent(state, next_state, pred_state)
+        tr_plot.show()
 
-    # tr_plot.close()
+    tr_plot.close()
 
 
