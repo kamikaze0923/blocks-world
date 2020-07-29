@@ -21,7 +21,7 @@ parser.add_argument('--dataset', type=str,
                     help='Dataset string.')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disable CUDA training.')
-parser.add_argument('--action-encoding', type=str, default='action_one_hot',
+parser.add_argument('--action-encoding', type=str, default='action_image',
                     help='Ways to encode the action')
 
 args_eval = parser.parse_args()
@@ -62,26 +62,27 @@ model = modules.ContrastiveSWM(
     hinge=args.hinge,
     ignore_action=args.ignore_action,
     copy_action=args.copy_action,
-    encoder=args.encoder
+    encoder=args.encoder,
+    act_encoding=args.action_encoding
 ).to(device)
 
-model.load_state_dict(torch.load(model_file,  map_location='cpu'))
+model.load_state_dict(torch.load(model_file,  map_location=device))
 model.eval()
 
 with torch.no_grad():
-    tr_plot = TransitionPlot()
+    # tr_plot = TransitionPlot()
 
     for batch_idx, data_batch in enumerate(eval_loader):
-        tr_plot.reset()
+        # tr_plot.reset()
 
         obs = data_batch[0]
         action = data_batch[1]
         next_obs = data_batch[-1]
-        tr_plot.plt_observations(obs, next_obs)
+        # tr_plot.plt_observations(obs, next_obs)
 
         objs = model.obj_extractor(obs)
         next_objs = model.obj_extractor(next_obs)
-        tr_plot.plt_objects(objs, next_objs)
+        # tr_plot.plt_objects(objs, next_objs)
 
         state = model.obj_encoder(objs)
         next_state = model.obj_encoder(next_objs)
@@ -89,9 +90,9 @@ with torch.no_grad():
         pred_trans = model.transition_model(state, action)
         pred_state = state + pred_trans
 
-        tr_plot.plt_latent(state, next_state, pred_state)
-        tr_plot.show()
+        # tr_plot.plt_latent(state, next_state, pred_state)
+        # tr_plot.show()
 
-    tr_plot.close()
+    # tr_plot.close()
 
 

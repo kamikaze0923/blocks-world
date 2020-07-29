@@ -136,17 +136,18 @@ class TransitionGNN(torch.nn.Module):
         self.copy_action = copy_action
         self.action_type = act_encoding
 
-        if self.action_type == "image":
+        if self.action_type == "action_image":
             self.act_extractor = EncoderCNNLarge(
                 input_dim=2,
                 hidden_dim=hidden_dim // 16,
                 num_objects=num_objects)
 
             self.act_encoder = EncoderMLP(
-            input_dim=act_input_dim,
-            hidden_dim=hidden_dim,
-            output_dim=action_dim,
-            num_objects=num_objects)
+                input_dim=act_input_dim,
+                hidden_dim=hidden_dim,
+                output_dim=action_dim,
+                num_objects=num_objects
+            )
 
         if self.ignore_action:
             self.action_dim = 0
@@ -241,17 +242,19 @@ class TransitionGNN(torch.nn.Module):
 
         if not self.ignore_action:
 
-            if self.copy_action:
-                action_vec = utils.to_one_hot(
-                    action, self.action_dim).repeat(1, self.num_objects)
-                action_vec = action_vec.view(-1, self.action_dim)
+            if self.action_type == "action_one_hot":
+                if self.copy_action:
+                    action_vec = utils.to_one_hot(action, self.action_dim).repeat(1, self.num_objects)
+                    action_vec = action_vec.view(-1, self.action_dim)
+                else:
+                    action_vec = utils.to_one_hot(action, self.action_dim * num_nodes)
+                    action_vec = action_vec.view(-1, self.action_dim)
             else:
-                action_vec = utils.to_one_hot(
-                    action, self.action_dim * num_nodes)
+                assert self.action_type == "action_image"
+                assert not self.copy_action # here each object's action vec is learned separately
+                action_vec = self.act_extractor(action)
+                action_vec = self.act_encoder(action_vec)
                 action_vec = action_vec.view(-1, self.action_dim)
-            print(node_attr.size(), action_vec.size())
-            print(node_attr[0], action_vec[0])
-            exit(0)
 
             # Attach action to each state
             node_attr = torch.cat([node_attr, action_vec], dim=-1)

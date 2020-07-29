@@ -90,7 +90,7 @@ def gen_episode(num_episode, episode_length):
         assert next_obs_colors.shape[0] == 9
         action_mov_obs = set_image_action(obs, moving_obj.color)
         action_tar_obs = set_image_action(obs, target_obj.color)
-        action_image = np.stack([action_mov_obs, action_tar_obs])
+        action_image = np.stack([action_mov_obs, action_tar_obs]).astype(np.float32)
         replay['action_image'].append(
             resize(action_image, (2, 100, 150))
         )
