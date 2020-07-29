@@ -10,6 +10,10 @@ EPISODE_LENGTH = 10
 N_TRAIN = 5000
 N_EVAL = 760
 
+np.random.seed(0)
+TRAIN_IDX = np.random.choice(N_TRAIN+N_EVAL, N_TRAIN, replace=False)
+
+
 def set_image_action(obs, obj_color):
     target = np.tile(obj_color, (obs.shape[0], obs.shape[1], 1))
     cond = np.all(obs == target, axis=-1).astype(np.int32)
@@ -40,7 +44,7 @@ def gen_episode(num_episode, episode_length):
     for i in range(n_tr):
         if i % 100 == 0:
             print(i)
-        if i < N_TRAIN:
+        if i in TRAIN_IDX:
             replay_buffer = replay_buffer_train
         else:
             replay_buffer = replay_buffer_eval
