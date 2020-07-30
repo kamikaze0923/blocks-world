@@ -3,46 +3,49 @@ import numpy as np
 
 class TransitionPlot:
 
-    COLORS = ['y', 'r', 'g', 'b']
-    N_ROW = 4
-    N_COL = 3
-    FIGURE_SIZE = (12, 16)
+    COLORS = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
+    N_COL = 8
 
     def __init__(self, num_obj_slots):
         assert num_obj_slots in (4,8)
+        self.OBJ_ROW = num_obj_slots // 4
+        self.N_ROW = 4 + self.OBJ_ROW
+        self.FIGURE_SIZE = (self.N_COL*2, self.N_ROW*2)
+        print(num_obj_slots)
         plt.subplots(figsize=self.FIGURE_SIZE)
         self.obs_axs = []
         self.act_axs = []
         self.latent_axs = []
         self.obj_axs = []
         self.next_obj_axs = []
-        for i in range(2):
+
+        for i in [0, 3]:
             self.obs_axs.append(
                 plt.subplot2grid(
-                    shape=(2*self.N_ROW, 2*self.N_COL), loc=(0, i*2), colspan=2, rowspan=2
+                    shape=(self.N_ROW, self.N_COL), loc=(0, i*2), colspan=2, rowspan=2
                 )
             )
 
-        for i in range(2):
+        for i in [1, 2]:
             self.act_axs.append(
                 plt.subplot2grid(
-                    shape=(2*self.N_ROW, 2*self.N_COL), loc=(2, i*2), colspan=2, rowspan=2
+                    shape=(self.N_ROW, self.N_COL), loc=(0, i*2), colspan=2, rowspan=2
                 )
             )
 
-        for i in range(4):
-            for j in range(2):
+        for i in range(self.OBJ_ROW):
+            for j in range(4):
                 self.obj_axs.append(
-                    plt.subplot2grid(shape=(2*self.N_ROW, 2*self.N_COL), loc=(4 + i, 0 + j), colspan=1, rowspan=1)
+                    plt.subplot2grid(shape=(self.N_ROW, self.N_COL), loc=(2 + i, 0 + j), colspan=1, rowspan=1)
                 )
                 self.next_obj_axs.append(
-                    plt.subplot2grid(shape=(2*self.N_ROW, 2*self.N_COL), loc=(4 + i, 2 + j), colspan=1, rowspan=1)
+                    plt.subplot2grid(shape=(self.N_ROW, self.N_COL), loc=(2 + i, 4 + j), colspan=1, rowspan=1)
                 )
 
         for i in range(3):
             self.latent_axs.append(
                 plt.subplot2grid(
-                    shape=(2*self.N_ROW, 2*self.N_COL), loc=(4 + num_obj_slots // 2, i*2), colspan=2, rowspan=2
+                    shape=(self.N_ROW, self.N_COL), loc=(2 + self.OBJ_ROW, i*2), colspan=2, rowspan=2
                 )
             )
 
@@ -100,7 +103,7 @@ class TransitionPlot:
         for ax in self.latent_axs:
             ax.legend(['Object {}'.format(i) for i,_ in enumerate(self.COLORS)], prop={'size': 6}, loc=2, ncol=2)
 
-    def show(self, interval=5):
+    def show(self, interval=2):
         plt.pause(interval)
 
     def close(self):
