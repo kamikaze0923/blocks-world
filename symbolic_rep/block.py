@@ -13,7 +13,8 @@ with open((os.path.join(prefix, "{}-init.json".format(prefix)))) as f:
     init_json = json.load(f)
 
 STACK_XS = init_json['stack_x']
-BLCOK_NAMES = ["A", "B", "C", "D"]
+BLCOK_INDIES = [i for i in range(1, 1+objs)]
+PAD_INDIES = [i for i in range(1+objs, 1+objs+stacks)]
 
 
 class Block:
@@ -42,8 +43,11 @@ class Block:
             self.shape, self.size, self.color[0], self.color[1], self.color[2]
         )
 
-    def set_id(self, id):
-        self.id = BLCOK_NAMES[id]
+    def set_block_id(self, n):
+        self.id = BLCOK_INDIES[n]
+
+    def set_pad_id(self, n):
+        self.id = PAD_INDIES[n]
 
     def set_floor(self, floor):
         self.floor = floor
@@ -68,10 +72,11 @@ def extract_predicate(json_file):
         b = Block(obj)
         if b in SCENE_OBJS:
             scene_objs.append(b)
-            b.set_id(SCENE_OBJS.index(b))
+            b.set_block_id(SCENE_OBJS.index(b))
             scene_stacks_ys[b.n_stack].append(b.z)
         else:
             assert b.shape == "SmoothBottomPad"
+            b.set_pad_id(len(bottom_pads_objs))
             bottom_pads_objs.append(b)
     for k, v in scene_stacks_ys.items():
         scene_stacks_ys[k] = sorted(v)
