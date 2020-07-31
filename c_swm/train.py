@@ -55,9 +55,14 @@ parser.add_argument('--seed', type=int, default=42,
 parser.add_argument('--log-interval', type=int, default=20,
                     help='How many batches to wait before logging'
                          'training status.')
-parser.add_argument('--dataset', type=str,
+
+parser.add_argument('--train-dataset', type=str,
                     default='data/shapes_train.h5',
                     help='Path to replay buffer.')
+parser.add_argument('--eval-dataset', type=str,
+                    default='data/shapes_eval.h5',
+                    help='Path to replay buffer.')
+
 parser.add_argument('--name', type=str, default='none',
                     help='Experiment name.')
 parser.add_argument('--save-folder', type=str,
@@ -98,10 +103,10 @@ pickle.dump({'args': args}, open(meta_file, "wb"))
 
 device = torch.device('cuda' if args.cuda else 'cpu')
 
-dataset = utils.StateTransitionsDataset(
-    hdf5_file=args.dataset, action_encoding=args.action_encoding)
+train_dataset = utils.StateTransitionsDataset(
+    hdf5_file=args.train_dataset, action_encoding=args.action_encoding)
 train_loader = data.DataLoader(
-    dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
+    train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
 
 # Get data sample
 obs = train_loader.__iter__().next()[0]
