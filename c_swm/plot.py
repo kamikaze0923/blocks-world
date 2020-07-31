@@ -1,14 +1,15 @@
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import numpy as np
 
 class TransitionPlot:
 
-    COLORS = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
     N_COL = 8
 
     def __init__(self, num_obj_slots):
-        assert num_obj_slots in (4,8)
-        self.OBJ_ROW = num_obj_slots // 4
+        assert num_obj_slots in (4,8,9)
+        self.COLORS = [cm.rainbow(x) for x in np.linspace(0, 1, num_obj_slots)]
+        self.OBJ_ROW = np.ceil(num_obj_slots / 4).astype(np.int32)
         self.N_ROW = 4 + self.OBJ_ROW
         self.FIGURE_SIZE = (self.N_COL*2, self.N_ROW*2)
         print(num_obj_slots)
@@ -103,7 +104,7 @@ class TransitionPlot:
         for ax in self.latent_axs:
             ax.legend(['Object {}'.format(i) for i,_ in enumerate(self.COLORS)], prop={'size': 6}, loc=2, ncol=2)
 
-    def show(self, interval=2):
+    def show(self, interval=1):
         plt.pause(interval)
 
     def close(self):
