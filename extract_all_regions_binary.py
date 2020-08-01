@@ -6,6 +6,7 @@ import imageio
 import os.path
 import skimage.transform
 import argparse
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(
     description='extract the regions and save the results in a npz file.')
@@ -52,7 +53,11 @@ def main(args):
             bbox = tuple(obj["bbox"])
             x1, y1, x2, y2 = bbox
             region = image[int(y1):int(y2), int(x1):int(x2), :]
-            images[i,j] = skimage.transform.resize(region,(resize,resize,3),preserve_range=True)
+            try:
+                images[i,j] = skimage.transform.resize(region,(resize,resize,3),preserve_range=True)
+            except:
+                plt.plot()
+                plt.imshow(image)
             bboxes[i,j] = bbox
     
     # store transitions

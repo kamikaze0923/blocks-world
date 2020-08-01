@@ -228,7 +228,8 @@ def main(args):
   
   # set up objects (except locations)
   objects = initialize_objects(args)
-
+  for o in objects:
+    print(o)
 
   stack_x = initialize_stack_x(args)
   print(stack_x)
@@ -243,22 +244,21 @@ def main(args):
         init = {"objects":objects, "stack_x":stack_x}
         json.dump(init, f, indent=4)
 
-  for o in objects:
-    print(o)
-  # print(stack_x)
-  
+
   states = -1
   hashtable = dict()
+  scene_cnt = 0
   for objects, stacks in enumerate_stack(objects, stack_x):
-    for o in objects:
-        print(o)
-
+    scene_cnt += 1
+    assert len(objects) == 4
+    # for o in objects:
+    #     print(o)
+    # print("-"*20)
 
     key = scene_hashkey(objects)
     if key in hashtable:
       continue
 
-    
     states +=1
     if 0 == (states%10000):
       print(states)
@@ -275,32 +275,41 @@ def main(args):
     if args.dry_run:
       continue
 
+
     objects_with_pad = copy(objects)
+    for i,_ in enumerate(objects_with_pad):
+        x, y, z = objects_with_pad[i]['location']
+        z += 2 * properties['sizes']['small']
+        objects_with_pad[i]['location'] = (x,y,z)
+
     for x, color in zip(stack_x, properties['pad_colors'][:len(stack_x)]):
-        _, r = random_dict(properties['sizes'])
         objects_with_pad.append(
             {
                 'shape': 'SmoothBottomPad',
                 'color': [float(c) / 255.0 for c in color] + [1.0],
                 'material': properties['materials'][0],
                 'stackable': True,
-                'size': r,
+                'size': properties['sizes']['small'],
                 'rotation': 0,
                 'location': (x, 0, 0)
             }
         )
 
-    # render_scene(args,
-    #              output_index=states,
-    #              output_split=args.split,
-    #              output_image=img_path,
-    #              output_mask_image=mask_img_path,
-    #              output_scene=scene_path,
-    #              # output_blendfile=blend_path,
-    #              objects=objects_with_pad)
+    # for o in objects_with_pad:
+    #   print(o)
+
+    render_scene(args,
+                 output_index=states,
+                 output_split=args.split,
+                 output_image=img_path,
+                 output_mask_image=mask_img_path,
+                 output_scene=scene_path,
+                 # output_blendfile=blend_path,
+                 objects=objects_with_pad)
+
 
   print(states+1,"states")
-  
+
   states = -1
   transitions = -1
   hashset = set()
@@ -541,8 +550,8 @@ def stack_height(stack):
 def object_equal(o1, o2):
   return \
     o1["shape"]    == o2["shape"]    and \
-    o1["size"]     == o2["size"]     and \
-    o1["color"]    == o2["color"]
+    o1["size"]     == o2["size"]
+
 
 def initialize_objects(args):
 
@@ -598,7 +607,7 @@ def update_locations(stacks, stack_x):
     for obj in stack:
       x = x_base
       y = 0
-      z = stack_height(tmp_stack) + obj["size"]*2
+      z = stack_height(tmp_stack)
       obj["location"] = (x,y,z)
       tmp_stack.append(obj)
     

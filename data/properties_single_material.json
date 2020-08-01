@@ -25,6 +25,7 @@
     "rubber": "Rubber"
   },
   "sizes": {
-    "large": 0.4
+    "large": 0.7,
+    "small": 0.4
   }
 }
