@@ -60,8 +60,8 @@ def gen_episode(num_episode, episode_length):
         obs = plt.imread(os.path.join(prefix, "mask_image_tr", img_tr_files[i*2]))
         next_obs = plt.imread(os.path.join(prefix, "mask_image_tr", img_tr_files[i*2+1]))
 
-        pre_objs_index_matrix = np.zeros(shape=obs.shape[:2])
-        next_objs_index_matrix = np.zeros(shape=next_obs.shape[:2])
+        pre_objs_index_matrix = np.zeros(shape=obs.shape[:2], dtype=np.float32)
+        next_objs_index_matrix = np.zeros(shape=next_obs.shape[:2], dtype=np.float32)
 
         assert len(pre_objs) == len(suc_objs)
         for pre_obj, suc_obj in zip(pre_objs, suc_objs):
