@@ -93,7 +93,7 @@ def gen_episode(num_episode, episode_length):
             pre_obj_index = get_index_from_image(obs, pre_pad.color)
             pre_objs_index_matrix[pre_obj_index[0], pre_obj_index[1]] = pre_pad.id
             suc_obj_index = get_index_from_image(obs, suc_pad.color)
-            next_objs_index_matrix[pre_obj_index[0], suc_obj_index[1]] = suc_pad.id
+            next_objs_index_matrix[suc_obj_index[0], suc_obj_index[1]] = suc_pad.id
 
         assert action is not None
         assert target_obj is not None
