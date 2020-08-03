@@ -111,7 +111,9 @@ class ContrastiveSWM(nn.Module):
 
 
         action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1)
-        action = obj_mask[torch.arange(action_idx.size()[0]), action_idx, : , :]
+        batch_idx = torch.arange(action_idx.size()[0])
+        batch_idx = torch.stack([batch_idx, batch_idx], dim=1)
+        action = obj_mask[batch_idx, action_idx, : , :]
 
         self.pos_loss = self.energy(state, action, next_state)
         zeros = torch.zeros_like(self.pos_loss)
