@@ -14,11 +14,11 @@ import torch.nn.functional as F
 import c_swm.modules as modules
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--batch-size', type=int, default=64,
+parser.add_argument('--batch-size', type=int, default=128,
                     help='Batch size.')
 parser.add_argument('--epochs', type=int, default=5000,
                     help='Number of training epochs.')
-parser.add_argument('--learning-rate', type=float, default=5e-4,
+parser.add_argument('--learning-rate', type=float, default=1e-4,
                     help='Learning rate.')
 
 parser.add_argument('--encoder', type=str, default='small',
