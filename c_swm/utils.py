@@ -130,23 +130,38 @@ def unsorted_segment_sum(tensor, segment_ids, num_segments):
 class StateTransitionsDataset(data.Dataset):
     """Create dataset of (o_t, a_t, o_{t+1}) transitions from replay buffer."""
 
-    def __init__(self, hdf5_file, action_encoding, truncate=float('inf')):
+    def __init__(self, hdf5_file, truncate=float('inf')):
         """
         Args:
             hdf5_file (string): Path to the hdf5 file that contains experience
                 buffer
         """
         self.experience_buffer = load_list_dict_h5py(hdf5_file, truncate=truncate)
-        self.action_type = action_encoding
 
         # Build table for conversion between linear idx -> episode/step idx
         self.idx2episode = list()
         step = 0
+
+        n_obj = np.unique(self.experience_buffer[0]['obs_obj_index']).shape[0]
+        obj_mask_idx = self.experience_buffer[0]['next_obj_index']
+        next_obj_mask_idx = self.experience_buffer[0]['obs_obj_index']
+        assert obj_mask_idx.shape == next_obj_mask_idx.shape
+
         for ep in range(len(self.experience_buffer)):
-            num_steps = len(self.experience_buffer[ep][self.action_type])
+            num_steps = len(self.experience_buffer[ep]['action_one_hot'])
             idx_tuple = [(ep, idx) for idx in range(num_steps)]
             self.idx2episode.extend(idx_tuple)
             step += num_steps
+
+            obj_mask = np.zeros(shape=(n_obj, obj_mask_idx.shape[1], obj_mask_idx.shape[2]), dtype=np.float32)
+            next_obj_mask = np.zeros(shape=(n_obj, next_obj_mask_idx.shape[1], next_obj_mask_idx.shape[2]), dtype=np.float32)
+
+            for i in range(n_obj):
+                obj_mask[i] = (obj_mask[0] == i).astype(np.float32)
+                next_obj_mask[i] = (obj_mask[0] == i).astype(np.float32)
+
+            self.experience_buffer[ep]['obj_mask'] = obj_mask
+            self.experience_buffer[ep]['next_obj_mask'] = next_obj_mask
 
         self.num_steps = step
 
@@ -157,10 +172,17 @@ class StateTransitionsDataset(data.Dataset):
         ep, step = self.idx2episode[idx]
 
         obs = to_float(self.experience_buffer[ep]['obs'][step])
-        action = self.experience_buffer[ep][self.action_type][step]
         next_obs = to_float(self.experience_buffer[ep]['next_obs'][step])
 
-        return obs, action, next_obs
+        action_one_hot = self.experience_buffer[ep]['action_one_hot'][step]
+
+        obj_mask = self.experience_buffer[ep]['obj_mask']
+        next_obj_mask = self.experience_buffer[ep]['next_obj_mask']
+
+        action_mov_obj_index = self.experience_buffer[ep]['action_mov_obj_index']
+        action_tar_obj_index = self.experience_buffer[ep]['action_tar_obj_index']
+
+        return obs, next_obs, action_one_hot, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index
 
 
 class PathDataset(data.Dataset):
@@ -192,3 +214,23 @@ class PathDataset(data.Dataset):
             self.experience_buffer[idx]['next_obs'][self.path_length - 1])
         observations.append(obs)
         return observations, actions
+
+
+
+if __name__ == "__main__":
+
+    dataset = StateTransitionsDataset(hdf5_file="data/blocks_eval.h5", truncate=50)
+    eval_loader = data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4)
+
+    for batch_idx, data_batch in enumerate(eval_loader):
+        data_batch = [tensor.to('cpu') for tensor in data_batch]
+        obs, next_obs, action_one_hot, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data_batch
+        print(obs.size())
+        print(next_obs.size())
+        print(action_one_hot.size())
+        print(obj_mask.size())
+        print(next_obj_mask.size())
+        print(action_mov_obj_index.size())
+        print(action_tar_obj_index.size())
+        print(obj_mask.dtype)
+        exit(0)

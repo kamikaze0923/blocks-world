@@ -94,18 +94,24 @@ class ContrastiveSWM(nn.Module):
     def transition_loss(self, state, action, next_state):
         return self.energy(state, action, next_state).mean()
 
-    def contrastive_loss(self, obs, action, next_obs):
+    def contrastive_loss(self, data_batch):
 
-        objs = self.obj_extractor(obs)
-        next_objs = self.obj_extractor(next_obs)
+        _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data_batch
 
-        state = self.obj_encoder(objs)
-        next_state = self.obj_encoder(next_objs)
+        # objs = self.obj_extractor(obs)
+        # next_objs = self.obj_extractor(next_obs)
+
+        state = self.obj_encoder(obj_mask)
+        next_state = self.obj_encoder(next_obj_mask)
 
         # Sample negative state across episodes at random
         batch_size = state.size(0)
         perm = np.random.permutation(batch_size)
         neg_state = state[perm]
+
+
+        action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1)
+        action = obj_mask[torch.arange(action_idx.size()[0]), action_idx, : , :]
 
         self.pos_loss = self.energy(state, action, next_state)
         zeros = torch.zeros_like(self.pos_loss)

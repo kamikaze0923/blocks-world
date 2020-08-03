@@ -104,7 +104,7 @@ pickle.dump({'args': args}, open(meta_file, "wb"))
 device = torch.device('cuda' if args.cuda else 'cpu')
 
 train_dataset = utils.StateTransitionsDataset(
-    hdf5_file=args.train_dataset, action_encoding=args.action_encoding)
+    hdf5_file=args.train_dataset)
 train_loader = data.DataLoader(
     train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
 
@@ -186,7 +186,7 @@ for epoch in range(1, args.epochs + 1):
                 reduction='sum') / obs.size(0)
             loss += next_loss
         else:
-            loss = model.contrastive_loss(*data_batch)
+            loss = model.contrastive_loss(data_batch)
 
         loss.backward()
         train_loss += loss.item()
@@ -229,7 +229,7 @@ import c_swm.modules as modules
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--batch-size', type=int, default=64,
+parser.add_argument('--batch-size', type=int, default=2,
                     help='Batch size.')
 parser.add_argument('--epochs', type=int, default=5000,
                     help='Number of training epochs.')
@@ -380,8 +380,13 @@ for epoch in range(1, args.epochs + 1):
 
         if args.decoder:
             optimizer_dec.zero_grad()
-            obs, action, next_obs = data_batch
-            objs = model.obj_extractor(obs)
+            _, next_obs, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data_batch
+
+            ### action = ....... stack object mask here
+            action = None
+
+            # objs = model.obj_extractor(obs)
+            objs = obj_mask
             state = model.obj_encoder(objs)
 
             rec = torch.sigmoid(decoder(state))
