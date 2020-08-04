@@ -156,22 +156,22 @@ class StateTransitionsDataset(data.Dataset):
             obj_mask = np.zeros(shape=(n_obj, obj_mask_idx.shape[1], obj_mask_idx.shape[2]), dtype=np.float32)
             next_obj_mask = np.zeros(shape=(n_obj, next_obj_mask_idx.shape[1], next_obj_mask_idx.shape[2]), dtype=np.float32)
 
-            plt.gca()
-            plt.imshow(np.transpose(self.experience_buffer[ep]['obs'][0], (1,2,0)))
-            plt.pause(1)
-            plt.imshow(np.transpose(self.experience_buffer[ep]['next_obs'][0], (1,2,0)))
-            plt.pause(1)
+            # plt.gca()
+            # plt.imshow(np.transpose(self.experience_buffer[ep]['obs'][0], (1,2,0)))
+            # plt.pause(1)
+            # plt.imshow(np.transpose(self.experience_buffer[ep]['next_obs'][0], (1,2,0)))
+            # plt.pause(1)
 
             for i in range(n_obj):
                 obj_mask[i] = (obj_mask_idx[0] == i).astype(np.float32)
                 next_obj_mask[i] = (next_obj_mask_idx[0] == i).astype(np.float32)
-                print(obj_mask[i])
-                print(obj_mask[i].shape)
-                plt.imshow(obj_mask[i])
-                plt.pause(1)
-                plt.imshow(next_obj_mask[i])
-                plt.pause(1)
-            exit(0)
+                # print(obj_mask[i])
+                # print(obj_mask[i].shape)
+                # plt.imshow(obj_mask[i])
+                # plt.pause(1)
+                # plt.imshow(next_obj_mask[i])
+                # plt.pause(1)
+            # exit(0)
 
             self.experience_buffer[ep]['obj_mask'] = obj_mask
             self.experience_buffer[ep]['next_obj_mask'] = next_obj_mask
