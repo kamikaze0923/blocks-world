@@ -41,7 +41,7 @@ if args.cuda:
 
 device = torch.device('cuda' if args.cuda else 'cpu')
 
-dataset = utils.StateTransitionsDataset(hdf5_file=args.dataset, action_encoding=args.action_encoding, truncate=50)
+dataset = utils.StateTransitionsDataset(hdf5_file=args.dataset, truncate=50)
 eval_loader = data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4)
 
 # Get data sample
@@ -68,20 +68,24 @@ model.eval()
 with torch.no_grad():
     tr_plot = TransitionPlot(args.num_objects)
 
-    for batch_idx, data_batch in enumerate(eval_loader):
+    for _, data_batch in enumerate(eval_loader):
         data_batch = [tensor.to(device) for tensor in data_batch]
         tr_plot.reset()
 
-        obs = data_batch[0]
-        action = data_batch[1]
-        next_obs = data_batch[-1]
+        obs, next_obs, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data_batch
+
         tr_plot.plt_observations(obs, next_obs)
 
-        if args.action_encoding == "action_image":
-            tr_plot.plt_action(action)
+        assert args.action_encoding == "action_image"
+        action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1)
+        batch_idx = torch.arange(action_idx.size()[0])
+        batch_idx = torch.stack([batch_idx, batch_idx], dim=1)
+        action = obj_mask[batch_idx, action_idx, :, :]
+        tr_plot.plt_action(action)
 
-        objs = model.obj_extractor(obs)
-        next_objs = model.obj_extractor(next_obs)
+        # objs = model.obj_extractor(obs)
+        objs = obj_mask
+        next_objs = next_obj_mask
         tr_plot.plt_objects(objs, next_objs)
 
         state = model.obj_encoder(objs)
