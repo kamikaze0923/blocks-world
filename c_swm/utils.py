@@ -10,8 +10,10 @@ from torch import nn
 
 import matplotlib.pyplot as plt
 
+
 EPS = 1e-17
 
+np.set_printoptions(linewidth=np.inf, threshold=np.inf)
 
 def weights_init(m):
     if isinstance(m, nn.Conv2d):
@@ -130,7 +132,7 @@ def unsorted_segment_sum(tensor, segment_ids, num_segments):
 class StateTransitionsDataset(data.Dataset):
     """Create dataset of (o_t, a_t, o_{t+1}) transitions from replay buffer."""
 
-    def __init__(self, hdf5_file, truncate=float('inf')):
+    def __init__(self, hdf5_file, n_obj, truncate=float('inf')):
         """
         Args:
             hdf5_file (string): Path to the hdf5 file that contains experience
@@ -148,7 +150,7 @@ class StateTransitionsDataset(data.Dataset):
             self.idx2episode.extend(idx_tuple)
             step += num_steps
 
-            n_obj = np.unique(self.experience_buffer[ep]['obs_obj_index']).shape[0]
+
             obj_mask_idx = self.experience_buffer[ep]['obs_obj_index']
             next_obj_mask_idx = self.experience_buffer[ep]['next_obj_index']
             assert obj_mask_idx.shape == next_obj_mask_idx.shape
@@ -175,13 +177,6 @@ class StateTransitionsDataset(data.Dataset):
 
             self.experience_buffer[ep]['obj_mask'] = obj_mask
             self.experience_buffer[ep]['next_obj_mask'] = next_obj_mask
-
-
-
-
-
-
-
 
         self.num_steps = step
 

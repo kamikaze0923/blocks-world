@@ -64,6 +64,7 @@ def gen_episode(num_episode, episode_length):
         next_objs_index_matrix = np.zeros(shape=next_obs.shape[:2], dtype=np.float32)
 
         assert len(pre_objs) == len(suc_objs)
+
         for pre_obj, suc_obj in zip(pre_objs, suc_objs):
             assert pre_obj.id == suc_obj.id
             assert isinstance(pre_obj, Block)
@@ -87,13 +88,21 @@ def gen_episode(num_episode, episode_length):
                             break
                 # print("Target object {}".format(target_obj))
                 action = ACTIONS.index((pre_obj.n_stack, suc_obj.n_stack))
-                break
 
         for (pre_pad, suc_pad) in zip(pre_bottom_pads, suc_bottom_pads):
             pre_obj_index = get_index_from_image(obs, pre_pad.color)
             pre_objs_index_matrix[pre_obj_index[0], pre_obj_index[1]] = pre_pad.id
             suc_obj_index = get_index_from_image(next_obs, suc_pad.color)
             next_objs_index_matrix[suc_obj_index[0], suc_obj_index[1]] = suc_pad.id
+
+        for m, o, name in zip([pre_objs_index_matrix, next_objs_index_matrix], [obs, next_obs], ["p", "n"]):
+            n_obj = np.unique(m).shape[0]
+            if n_obj != 9:
+                print(name)
+                plt.imshow(o)
+                plt.show()
+                print(m)
+                exit(0)
 
         assert action is not None
         assert target_obj is not None

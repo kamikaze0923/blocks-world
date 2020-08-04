@@ -277,7 +277,7 @@ def main(args):
 
 
     objects_with_pad = copy(objects)
-    for i,_ in enumerate(objects_with_pad):
+    for i, _ in enumerate(objects_with_pad):
         x, y, z = objects_with_pad[i]['location']
         z += 2 * properties['sizes']['small']
         objects_with_pad[i]['location'] = (x,y,z)
@@ -291,10 +291,11 @@ def main(args):
                 'stackable': True,
                 'size': properties['sizes']['small'],
                 'rotation': 0,
-                'location': (x, 0, 0)
+                'location': (x, 0, properties['sizes']['small'])
             }
         )
 
+    # print(img_path)
     # for o in objects_with_pad:
     #   print(o)
 
@@ -306,7 +307,6 @@ def main(args):
                  output_scene=scene_path,
                  # output_blendfile=blend_path,
                  objects=objects_with_pad)
-
 
   print(states+1,"states")
 
@@ -607,7 +607,7 @@ def update_locations(stacks, stack_x):
     for obj in stack:
       x = x_base
       y = 0
-      z = stack_height(tmp_stack)
+      z = stack_height(tmp_stack) + obj['size']
       obj["location"] = (x,y,z)
       tmp_stack.append(obj)
     
