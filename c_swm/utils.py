@@ -142,16 +142,16 @@ class StateTransitionsDataset(data.Dataset):
         self.idx2episode = list()
         step = 0
 
-        n_obj = np.unique(self.experience_buffer[0]['obs_obj_index']).shape[0]
-        obj_mask_idx = self.experience_buffer[0]['obs_obj_index']
-        next_obj_mask_idx = self.experience_buffer[0]['next_obj_index']
-        assert obj_mask_idx.shape == next_obj_mask_idx.shape
-
         for ep in range(len(self.experience_buffer)):
             num_steps = len(self.experience_buffer[ep]['action_one_hot'])
             idx_tuple = [(ep, idx) for idx in range(num_steps)]
             self.idx2episode.extend(idx_tuple)
             step += num_steps
+
+            n_obj = np.unique(self.experience_buffer[ep]['obs_obj_index']).shape[0]
+            obj_mask_idx = self.experience_buffer[ep]['obs_obj_index']
+            next_obj_mask_idx = self.experience_buffer[ep]['next_obj_index']
+            assert obj_mask_idx.shape == next_obj_mask_idx.shape
 
             obj_mask = np.zeros(shape=(n_obj, obj_mask_idx.shape[1], obj_mask_idx.shape[2]), dtype=np.float32)
             next_obj_mask = np.zeros(shape=(n_obj, next_obj_mask_idx.shape[1], next_obj_mask_idx.shape[2]), dtype=np.float32)
