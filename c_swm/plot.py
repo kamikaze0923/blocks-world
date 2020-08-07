@@ -67,10 +67,11 @@ class TransitionPlot:
 
 
     def reset(self):
+        for ax in self.obs_axs + self.act_axs + self.latent_axs + self.obj_axs + self.next_obj_axs:
+            ax.cla()
         for ax in self.obj_axs + self.next_obj_axs + self.act_axs + self.obs_axs:
             ax.axis('off')
         for i in range(3):
-            self.latent_axs[i].cla()
             self.latent_axs[i].set_xlim(-5, 5)
             self.latent_axs[i].set_ylim(-5, 5)
         self.latent_axs[0].set_title("Pre State Latent", fontsize=6)
