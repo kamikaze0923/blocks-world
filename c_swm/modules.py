@@ -36,27 +36,27 @@ class ContrastiveSWM(nn.Module):
         num_channels = input_dims[0]
         width_height = input_dims[1:]
 
-        if encoder == 'small':
-            self.obj_extractor = EncoderCNNSmall(
-                input_dim=num_channels,
-                hidden_dim=hidden_dim // 16,
-                num_objects=num_objects)
-            # CNN image size changes
-            width_height = np.array(width_height)
-            width_height = width_height // 10
-        elif encoder == 'medium':
-            self.obj_extractor = EncoderCNNMedium(
-                input_dim=num_channels,
-                hidden_dim=hidden_dim // 16,
-                num_objects=num_objects)
-            # CNN image size changes
-            width_height = np.array(width_height)
-            width_height = width_height // 5
-        elif encoder == 'large':
-            self.obj_extractor = EncoderCNNLarge(
-                input_dim=num_channels,
-                hidden_dim=hidden_dim // 16,
-                num_objects=num_objects)
+        # if encoder == 'small':
+        #     self.obj_extractor = EncoderCNNSmall(
+        #         input_dim=num_channels,
+        #         hidden_dim=hidden_dim // 16,
+        #         num_objects=num_objects)
+        #     # CNN image size changes
+        #     width_height = np.array(width_height)
+        #     width_height = width_height // 10
+        # elif encoder == 'medium':
+        #     self.obj_extractor = EncoderCNNMedium(
+        #         input_dim=num_channels,
+        #         hidden_dim=hidden_dim // 16,
+        #         num_objects=num_objects)
+        #     # CNN image size changes
+        #     width_height = np.array(width_height)
+        #     width_height = width_height // 5
+        # elif encoder == 'large':
+        #     self.obj_extractor = EncoderCNNLarge(
+        #         input_dim=num_channels,
+        #         hidden_dim=hidden_dim // 16,
+        #         num_objects=num_objects)
 
         self.obj_encoder = EncoderMLP(
             input_dim=np.prod(input_dims),
