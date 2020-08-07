@@ -14,12 +14,12 @@ np.random.seed(0)
 np.set_printoptions(threshold=np.inf, linewidth=np.inf)
 TRAIN_IDX = np.random.choice(N_TRAIN+N_EVAL, N_TRAIN, replace=False)
 
-def resize(img): # resize by 2
+def resize(img, scale=4): # resize by 2
     assert len(img.shape) == 3 or len(img.shape) == 2
     if len(img.shape) == 3:
-        img_down_sampled = img[:,::2,::2]
+        img_down_sampled = img[:,::scale,::scale]
     else:
-        img_down_sampled = img[::2, ::2]
+        img_down_sampled = img[::scale, ::scale]
     return img_down_sampled
 
 def get_index_from_image(img, color):
