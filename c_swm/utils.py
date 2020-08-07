@@ -130,7 +130,9 @@ def unsorted_segment_sum(tensor, segment_ids, num_segments):
 
 def get_masked_obj(obs, idx, idx_matirx):
     flt = np.stack([(idx_matirx[0] == idx).astype(np.float32) for _ in range(obs.shape[1])])
-    return np.multiply(flt, obs[0])
+    prod = np.multiply(flt, obs[0])
+    prod[prod == 0] = 1
+    return prod
 
 
 
@@ -156,7 +158,7 @@ class StateTransitionsDataset(data.Dataset):
             step += num_steps
 
             obs = self.experience_buffer[ep]['obs']
-            next_obs = self.experience_buffer[ep]['obs']
+            next_obs = self.experience_buffer[ep]['next_obs']
             obj_mask_idx = self.experience_buffer[ep]['obs_obj_index']
             next_obj_mask_idx = self.experience_buffer[ep]['next_obj_index']
             assert obj_mask_idx.shape == next_obj_mask_idx.shape
@@ -173,12 +175,10 @@ class StateTransitionsDataset(data.Dataset):
             for i in range(n_obj):
                 obj_mask_sep[i] = get_masked_obj(obs, i, obj_mask_idx)
                 next_obj_mask_sep[i] = get_masked_obj(next_obs, i, next_obj_mask_idx)
-                # print(obj_mask[i])
-                # print(obj_mask[i].shape)
-                # plt.imshow(obj_mask[i])
-                # plt.pause(1)
-                # plt.imshow(next_obj_mask[i])
-                # plt.pause(1)
+            #     plt.imshow(np.transpose(obj_mask_sep[i], (1,2,0)))
+            #     plt.pause(1)
+            #     plt.imshow(np.transpose(next_obj_mask_sep[i], (1,2,0)))
+            #     plt.pause(1)
             # exit(0)
 
             self.experience_buffer[ep]['obj_mask_sep'] = obj_mask_sep
