@@ -5,7 +5,6 @@ import numpy as np
 import torch
 from torch import nn
 
-
 class ContrastiveSWM(nn.Module):
     """Main module for a Contrastively-trained Structured World Model (C-SWM).
 
@@ -67,7 +66,7 @@ class ContrastiveSWM(nn.Module):
 
         self.transition_model = TransitionGNN(
             input_dim=embedding_dim,
-            act_input_dim=np.prod(width_height),
+            act_input_dim=np.prod(input_dims),
             hidden_dim=hidden_dim,
             action_dim=action_dim,
             num_objects=num_objects,
@@ -259,8 +258,8 @@ class TransitionGNN(torch.nn.Module):
             else:
                 assert self.action_type == "action_image"
                 assert not self.copy_action # here each object's action vec is learned separately
-                action_vec = self.act_extractor(action)
-                action_vec = self.act_encoder(action_vec)
+                # action_vec = self.act_extractor(action)
+                action_vec = self.act_encoder(action)
                 action_vec = action_vec.view(-1, self.action_dim)
 
             # Attach action to each state

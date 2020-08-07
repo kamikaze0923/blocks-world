@@ -90,16 +90,16 @@ class TransitionPlot:
         self.obs_axs[1].imshow(np_next_obs)
 
     def plt_action(self, action):
-        np_mov_obj = action[0][0].cpu().numpy()
-        np_tar_obj = action[0][1].cpu().numpy()
+        np_mov_obj = np.transpose(action[0][0].cpu().numpy(), (1,2,0))
+        np_tar_obj = np.transpose(action[0][1].cpu().numpy(), (1,2,0))
         # print(np_obs.shape, np_next_obs.shape)
         self.act_axs[0].imshow(np_mov_obj)
         self.act_axs[1].imshow(np_tar_obj)
 
     def plt_objects(self, objs, next_objs):
         for i in range(objs.size()[1]):
-            np_obj = objs[0][i].cpu().numpy()
-            np_next_obj = next_objs[0][i].cpu().numpy()
+            np_obj = np.transpose(objs[0][i].cpu().numpy(), (1,2,0))
+            np_next_obj = np.transpose(next_objs[0][i].cpu().numpy(), (1,2,0))
             self.obj_axs[i].imshow(np_obj)
             self.next_obj_axs[i].imshow(np_next_obj)
 
