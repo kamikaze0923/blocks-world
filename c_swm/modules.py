@@ -59,14 +59,14 @@ class ContrastiveSWM(nn.Module):
                 num_objects=num_objects)
 
         self.obj_encoder = EncoderMLP(
-            input_dim=np.prod(width_height),
+            input_dim=np.prod(input_dims),
             hidden_dim=hidden_dim,
             output_dim=embedding_dim,
             num_objects=num_objects)
 
         self.transition_model = TransitionGNN(
             input_dim=embedding_dim,
-            act_input_dim=np.prod(input_dims),
+            act_input_dim=np.prod(input_dims)*2,
             hidden_dim=hidden_dim,
             action_dim=action_dim,
             num_objects=num_objects,
@@ -143,16 +143,12 @@ class TransitionGNN(torch.nn.Module):
         self.action_type = action_encoding
 
         if self.action_type == "action_image":
-            self.act_extractor = EncoderCNNLarge(
-                input_dim=2,
-                hidden_dim=hidden_dim // 16,
-                num_objects=num_objects)
 
             self.act_encoder = EncoderMLP(
                 input_dim=act_input_dim,
                 hidden_dim=hidden_dim,
                 output_dim=action_dim,
-                num_objects=num_objects
+                num_objects=1
             )
 
         if self.ignore_action:
@@ -260,7 +256,7 @@ class TransitionGNN(torch.nn.Module):
                 assert not self.copy_action # here each object's action vec is learned separately
                 # action_vec = self.act_extractor(action)
                 action_vec = self.act_encoder(action)
-                action_vec = action_vec.view(-1, self.action_dim)
+                action_vec = action_vec.view(-1, self.action_dim).repeat(self.num_objects, 1)
 
             # Attach action to each state
             node_attr = torch.cat([node_attr, action_vec], dim=-1)
