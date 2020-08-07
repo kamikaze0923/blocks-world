@@ -34,8 +34,11 @@ def gen_episode(num_episode, episode_length):
     n_tr = len(tr_files) // 2
     assert N_TRAIN + N_EVAL == n_tr
 
-    img_tr_files = os.listdir(os.path.join(prefix, "mask_image_tr"))
+    img_tr_files = os.listdir(os.path.join(prefix, "image_tr"))
     img_tr_files.sort()
+
+    mask_tr_files = os.listdir(os.path.join(prefix, "mask_image_tr"))
+    mask_tr_files.sort()
 
     ACTIONS = [(i, j) for i in range(objs) for j in range(objs) if j != i]  # (SOURCE, TARGET)
 
@@ -57,19 +60,22 @@ def gen_episode(num_episode, episode_length):
         target_obj = None
         moving_obj = None
 
-        obs = plt.imread(os.path.join(prefix, "mask_image_tr", img_tr_files[i*2]))
-        next_obs = plt.imread(os.path.join(prefix, "mask_image_tr", img_tr_files[i*2+1]))
+        obs = plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2]))
+        next_obs = plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2+1]))
 
-        pre_objs_index_matrix = np.zeros(shape=obs.shape[:2], dtype=np.float32)
-        next_objs_index_matrix = np.zeros(shape=next_obs.shape[:2], dtype=np.float32)
+        mask = plt.imread(os.path.join(prefix, "mask_image_tr", mask_tr_files[i*2]))
+        next_mask = plt.imread(os.path.join(prefix, "mask_image_tr", mask_tr_files[i*2+1]))
+
+        pre_objs_index_matrix = np.zeros(shape=mask.shape[:2], dtype=np.float32)
+        next_objs_index_matrix = np.zeros(shape=next_mask.shape[:2], dtype=np.float32)
 
         assert len(pre_objs) == len(suc_objs)
 
         for pre_obj, suc_obj in zip(pre_objs, suc_objs):
             assert pre_obj.id == suc_obj.id
             assert isinstance(pre_obj, Block)
-            pre_obj_index = get_index_from_image(obs, pre_obj.color)
-            next_obj_index = get_index_from_image(next_obs, suc_obj.color)
+            pre_obj_index = get_index_from_image(mask, pre_obj.color)
+            next_obj_index = get_index_from_image(next_mask, suc_obj.color)
             pre_objs_index_matrix[pre_obj_index[0], pre_obj_index[1]] = pre_obj.id #0 as back ground
             next_objs_index_matrix[next_obj_index[0], next_obj_index[1]] = suc_obj.id #0 as back ground
             if pre_obj.position_eq(suc_obj):
@@ -90,19 +96,13 @@ def gen_episode(num_episode, episode_length):
                 action = ACTIONS.index((pre_obj.n_stack, suc_obj.n_stack))
 
         for (pre_pad, suc_pad) in zip(pre_bottom_pads, suc_bottom_pads):
-            pre_obj_index = get_index_from_image(obs, pre_pad.color)
+            pre_obj_index = get_index_from_image(mask, pre_pad.color)
             pre_objs_index_matrix[pre_obj_index[0], pre_obj_index[1]] = pre_pad.id
-            suc_obj_index = get_index_from_image(next_obs, suc_pad.color)
+            suc_obj_index = get_index_from_image(next_mask, suc_pad.color)
             next_objs_index_matrix[suc_obj_index[0], suc_obj_index[1]] = suc_pad.id
 
-        for m, o, name in zip([pre_objs_index_matrix, next_objs_index_matrix], [obs, next_obs], ["p", "n"]):
-            n_obj = np.unique(m).shape[0]
-            if n_obj != 9:
-                print(name)
-                plt.imshow(o)
-                plt.show()
-                print(m)
-                exit(0)
+        for m in [pre_objs_index_matrix, next_objs_index_matrix]:
+            assert np.unique(m).shape[0] == 9
 
         assert action is not None
         assert target_obj is not None
@@ -110,8 +110,10 @@ def gen_episode(num_episode, episode_length):
         replay = {
             'action_one_hot': [],
             'obs': [],
+            'mask': [],
             'obs_obj_index': [],
             'next_obs': [],
+            'next_mask': [],
             'next_obj_index': [],
             'action_mov_obj_index': [],
             'action_tar_obj_index': []
@@ -119,8 +121,8 @@ def gen_episode(num_episode, episode_length):
 
         replay['action_one_hot'].append(action)
 
-        obs_colors = np.unique(np.resize(obs, (-1, 4)), axis=0)
-        next_obs_colors = np.unique(np.resize(next_obs, (-1, 4)), axis=0)
+        obs_colors = np.unique(np.resize(mask, (-1, 4)), axis=0)
+        next_obs_colors = np.unique(np.resize(next_mask, (-1, 4)), axis=0)
         assert obs_colors.shape[0] == 9
         assert next_obs_colors.shape[0] == 9
 
@@ -134,12 +136,21 @@ def gen_episode(num_episode, episode_length):
         # plt.show()
         # plt.imshow(next_obs)
         # plt.show()
+
         replay['obs'].append(
             resize(np.transpose(obs, (2,0,1)))
         )
 
         replay['next_obs'].append(
             resize(np.transpose(next_obs, (2,0,1)))
+        )
+
+        replay['mask'].append(
+            resize(np.transpose(mask, (2,0,1)))
+        )
+
+        replay['next_mask'].append(
+            resize(np.transpose(next_mask, (2,0,1)))
         )
 
         replay['obs_obj_index'].append(
