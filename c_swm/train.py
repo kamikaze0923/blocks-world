@@ -14,7 +14,7 @@ import torch.nn.functional as F
 import c_swm.modules as modules
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--batch-size', type=int, default=16,
+parser.add_argument('--batch-size', type=int, default=64,
                     help='Batch size.')
 parser.add_argument('--epochs', type=int, default=5000,
                     help='Number of training epochs.')
