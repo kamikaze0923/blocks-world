@@ -41,7 +41,7 @@ if args.cuda:
 
 device = torch.device('cuda' if args.cuda else 'cpu')
 
-dataset = utils.StateTransitionsDataset(hdf5_file=args.dataset, n_obj=args.num_objects, truncate=50)
+dataset = utils.StateTransitionsDataset(hdf5_file=args.dataset, n_obj=args.num_objects, truncate=500)
 eval_loader = data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4)
 
 # Get data sample

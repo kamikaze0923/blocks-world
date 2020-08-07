@@ -109,7 +109,6 @@ class ContrastiveSWM(nn.Module):
         perm = np.random.permutation(batch_size)
         neg_state = state[perm]
 
-
         action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1)
         batch_idx = torch.arange(action_idx.size()[0])
         batch_idx = torch.stack([batch_idx, batch_idx], dim=1)
