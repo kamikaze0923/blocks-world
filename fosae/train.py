@@ -60,8 +60,8 @@ def test(dataloader, vae, temp=0):
     return test_loss / len(dataloader)
 
 def load_model(vae):
-    vae.load_state_dict(torch.load("puzzle/model/{}.pth".format(MODEL_NAME)))
-    print("puzzle/model/{}.pth loaded".format(MODEL_NAME))
+    vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME)))
+    print("fosae/model/{}.pth loaded".format(MODEL_NAME))
 
 
 
