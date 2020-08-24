@@ -60,7 +60,7 @@ def test(dataloader, vae, temp=0):
     return test_loss / len(dataloader)
 
 def load_model(vae):
-    vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME)))
+    vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
     print("fosae/model/{}.pth loaded".format(MODEL_NAME))
 
 
@@ -73,8 +73,9 @@ def run(n_epoch):
     assert len(test_set) % TEST_BZ == 0
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
-    vae = eval(MODEL_NAME)().to(device)
+    vae = eval(MODEL_NAME)()
     load_model(vae)
+    vae.to(device)
     optimizer = Adam(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 10 else 0.1)
     best_loss = float('inf')
