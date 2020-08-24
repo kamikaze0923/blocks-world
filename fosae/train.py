@@ -32,8 +32,8 @@ def train(dataloader, vae, temp, optimizer):
     vae.train()
     train_loss = 0
     for i, data in enumerate(dataloader):
-        if i % 5*TRAIN_BZ == 0:
-            print(i)
+        if i % 5 == 0:
+            print(i*TRAIN_BZ)
         _, _, _, obj_mask, _, _, _ = data
         data = obj_mask.view(obj_mask.size()[0], obj_mask.size()[1], -1)
         data = data.to(device)
