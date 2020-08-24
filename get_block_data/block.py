@@ -1,7 +1,7 @@
 import os
 import json
 from collections import defaultdict
-from symbolic_rep.relation import SceneRelation
+from get_block_data.relation import SceneRelation
 
 objs = 4
 stacks = 4

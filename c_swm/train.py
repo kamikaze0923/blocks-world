@@ -37,7 +37,7 @@ parser.add_argument('--embedding-dim', type=int, default=2,
                     help='Dimensionality of embedding.')
 parser.add_argument('--action-dim', type=int, default=12,
                     help='Dimensionality of action space.')
-parser.add_argument('--num-objects', type=int, default=4,
+parser.add_argument('--num-objects', type=int, default=9,
                     help='Number of object slots in model.')
 parser.add_argument('--ignore-action', action='store_true', default=False,
                     help='Ignore action in GNN transition model.')
@@ -56,7 +56,7 @@ parser.add_argument('--log-interval', type=int, default=20,
                          'training status.')
 
 parser.add_argument('--train-dataset', type=str,
-                    default='data/shapes_train.h5',
+                    default='data/blocks_train.h5',
                     help='Path to replay buffer.')
 parser.add_argument('--eval-dataset', type=str,
                     default='data/shapes_eval.h5',

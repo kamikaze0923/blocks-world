@@ -1,5 +1,5 @@
 import os
-from symbolic_rep.block import Block, prefix, extract_predicate, objs
+from get_block_data.block import Block, prefix, extract_predicate, objs
 import matplotlib.pyplot as plt
 import numpy as np
 from c_swm.utils import save_list_dict_h5py
@@ -26,6 +26,7 @@ def resize(img, scale=1):
     return img
 
 def get_index_from_image(img, color):
+    color = color[:-1]
     target = np.tile(color, (img.shape[0], img.shape[1], 1))
     cond = np.all(img == target, axis=-1)
     return np.where(cond)
@@ -63,11 +64,11 @@ def gen_episode(num_episode, episode_length):
         target_obj = None
         moving_obj = None
 
-        obs = plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2]))
-        next_obs = plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2+1]))
+        obs = plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2]))[:,:,:-1]
+        next_obs = plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2+1]))[:,:,:-1]
 
-        mask = plt.imread(os.path.join(prefix, "mask_image_tr", mask_tr_files[i*2]))
-        next_mask = plt.imread(os.path.join(prefix, "mask_image_tr", mask_tr_files[i*2+1]))
+        mask = plt.imread(os.path.join(prefix, "mask_image_tr", mask_tr_files[i*2]))[:,:,:-1]
+        next_mask = plt.imread(os.path.join(prefix, "mask_image_tr", mask_tr_files[i*2+1]))[:,:,:-1]
 
         pre_objs_index_matrix = np.zeros(shape=mask.shape[:2], dtype=np.float32)
         next_objs_index_matrix = np.zeros(shape=next_mask.shape[:2], dtype=np.float32)
@@ -124,8 +125,8 @@ def gen_episode(num_episode, episode_length):
 
         replay['action_one_hot'].append(action)
 
-        obs_colors = np.unique(np.resize(mask, (-1, 4)), axis=0)
-        next_obs_colors = np.unique(np.resize(next_mask, (-1, 4)), axis=0)
+        obs_colors = np.unique(np.resize(mask, (-1, mask.shape[-1])), axis=0)
+        next_obs_colors = np.unique(np.resize(next_mask, (-1, next_mask.shape[-1])), axis=0)
         assert obs_colors.shape[0] == 9
         assert next_obs_colors.shape[0] == 9
 
