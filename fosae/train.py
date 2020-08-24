@@ -1,5 +1,5 @@
 from c_swm.utils import StateTransitionsDataset
-from fosae.model import FoSae
+from fosae.modules import FoSae
 from fosae.gumble import device
 import torch
 import torch.nn as nn
@@ -85,7 +85,7 @@ def run(n_epoch):
         print('====> Epoch: {} Average test loss: {:.4f}'.format(e, test_loss))
         if test_loss < best_loss:
             print("Save Model")
-            torch.save(vae.state_dict(), "puzzle/model/{}.pth".format(MODEL_NAME))
+            torch.save(vae.state_dict(), "fosae/model/{}.pth".format(MODEL_NAME))
             best_loss = test_loss
         scheculer.step()
 
