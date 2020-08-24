@@ -3,9 +3,9 @@ from torch import nn
 from fosae.gumble import gumbel_softmax
 
 N = 9
-P = 2
-A = 2
-U = 9
+P = 1
+A = 1
+U = 1
 LAYER_SIZE = 100
 N_OBJ_FEATURE = 50 * 75 * 3
 
