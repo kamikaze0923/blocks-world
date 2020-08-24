@@ -6,7 +6,7 @@ N = 9
 P = 9
 A = 1
 U = 9
-LAYER_SIZE = 300
+LAYER_SIZE = 100
 N_OBJ_FEATURE = 50 * 75 * 3
 
 class AttentionEncoder(nn.Module):
