@@ -8,11 +8,11 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 
-TEMP_BEGIN = 60
-TEMP_MIN = 60
+TEMP_BEGIN = 5
+TEMP_MIN = 0.7
 ANNEAL_RATE = 0.03
-TRAIN_BZ = 100
-TEST_BZ = 190
+TRAIN_BZ = 200
+TEST_BZ = 760
 
 
 print("Model is FOSAE")
@@ -32,6 +32,8 @@ def train(dataloader, vae, temp, optimizer):
     vae.train()
     train_loss = 0
     for i, data in enumerate(dataloader):
+        if i % 5*TRAIN_BZ == 0:
+            print(i)
         _, _, _, obj_mask, _, _, _ = data
         data = obj_mask.view(obj_mask.size()[0], obj_mask.size()[1], -1)
         data = data.to(device)
