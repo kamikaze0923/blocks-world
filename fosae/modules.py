@@ -90,10 +90,8 @@ class FoSae(nn.Module):
         args_pre = self.encoder(x_pre.unsqueeze(1).expand(-1, U, -1, -1), temp) #copy x for multiple predicate units
         preds_pre = self.predicate_net(args_pre, temp)
         out_pre = self.decoder(preds_pre)
-        print(x_pre.size(), args_pre.size(), x_action.size())
-        exit(0)
 
-        state_action = torch.cat([x_pre.unsqueeze(1).expand(-1, U, -1, -1), x_action.unsqueeze(1).expand(-1, U, -1, -1)], dim=2)
+        state_action = torch.cat([args_pre, x_action.unsqueeze(1).expand(-1, U, -1, -1)], dim=2)
         preds_action = self.action_net(state_action)
 
         args_next = self.encoder(x_next.unsqueeze(1).expand(-1, U, -1, -1), temp) #copy x for multiple predicate units
