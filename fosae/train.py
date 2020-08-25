@@ -109,6 +109,7 @@ def load_model(vae):
 
 
 def run(n_epoch):
+    sys.stdout.flush()
     train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
     test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
     print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
