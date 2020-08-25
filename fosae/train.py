@@ -13,6 +13,7 @@ TEMP_MIN = 0.7
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 200
 TEST_BZ = 760
+GAMMA = 100
 
 
 print("Model is FOSAE")
@@ -29,14 +30,13 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
 def action_loss_function(x, x_next, action, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, x.dim())]
     MSE = criterion(x+action, x_next).sum(dim=sum_dim).mean()
-    return MSE
+    return MSE * GAMMA
 
 def train(dataloader, vae, temp, optimizer):
     vae.train()
-    train_loss = 0
+    recon_loss = 0
+    action_loss = 0
     for i, data in enumerate(dataloader):
-        if i % 5 == 0:
-            print(i*TRAIN_BZ)
         _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
         data = obj_mask.view(obj_mask.size()[0], obj_mask.size()[1], -1)
         data = data.to(device)
@@ -57,18 +57,21 @@ def train(dataloader, vae, temp, optimizer):
         rec_loss0 = rec_loss_function(recon_batch[0], data)
         rec_loss1 = rec_loss_function(recon_batch[1], data_next)
         act_loss = action_loss_function(*preds)
-        print(rec_loss0, rec_loss1, act_loss)
         loss = rec_loss0 + rec_loss1 + act_loss
-
         optimizer.zero_grad()
         loss.backward()
-        train_loss += loss.item()
+
+        recon_loss += rec_loss0.item()
+        recon_loss += rec_loss1.item()
+        action_loss =+ act_loss.item()
         optimizer.step()
-    return train_loss / len(dataloader)
+    print(recon_loss / len(dataloader), action_loss / len(dataloader))
+    return (recon_loss + action_loss) / len(dataloader)
 
 def test(dataloader, vae, temp=0):
     vae.eval()
-    test_loss = 0
+    recon_loss = 0
+    action_loss = 0
     with torch.no_grad():
         for i, data in enumerate(dataloader):
             _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
@@ -82,9 +85,12 @@ def test(dataloader, vae, temp=0):
             rec_loss1 = rec_loss_function(recon_batch[1], data_next)
             act_loss = action_loss_function(*preds)
 
-            loss = rec_loss0 + rec_loss1 + act_loss
-            test_loss += loss.item()
-    return test_loss / len(dataloader)
+            recon_loss += rec_loss0.item()
+            recon_loss += rec_loss1.item()
+            action_loss = + act_loss.item()
+
+    print(recon_loss / len(dataloader), action_loss / len(dataloader))
+    return (recon_loss+action_loss) / len(dataloader)
 
 def load_model(vae):
     vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
