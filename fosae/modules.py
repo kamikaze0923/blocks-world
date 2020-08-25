@@ -84,19 +84,14 @@ class FoSae(nn.Module):
         self.action_net = ActionNetwork()
         self.decoder = PredicateDecoder()
 
-
-    def encode(self, x):
-        return
-
-    def decode(self, z_y):
-        return
-
     def forward(self, x, temp):
         x_pre, x_next, x_action = x
 
         args_pre = self.encoder(x_pre.unsqueeze(1).expand(-1, U, -1, -1), temp) #copy x for multiple predicate units
         preds_pre = self.predicate_net(args_pre, temp)
         out_pre = self.decoder(preds_pre)
+        print(x_pre.size(), args_pre.size(), x_action.size())
+        exit(0)
 
         state_action = torch.cat([x_pre.unsqueeze(1).expand(-1, U, -1, -1), x_action.unsqueeze(1).expand(-1, U, -1, -1)], dim=2)
         preds_action = self.action_net(state_action)
@@ -104,6 +99,5 @@ class FoSae(nn.Module):
         args_next = self.encoder(x_next.unsqueeze(1).expand(-1, U, -1, -1), temp) #copy x for multiple predicate units
         preds_next = self.predicate_net(args_next, temp)
         out_next = self.decoder(preds_next)
-
 
         return (out_pre, out_next), (args_pre, args_next), (preds_pre, preds_next, preds_action)
