@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
+import sys
 
 TEMP_BEGIN = 5
 TEMP_MIN = 0.7
@@ -122,6 +123,7 @@ def run(n_epoch):
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 10 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
+        sys.stdout.flush()
         temp = np.maximum(TEMP_BEGIN * np.exp(-ANNEAL_RATE * e), TEMP_MIN)
         print("Epoch: {}, Temperature: {}, Lr: {}".format(e, temp, scheculer.get_lr()))
         train_loss = train(train_loader, vae, temp, optimizer)
