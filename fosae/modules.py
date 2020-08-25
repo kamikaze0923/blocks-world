@@ -55,7 +55,7 @@ class ActionNetwork(nn.Module):
         self.hardTH = nn.Hardtanh(-3, 3)
 
     def forward(self, input):
-        h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, U, ACTION_A*N_OBJ_FEATURE))))
+        h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, U, (ACTION_A+A)*N_OBJ_FEATURE))))
         logits = self.fc2(h1).view(-1, U, P, 2)
         action = self.hardTH(logits)
         return action
@@ -91,7 +91,7 @@ class FoSae(nn.Module):
         preds_pre = self.predicate_net(args_pre, temp)
         out_pre = self.decoder(preds_pre)
 
-        state_action = torch.cat([args_pre, x_action.unsqueeze(1).expand(-1, U, -1, -1)], dim=2).view(-1, U, (ACTION_A+A)*N_OBJ_FEATURE)
+        state_action = torch.cat([args_pre, x_action.unsqueeze(1).expand(-1, U, -1, -1)], dim=2)
         preds_action = self.action_net(state_action)
 
         args_next = self.encoder(x_next.unsqueeze(1).expand(-1, U, -1, -1), temp) #copy x for multiple predicate units
