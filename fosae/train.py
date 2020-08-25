@@ -65,7 +65,7 @@ def train(dataloader, vae, temp, optimizer):
         recon_loss += rec_loss1.item()
         action_loss =+ act_loss.item()
         optimizer.step()
-        print(rec_loss0.item(), rec_loss0.item(), act_loss.item())
+        print("{:.2f}, {:.2f}, {:.2f}".format(rec_loss0.item(), rec_loss0.item(), act_loss.item()))
     return (recon_loss + action_loss) / len(dataloader)
 
 def test(dataloader, vae, temp=0):
@@ -97,7 +97,7 @@ def test(dataloader, vae, temp=0):
             recon_loss += rec_loss1.item()
             action_loss = + act_loss.item()
 
-            print(rec_loss0.item(), rec_loss1.item(), act_loss.item())
+            print("{:.2f}, {:.2f}, {:.2f}".format(rec_loss0.item(), rec_loss0.item(), act_loss.item()))
 
     return (recon_loss+action_loss) / len(dataloader)
 
