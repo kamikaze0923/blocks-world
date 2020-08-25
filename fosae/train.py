@@ -65,7 +65,7 @@ def train(dataloader, vae, temp, optimizer):
         recon_loss += rec_loss1.item()
         action_loss =+ act_loss.item()
         optimizer.step()
-    print(recon_loss / len(dataloader), action_loss / len(dataloader))
+        print(rec_loss0.item(), rec_loss0.item(), act_loss.item())
     return (recon_loss + action_loss) / len(dataloader)
 
 def test(dataloader, vae, temp=0):
@@ -79,7 +79,15 @@ def test(dataloader, vae, temp=0):
             data = data.to(device)
             data_next = next_obj_mask.view(next_obj_mask.size()[0], next_obj_mask.size()[1], -1)
             data_next = data_next.to(device)
-            recon_batch, _, preds = vae((data, data_next), temp)
+
+            action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
+            batch_idx = torch.arange(action_idx.size()[0])
+            batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
+            action = obj_mask[batch_idx, action_idx, :, :]
+            action = action.view(action.size()[0], action.size()[1], -1).to(device)
+
+
+            recon_batch, _, preds = vae((data, data_next, action), temp)
 
             rec_loss0 = rec_loss_function(recon_batch[0], data)
             rec_loss1 = rec_loss_function(recon_batch[1], data_next)
@@ -89,7 +97,8 @@ def test(dataloader, vae, temp=0):
             recon_loss += rec_loss1.item()
             action_loss = + act_loss.item()
 
-    print(recon_loss / len(dataloader), action_loss / len(dataloader))
+            print(rec_loss0.item(), rec_loss1.item(), act_loss.item())
+
     return (recon_loss+action_loss) / len(dataloader)
 
 def load_model(vae):
