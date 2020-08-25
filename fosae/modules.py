@@ -7,7 +7,10 @@ P = 2
 A = 2
 U = 9
 LAYER_SIZE = 120
-N_OBJ_FEATURE = 50 * 75 * 3
+IMG_H = 50
+IMG_W = 75
+IMG_C = 3
+N_OBJ_FEATURE = IMG_H * IMG_W * IMG_C
 
 class AttentionEncoder(nn.Module):
 
