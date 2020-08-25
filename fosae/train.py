@@ -11,7 +11,7 @@ import numpy as np
 TEMP_BEGIN = 5
 TEMP_MIN = 0.7
 ANNEAL_RATE = 0.03
-TRAIN_BZ = 2
+TRAIN_BZ = 200
 TEST_BZ = 760
 
 
@@ -54,8 +54,11 @@ def train(dataloader, vae, temp, optimizer):
         noise3 = torch.normal(mean=0, std=0.4, size=action.size()).to(device)
         recon_batch, _ , preds = vae((data+noise1, data_next+noise2, action+noise3), temp)
 
-        loss = rec_loss_function(recon_batch[0], data) + rec_loss_function(recon_batch[1], data_next)
-        loss += action_loss_function(*preds)
+        rec_loss0 = rec_loss_function(recon_batch[0], data)
+        rec_loss1 = rec_loss_function(recon_batch[1], data_next)
+        act_loss = action_loss_function(*preds)
+        print(rec_loss0, rec_loss1, act_loss)
+        loss = rec_loss0 + rec_loss1 + act_loss
 
         optimizer.zero_grad()
         loss.backward()
@@ -74,8 +77,12 @@ def test(dataloader, vae, temp=0):
             data_next = next_obj_mask.view(next_obj_mask.size()[0], next_obj_mask.size()[1], -1)
             data_next = data_next.to(device)
             recon_batch, _, preds = vae((data, data_next), temp)
-            loss = rec_loss_function(recon_batch[0], data) + rec_loss_function(recon_batch[1], data_next)
-            loss += action_loss_function(*preds)
+
+            rec_loss0 = rec_loss_function(recon_batch[0], data)
+            rec_loss1 = rec_loss_function(recon_batch[1], data_next)
+            act_loss = action_loss_function(*preds)
+
+            loss = rec_loss0 + rec_loss1 + act_loss
             test_loss += loss.item()
     return test_loss / len(dataloader)
 
