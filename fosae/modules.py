@@ -11,6 +11,7 @@ IMG_H = 50
 IMG_W = 75
 IMG_C = 3
 N_OBJ_FEATURE = IMG_H * IMG_W * IMG_C
+ACTION_A = 2
 
 class AttentionEncoder(nn.Module):
 
@@ -43,6 +44,23 @@ class PredicateNetwork(nn.Module):
         prob = gumbel_softmax(logits, temp)
         return prob
 
+class ActionNetwork(nn.Module):
+
+    def __init__(self):
+        super(ActionNetwork, self).__init__()
+        self.fc1 = nn.Linear(in_features=ACTION_A*N_OBJ_FEATURE, out_features=LAYER_SIZE)
+        self.bn1 = nn.BatchNorm1d(U)
+        self.dpt1 = nn.Dropout(0.4)
+        self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=P*2)
+        self.hardTH = nn.Hardtanh(-3, 3)
+
+    def forward(self, input):
+        h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, U, ACTION_A*N_OBJ_FEATURE))))
+        logits = self.fc2(h1).view(-1, U, P, 2)
+        action = self.hardTH(logits)
+        return action
+
+
 class PredicateDecoder(nn.Module):
 
     def __init__(self):
@@ -63,6 +81,7 @@ class FoSae(nn.Module):
         super(FoSae, self).__init__()
         self.encoder = AttentionEncoder()
         self.predicate_net = PredicateNetwork()
+        self.action_net = ActionNetwork()
         self.decoder = PredicateDecoder()
 
 
@@ -73,11 +92,17 @@ class FoSae(nn.Module):
         return
 
     def forward(self, x, temp):
-        x_u = x.unsqueeze(1).expand(-1, U, -1, -1) #copy x for multiple predicate units
-        args = self.encoder(x_u, temp)
-        preds = self.predicate_net(args, temp)
-        out = self.decoder(preds)
-        return out, args, preds
+        x_pre, x_next, x_action = x
+
+        args_pre = self.encoder(x_pre.unsqueeze(1).expand(-1, U, -1, -1), temp) #copy x for multiple predicate units
+        preds_pre = self.predicate_net(args_pre, temp)
+        out_pre = self.decoder(preds_pre)
+
+        preds_action = self.action_net(x_action.unsqueeze(1).expand(-1, U, -1, -1))
+
+        args_next = self.encoder(x_next.unsqueeze(1).expand(-1, U, -1, -1), temp) #copy x for multiple predicate units
+        preds_next = self.predicate_net(args_next, temp)
+        out_next = self.decoder(preds_next)
 
 
-
+        return (out_pre, out_next), (args_pre, args_next), (preds_pre, preds_next, preds_action)

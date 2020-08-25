@@ -11,7 +11,7 @@ import numpy as np
 TEMP_BEGIN = 5
 TEMP_MIN = 0.7
 ANNEAL_RATE = 0.03
-TRAIN_BZ = 200
+TRAIN_BZ = 2
 TEST_BZ = 760
 
 
@@ -19,14 +19,17 @@ print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 
 
-# Reconstruction + KL divergence losses summed over all elements and batch
-def loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
+# Reconstruction
+def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     sum_dim = [i for i in range(1, x.dim())]
-    # x_min, x_max, rec_x_min, rec_x_max = x.min().item(), x.max().item(), recon_x.min().detach().item(), recon_x.max().detach().item()
-    # print("{}-{}-{}-{}".format(x_min, x_max, rec_x_min, rec_x_max))
-    # print("{}-{}-{}-{}".format(x_min < 0, x_max > 1, rec_x_min < 0, rec_x_max > 1))
     BCE = criterion(recon_x, x).sum(dim=sum_dim).mean()
     return BCE
+
+# Action similarity in latent space
+def action_loss_function(x, x_next, action, criterion=nn.MSELoss(reduction='none')):
+    sum_dim = [i for i in range(1, x.dim())]
+    MSE = criterion(x+action, x_next).sum(dim=sum_dim).mean()
+    return MSE
 
 def train(dataloader, vae, temp, optimizer):
     vae.train()
@@ -34,13 +37,27 @@ def train(dataloader, vae, temp, optimizer):
     for i, data in enumerate(dataloader):
         if i % 5 == 0:
             print(i*TRAIN_BZ)
-        _, _, _, obj_mask, _, _, _ = data
+        _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
         data = obj_mask.view(obj_mask.size()[0], obj_mask.size()[1], -1)
         data = data.to(device)
+        data_next = next_obj_mask.view(next_obj_mask.size()[0], next_obj_mask.size()[1], -1)
+        data_next = data_next.to(device)
+
+        action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
+        batch_idx = torch.arange(action_idx.size()[0])
+        batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
+        action = obj_mask[batch_idx, action_idx, : , :]
+        action = action.view(action.size()[0], action.size()[1], -1).to(device)
+
+        noise1 = torch.normal(mean=0, std=0.4, size=data.size()).to(device)
+        noise2 = torch.normal(mean=0, std=0.4, size=data_next.size()).to(device)
+        noise3 = torch.normal(mean=0, std=0.4, size=action.size()).to(device)
+        recon_batch, _ , preds = vae((data+noise1, data_next+noise2, action+noise3), temp)
+
+        loss = rec_loss_function(recon_batch[0], data) + rec_loss_function(recon_batch[1], data_next)
+        loss += action_loss_function(*preds)
+
         optimizer.zero_grad()
-        noise = torch.normal(mean=0, std=0.4, size=data.size()).to(device)
-        recon_batch, _ , _ = vae(data+noise, temp)
-        loss = loss_function(recon_batch, data)
         loss.backward()
         train_loss += loss.item()
         optimizer.step()
@@ -51,11 +68,14 @@ def test(dataloader, vae, temp=0):
     test_loss = 0
     with torch.no_grad():
         for i, data in enumerate(dataloader):
-            _, _, _, obj_mask, _, _, _ = data
+            _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
             data = obj_mask.view(obj_mask.size()[0], obj_mask.size()[1], -1)
             data = data.to(device)
-            recon_batch, _, _ = vae(data, temp)
-            loss = loss_function(recon_batch, data)
+            data_next = next_obj_mask.view(next_obj_mask.size()[0], next_obj_mask.size()[1], -1)
+            data_next = data_next.to(device)
+            recon_batch, _, preds = vae((data, data_next), temp)
+            loss = rec_loss_function(recon_batch[0], data) + rec_loss_function(recon_batch[1], data_next)
+            loss += action_loss_function(*preds)
             test_loss += loss.item()
     return test_loss / len(dataloader)
 

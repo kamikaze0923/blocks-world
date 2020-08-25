@@ -27,15 +27,17 @@ def run(vae, view_loader):
 
         data = view_loader.__iter__().__next__()
 
-        _, _, _, obj_mask, _, _, _ = data
+        _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
         data = obj_mask.view(obj_mask.size()[0], obj_mask.size()[1], -1)
         data = data.to(device)
+        data_next = next_obj_mask.view(next_obj_mask.size()[0], next_obj_mask.size()[1], -1)
+        data_next = data_next.to(device)
+        recon_batch, args, preds = vae((data, data_next), 0)
 
         data_np = data.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        recon_batch, args, preds = vae(data, 0)
-        recon_batch = recon_batch.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        args = args.view(-1, N , A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        preds = preds.detach().cpu().numpy()
+        recon_batch = recon_batch[0].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
+        args = args[0].view(-1, N , A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
+        preds = preds[0].detach().cpu().numpy()
 
 
         print(data_np.shape, recon_batch.shape, args.shape, preds.shape)
