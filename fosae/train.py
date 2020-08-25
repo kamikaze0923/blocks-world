@@ -112,6 +112,7 @@ def run(n_epoch):
     train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
     test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
     print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
+    sys.stdout.flush()
     assert len(train_set) % TRAIN_BZ == 0
     assert len(test_set) % TEST_BZ == 0
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
@@ -123,9 +124,9 @@ def run(n_epoch):
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 10 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
-        sys.stdout.flush()
         temp = np.maximum(TEMP_BEGIN * np.exp(-ANNEAL_RATE * e), TEMP_MIN)
         print("Epoch: {}, Temperature: {}, Lr: {}".format(e, temp, scheculer.get_lr()))
+        sys.stdout.flush()
         train_loss = train(train_loader, vae, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
         test_loss = test(test_loader, vae)
