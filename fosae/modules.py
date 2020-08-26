@@ -54,11 +54,12 @@ class ActionNetwork(nn.Module):
         self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=P*3)
         self.hardTH = nn.Hardtanh(-3, 3)
 
-    def forward(self, input, temp):
+    def forward(self, input, temp, action_base=torch.tensor([-1,0,1])):
         h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, U, (ACTION_A+A)*N_OBJ_FEATURE))))
         logits = self.fc2(h1).view(-1, U, P, 3)
-        action = gumbel_softmax(logits, temp)
-        print(action.size())
+        action_one_hot = gumbel_softmax(logits, temp)
+        action = action_base.expand_as(action_one_hot)
+        print(action.size(), action_one_hot.size())
         exit(0)
         return action
 
