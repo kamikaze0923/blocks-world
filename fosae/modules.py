@@ -94,7 +94,7 @@ class FoSae(nn.Module):
         out_pre = self.decoder(preds_pre)
 
         state_action = torch.cat([args_pre, x_action.unsqueeze(1).expand(-1, U, -1, -1)], dim=2)
-        preds_action = self.action_net(state_action)
+        preds_action = self.action_net(state_action, temp)
 
         args_next = self.encoder(x_next.unsqueeze(1).expand(-1, U, -1, -1), temp) #copy x for multiple predicate units
         preds_next = self.predicate_net(args_next, temp)
