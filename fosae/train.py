@@ -12,7 +12,7 @@ import sys
 TEMP_BEGIN = 5
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.03
-TRAIN_BZ = 2
+TRAIN_BZ = 200
 TEST_BZ = 720
 ALPHA = 1
 BETA = 1
@@ -75,9 +75,15 @@ def train(dataloader, vae, temp, optimizer):
         contrastive_loss += ctrs_loss.item()
         optimizer.step()
 
-        print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format(rec_loss0.item(), rec_loss1.item(), act_loss.item(), ctrs_loss.item()))
+    print("{:.2f}, {:.2f}, {:.2f}".format
+        (
+            recon_loss / len(dataloader),
+            action_loss / len(dataloader),
+            contrastive_loss / len(dataloader)
+        )
+    )
 
-    return (recon_loss + action_loss) / len(dataloader)
+    return (recon_loss + action_loss + contrastive_loss) / len(dataloader)
 
 def test(dataloader, vae, temp=0):
     vae.eval()
@@ -111,9 +117,16 @@ def test(dataloader, vae, temp=0):
             action_loss += act_loss.item()
             contrastive_loss += ctrs_loss.item()
 
-            print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format(rec_loss0.item(), rec_loss1.item(), act_loss.item(), ctrs_loss.item()))
 
-    return (recon_loss+action_loss) / len(dataloader)
+    print("{:.2f}, {:.2f}, {:.2f}".format
+        (
+            recon_loss / len(dataloader),
+            action_loss / len(dataloader),
+            contrastive_loss / len(dataloader)
+        )
+    )
+
+    return (recon_loss + action_loss + contrastive_loss) / len(dataloader)
 
 def load_model(vae):
     vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
