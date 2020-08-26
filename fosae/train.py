@@ -14,8 +14,8 @@ TEMP_MIN = 0.7
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 200
 TEST_BZ = 190
-ALPHA = 100
-BETA = 100
+ALPHA = 1000
+BETA = 1000
 MARGIN = 4.0
 
 
@@ -38,8 +38,6 @@ def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reductio
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
     MSE = criterion(pred, preds_next).sum(dim=sum_dim).mean()
-    print(torch.max(torch.tensor(0.0), torch.tensor(MARGIN) - MSE))
-    exit(0)
     return torch.max(torch.tensor(0.0), torch.tensor(MARGIN) - MSE) * BETA
 
 
