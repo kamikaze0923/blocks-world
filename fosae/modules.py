@@ -54,10 +54,12 @@ class ActionNetwork(nn.Module):
         self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=P*2)
         self.hardTH = nn.Hardtanh(-3, 3)
 
-    def forward(self, input):
+    def forward(self, input, temp):
         h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, U, (ACTION_A+A)*N_OBJ_FEATURE))))
-        logits = self.fc2(h1).view(-1, U, P, 2)
-        action = self.hardTH(logits)
+        logits = self.fc2(h1).view(-1, U, P, 3)
+        action = gumbel_softmax(logits, temp)
+        print(action.size())
+        exit(0)
         return action
 
 
