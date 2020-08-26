@@ -3,9 +3,9 @@ from torch import nn
 from fosae.gumble import gumbel_softmax
 
 N = 9
-P = 16
-A = 1
-U = 4
+P = 32
+A = 2
+U = 5
 LAYER_SIZE = 100
 IMG_H = 50
 IMG_W = 75

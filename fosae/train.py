@@ -32,7 +32,7 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
 # Action similarity in latent space
 def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
-    MSE = criterion(pred.detach()+action, preds_next.detach()).sum(dim=sum_dim).mean()
+    MSE = criterion(pred+action, preds_next).sum(dim=sum_dim).mean()
     return MSE * ALPHA
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
