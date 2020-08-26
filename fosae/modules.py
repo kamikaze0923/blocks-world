@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from fosae.gumble import gumbel_softmax
+from fosae.gumble import gumbel_softmax, device
 
 N = 9
 P = 32
@@ -54,11 +54,11 @@ class ActionNetwork(nn.Module):
         self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=P*3)
         self.hardTH = nn.Hardtanh(-3, 3)
 
-    def forward(self, input, temp, action_base=torch.tensor([-1,0,1])):
+    def forward(self, input, temp, action_base=torch.tensor([-1.0, 0.0, 1.0])):
         h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, U, (ACTION_A+A)*N_OBJ_FEATURE))))
         logits = self.fc2(h1).view(-1, U, P, 3)
         action_one_hot = gumbel_softmax(logits, temp)
-        action_base_expand = action_base.expand_as(action_one_hot)
+        action_base_expand = action_base.expand_as(action_one_hot).to(device)
         action = torch.mul(action_one_hot, action_base_expand).sum(dim=-1, keepdim=True)
         print(action.size())
         exit(0)
