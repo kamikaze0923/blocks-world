@@ -58,8 +58,9 @@ class ActionNetwork(nn.Module):
         h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, U, (ACTION_A+A)*N_OBJ_FEATURE))))
         logits = self.fc2(h1).view(-1, U, P, 3)
         action_one_hot = gumbel_softmax(logits, temp)
-        action = action_base.expand_as(action_one_hot)
-        print(action.size(), action_one_hot.size())
+        action_base_expand = action_base.expand_as(action_one_hot)
+        action = torch.mul(action_one_hot, action_base_expand).sum(dim=-1, keepdim=True)
+        print(action.size())
         exit(0)
         return action
 
