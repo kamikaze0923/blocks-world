@@ -149,7 +149,7 @@ def run(n_epoch):
     vae = eval(MODEL_NAME)()
     # load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
-    scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 10 else 0.1)
+    scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
         temp = np.maximum(TEMP_BEGIN * np.exp(-ANNEAL_RATE * e), TEMP_MIN)
