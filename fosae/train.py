@@ -29,14 +29,20 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
 
 # Action similarity in latent space
 def action_loss_function(x, x_next, action, criterion=nn.MSELoss(reduction='none')):
-    sum_dim = [i for i in range(1, x.dim())]
+    sum_dim = [i for i in range(2, x.dim())]
     MSE = criterion(x+action, x_next).sum(dim=sum_dim).mean()
     return MSE * GAMMA
+
+def contrastive_loss(pred, preds_next):
+    print(pred.size(), preds_next.size())
+    exit(0)
+
 
 def train(dataloader, vae, temp, optimizer):
     vae.train()
     recon_loss = 0
     action_loss = 0
+    contrastive_loss = 0
     for i, data in enumerate(dataloader):
         _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
         data = obj_mask.view(obj_mask.size()[0], obj_mask.size()[1], -1)
@@ -58,21 +64,26 @@ def train(dataloader, vae, temp, optimizer):
         rec_loss0 = rec_loss_function(recon_batch[0], data)
         rec_loss1 = rec_loss_function(recon_batch[1], data_next)
         act_loss = action_loss_function(*preds)
-        loss = rec_loss0 + rec_loss1 + act_loss
+        ctrs_loss = contrastive_loss(preds[0], preds[1])
+        loss = rec_loss0 + rec_loss1 + act_loss + ctrs_loss
         optimizer.zero_grad()
         loss.backward()
 
         recon_loss += rec_loss0.item()
         recon_loss += rec_loss1.item()
-        action_loss =+ act_loss.item()
+        action_loss += act_loss.item()
+        contrastive_loss += ctrs_loss.item()
         optimizer.step()
-        print("{:.2f}, {:.2f}, {:.2f}".format(rec_loss0.item(), rec_loss1.item(), act_loss.item()))
+
+        print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format(rec_loss0.item(), rec_loss1.item(), act_loss.item(), ctrs_loss.item()))
+
     return (recon_loss + action_loss) / len(dataloader)
 
 def test(dataloader, vae, temp=0):
     vae.eval()
     recon_loss = 0
     action_loss = 0
+    contrastive_loss = 0
     with torch.no_grad():
         for i, data in enumerate(dataloader):
             _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
@@ -93,12 +104,14 @@ def test(dataloader, vae, temp=0):
             rec_loss0 = rec_loss_function(recon_batch[0], data)
             rec_loss1 = rec_loss_function(recon_batch[1], data_next)
             act_loss = action_loss_function(*preds)
+            ctrs_loss = contrastive_loss(preds[0], preds[1])
 
             recon_loss += rec_loss0.item()
             recon_loss += rec_loss1.item()
-            action_loss = + act_loss.item()
+            action_loss += act_loss.item()
+            contrastive_loss += ctrs_loss.item()
 
-            print("{:.2f}, {:.2f}, {:.2f}".format(rec_loss0.item(), rec_loss1.item(), act_loss.item()))
+            print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format(rec_loss0.item(), rec_loss1.item(), act_loss.item(), ctrs_loss.item()))
 
     return (recon_loss+action_loss) / len(dataloader)
 
@@ -118,9 +131,8 @@ def run(n_epoch):
     assert len(test_set) % TEST_BZ == 0
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
-    vae = eval(MODEL_NAME)()
-    load_model(vae)
-    vae.to(device)
+    vae = eval(MODEL_NAME)().to(device)
+    # load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 10 else 0.1)
     best_loss = float('inf')
