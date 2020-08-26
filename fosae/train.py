@@ -14,7 +14,9 @@ TEMP_MIN = 0.7
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 200
 TEST_BZ = 190
-GAMMA = 100
+ALPHA = 100
+BETA = 100
+MARGIN = 4
 
 
 print("Model is FOSAE")
@@ -28,15 +30,15 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     return BCE
 
 # Action similarity in latent space
-def action_loss_function(x, x_next, action, criterion=nn.MSELoss(reduction='none')):
-    sum_dim = [i for i in range(2, x.dim())]
-    MSE = criterion(x+action, x_next).sum(dim=sum_dim).mean()
-    return MSE * GAMMA
+def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none')):
+    sum_dim = [i for i in range(1, pred.dim())]
+    MSE = criterion(pred+action, preds_next).sum(dim=sum_dim).mean()
+    return MSE * ALPHA
 
-def contrastive_loss_function(pred, preds_next):
-    print(pred.size(), preds_next.size())
-    exit(0)
-    return 0
+def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
+    sum_dim = [i for i in range(1, pred.dim())]
+    MSE = criterion(pred, preds_next).sum(dim=sum_dim).mean()
+    return torch.max(torch.tensor(0), torch.tensor(MARGIN) - MSE) * BETA
 
 
 def train(dataloader, vae, temp, optimizer):
