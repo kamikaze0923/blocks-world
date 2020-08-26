@@ -5,7 +5,7 @@ from fosae.gumble import gumbel_softmax
 N = 9
 P = 2
 A = 2
-U = 9
+U = 5
 LAYER_SIZE = 100
 IMG_H = 50
 IMG_W = 75
