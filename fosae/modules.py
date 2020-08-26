@@ -60,9 +60,7 @@ class ActionNetwork(nn.Module):
         action_one_hot = gumbel_softmax(logits, temp)
         action_base_expand = action_base.expand_as(action_one_hot).to(device)
         action = torch.mul(action_one_hot, action_base_expand).sum(dim=-1, keepdim=True)
-        print(action.size())
-        exit(0)
-        return action
+        return torch.cat([action, -action], dim=-1)
 
 
 class PredicateDecoder(nn.Module):
