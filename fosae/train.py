@@ -12,8 +12,8 @@ import sys
 TEMP_BEGIN = 5
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.03
-TRAIN_BZ = 200
-TEST_BZ = 190
+TRAIN_BZ = 180
+TEST_BZ = 720
 ALPHA = 1000
 BETA = 1000
 MARGIN = 4.0
@@ -126,14 +126,16 @@ def load_model(vae):
 
 def run(n_epoch):
     sys.stdout.flush()
-    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
-    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
-    print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
+    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
+    # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
+    # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
+    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
+    print("Training Examples: {}".format(len(train_set)))
     sys.stdout.flush()
     assert len(train_set) % TRAIN_BZ == 0
-    assert len(test_set) % TEST_BZ == 0
+    # assert len(test_set) % TEST_BZ == 0
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
-    test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
+    # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
     # load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
@@ -145,7 +147,7 @@ def run(n_epoch):
         sys.stdout.flush()
         train_loss = train(train_loader, vae, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
-        test_loss = test(test_loader, vae)
+        test_loss = test(train_loader, vae)
         print('====> Epoch: {} Average test loss: {:.4f}'.format(e, test_loss))
         if test_loss < best_loss:
             print("Save Model")
