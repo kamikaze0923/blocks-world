@@ -48,7 +48,7 @@ class ActionNetwork(nn.Module):
 
     def __init__(self):
         super(ActionNetwork, self).__init__()
-        self.fc1 = nn.Linear(in_features=(ACTION_A+A)*N_OBJ_FEATURE, out_features=LAYER_SIZE)
+        self.fc1 = nn.Linear(in_features=(ACTION_A+N)*N_OBJ_FEATURE, out_features=LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(U)
         self.dpt1 = nn.Dropout(0.4)
         self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=P*3)
@@ -93,7 +93,7 @@ class FoSae(nn.Module):
         preds_pre = self.predicate_net(args_pre, temp)
         out_pre = self.decoder(preds_pre)
 
-        state_action = torch.cat([args_pre, x_action.unsqueeze(1).expand(-1, U, -1, -1)], dim=2)
+        state_action = torch.cat([x_pre.unsqueeze(1).expand(-1, U, -1, -1), x_action.unsqueeze(1).expand(-1, U, -1, -1)], dim=2)
         preds_action = self.action_net(state_action, temp)
 
         args_next = self.encoder(x_next.unsqueeze(1).expand(-1, U, -1, -1), temp) #copy x for multiple predicate units
