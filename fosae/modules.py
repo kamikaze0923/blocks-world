@@ -67,8 +67,8 @@ class PredicateUnit(nn.Module):
 
     def __init__(self, predicate_net):
         super(PredicateUnit, self).__init__()
-        self.state_encoder = StateEncoder()
-        self.action_encoder = ActionEncoder()
+        self.state_encoder = StateEncoder().to(device)
+        self.action_encoder = ActionEncoder().to(device)
         self.predicate_net = predicate_net
 
     def forward(self, input, temp):
@@ -101,11 +101,11 @@ class FoSae(nn.Module):
 
     def __init__(self):
         super(FoSae, self).__init__()
-        self.predicate_net = PredicateNetwork()
+        self.predicate_net = PredicateNetwork().to(device)
         self.pus = []
         for _ in range(U):
             self.pus.append(PredicateUnit(self.predicate_net))
-        self.decoder = PredicateDecoder()
+        self.decoder = PredicateDecoder().to(device)
 
     def forward(self, x, temp):
 

@@ -133,7 +133,7 @@ def run(n_epoch):
     # assert len(test_set) % TEST_BZ == 0
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
-    vae = eval(MODEL_NAME)().to(device)
+    vae = eval(MODEL_NAME)()
     # load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 10 else 0.1)
