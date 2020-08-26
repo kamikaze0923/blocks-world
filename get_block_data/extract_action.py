@@ -177,6 +177,7 @@ def gen_episode(num_episode, episode_length):
 
     save_list_dict_h5py(replay_buffer_train, "{}/{}/{}".format("c_swm", "data", "blocks_train.h5"))
     save_list_dict_h5py(replay_buffer_eval, "{}/{}/{}".format("c_swm", "data", "blocks_eval.h5"))
+    save_list_dict_h5py(replay_buffer_eval + replay_buffer_train, "{}/{}/{}".format("c_swm", "data", "blocks_all.h5"))
 
 
 if __name__ == "__main__":
