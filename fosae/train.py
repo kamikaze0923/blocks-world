@@ -38,7 +38,7 @@ def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reductio
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
     MSE = criterion(pred, preds_next).sum(dim=sum_dim).mean()
-    return torch.max(torch.tensor(0.0), torch.tensor(MARGIN) - MSE) * BETA
+    return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - MSE) * BETA
 
 
 def train(dataloader, vae, temp, optimizer):
