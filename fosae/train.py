@@ -14,14 +14,12 @@ TEMP_MIN = 0.01
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 180
 TEST_BZ = 720
-ALPHA = 1000
-BETA = 1000
+ALPHA = 1
+BETA = 1
 MARGIN = 4.0
-
 
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
-
 
 # Reconstruction
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
@@ -39,7 +37,6 @@ def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='
     sum_dim = [i for i in range(1, pred.dim())]
     MSE = criterion(pred, preds_next).sum(dim=sum_dim).mean()
     return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - MSE) * BETA
-
 
 def train(dataloader, vae, temp, optimizer):
     vae.train()
