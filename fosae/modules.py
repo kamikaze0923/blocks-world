@@ -51,7 +51,7 @@ class ActionNetwork(nn.Module):
         self.fc1 = nn.Linear(in_features=(ACTION_A+A)*N_OBJ_FEATURE, out_features=LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(U)
         self.dpt1 = nn.Dropout(0.4)
-        self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=P*2)
+        self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=P*3)
         self.hardTH = nn.Hardtanh(-3, 3)
 
     def forward(self, input, temp):
