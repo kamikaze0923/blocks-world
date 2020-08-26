@@ -33,9 +33,10 @@ def action_loss_function(x, x_next, action, criterion=nn.MSELoss(reduction='none
     MSE = criterion(x+action, x_next).sum(dim=sum_dim).mean()
     return MSE * GAMMA
 
-def contrastive_loss(pred, preds_next):
+def contrastive_loss_function(pred, preds_next):
     print(pred.size(), preds_next.size())
     exit(0)
+    return 0
 
 
 def train(dataloader, vae, temp, optimizer):
@@ -64,7 +65,7 @@ def train(dataloader, vae, temp, optimizer):
         rec_loss0 = rec_loss_function(recon_batch[0], data)
         rec_loss1 = rec_loss_function(recon_batch[1], data_next)
         act_loss = action_loss_function(*preds)
-        ctrs_loss = contrastive_loss(preds[0], preds[1])
+        ctrs_loss = contrastive_loss_function(preds[0], preds[1])
         loss = rec_loss0 + rec_loss1 + act_loss + ctrs_loss
         optimizer.zero_grad()
         loss.backward()
@@ -104,7 +105,7 @@ def test(dataloader, vae, temp=0):
             rec_loss0 = rec_loss_function(recon_batch[0], data)
             rec_loss1 = rec_loss_function(recon_batch[1], data_next)
             act_loss = action_loss_function(*preds)
-            ctrs_loss = contrastive_loss(preds[0], preds[1])
+            ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
             recon_loss += rec_loss0.item()
             recon_loss += rec_loss1.item()
