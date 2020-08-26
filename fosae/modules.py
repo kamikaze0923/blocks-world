@@ -5,8 +5,8 @@ from fosae.gumble import gumbel_softmax, device
 N = 9
 P = 36
 A = 2
-U = 36
-LAYER_SIZE = 200
+U = 18
+LAYER_SIZE = 1000
 IMG_H = 50
 IMG_W = 75
 IMG_C = 3
