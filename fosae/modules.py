@@ -3,7 +3,7 @@ from torch import nn
 from fosae.gumble import gumbel_softmax, device
 
 N = 9
-P = 36
+P = 16
 A = 2
 U = 9
 CONV_CHANNELS = 32
