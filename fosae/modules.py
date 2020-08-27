@@ -23,22 +23,18 @@ class BackBoneImageObjectEncoder(nn.Module):
     def __init__(self, in_objects, out_features):
         super(BackBoneImageObjectEncoder, self).__init__()
         self.in_objects = in_objects
-        self.conv1 = nn.Conv2d(in_channels=in_objects*IMG_C, out_channels=CONV_CHANNELS, kernel_size=(4,4), stride=(2,2), padding=1)
+        self.conv1 = nn.Conv2d(in_channels=in_objects*IMG_C, out_channels=CONV_CHANNELS, kernel_size=(8,8), stride=(4,4), padding=2)
         self.bn1 = nn.BatchNorm2d(CONV_CHANNELS)
         self.dpt1 = nn.Dropout(0.4)
-        self.conv2 = nn.Conv2d(in_channels=CONV_CHANNELS, out_channels=CONV_CHANNELS, kernel_size=(2,2), stride=(2,2))
-        self.bn2 = nn.BatchNorm2d(CONV_CHANNELS)
+        self.fc2 = nn.Linear(in_features=CONV_CHANNELS*FMAP_H*FMAP_W, out_features=FC_LAYER_SIZE)
+        self.bn2 = nn.BatchNorm1d(1)
         self.dpt2 = nn.Dropout(0.4)
-        self.fc3 = nn.Linear(in_features=CONV_CHANNELS*FMAP_H*FMAP_W, out_features=FC_LAYER_SIZE)
-        self.bn3 = nn.BatchNorm1d(1)
-        self.dpt3 = nn.Dropout(0.4)
-        self.fc4 = nn.Linear(in_features=FC_LAYER_SIZE, out_features=out_features)
+        self.fc3 = nn.Linear(in_features=FC_LAYER_SIZE, out_features=out_features)
 
     def forward(self, input, temp):
         h1 = self.dpt1(self.bn1(self.conv1(input.view(-1, self.in_objects * IMG_C, IMG_H, IMG_W))))
-        h2 = self.dpt2(self.bn2(self.conv2(h1)))
-        h2 = h2.view(-1, 1, CONV_CHANNELS * FMAP_H * FMAP_W)
-        h3 = self.dpt3(self.bn3(self.fc3(h2)))
+        h2 = h1.view(-1, 1, CONV_CHANNELS * FMAP_H * FMAP_W)
+        h3 = self.dpt2(self.bn2(self.fc2(h2)))
         return self.fc4(h3)
 
 
