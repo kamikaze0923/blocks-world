@@ -46,11 +46,10 @@ class PredicateNetwork(nn.Module):
 
     def __init__(self):
         super(PredicateNetwork, self).__init__()
-        self.predicate_encoder = BackBoneImageObjectEncoder(in_objects=A, out_features=P*2)
+        self.predicate_encoder = BackBoneImageObjectEncoder(in_objects=A, out_features=2)
 
     def forward(self, input, temp):
         logits = self.predicate_encoder(input, temp)
-        logits = logits.view(-1, P, 2)
         prob = gumbel_softmax(logits, temp)
         return prob
 
@@ -83,20 +82,26 @@ class ActionEncoder(nn.Module):
 
 class PredicateUnit(nn.Module):
 
-    def __init__(self, predicate_net):
+    def __init__(self, predicate_nets):
         super(PredicateUnit, self).__init__()
         self.state_encoder = StateEncoder().to(device)
         self.action_encoder = ActionEncoder().to(device)
-        self.predicate_net = predicate_net
+        self.predicate_nets = predicate_nets
 
     def forward(self, input, temp):
         state, state_next, action = input
 
         args = self.state_encoder(state, temp)
-        preds = self.predicate_net(args, temp)
+        preds = []
+        for pred_net in self.predicate_nets:
+            preds.append(pred_net(args, temp))
+        preds = torch.stack(preds, dim=1)
 
         args_next = self.state_encoder(state, temp)
-        preds_next = self.predicate_net(args, temp)
+        preds_next = []
+        for pred_net in self.predicate_nets:
+            preds_next.append(pred_net(args_next, temp))
+        preds_next = torch.cat(preds_next, dim=1)
 
         action = self.action_encoder(torch.cat([state, action], dim=1), temp)
 
@@ -119,10 +124,12 @@ class FoSae(nn.Module):
 
     def __init__(self):
         super(FoSae, self).__init__()
-        self.predicate_net = PredicateNetwork().to(device)
+        self.predicate_nets = []
+        for _ in range(P):
+            self.predicate_nets.append(PredicateNetwork().to(device))
         self.pus = []
         for _ in range(U):
-            self.pus.append(PredicateUnit(self.predicate_net))
+            self.pus.append(PredicateUnit(self.predicate_nets))
         self.decoder = PredicateDecoder().to(device)
 
     def forward(self, x, temp):
