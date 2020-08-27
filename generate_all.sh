@@ -42,8 +42,8 @@ blender="blender -noaudio --background --python render_images.py -- \
       --initial-objects $prefix/$prefix-init.json                \
       --statistics      $prefix/$prefix-stat.json                \
       --render-num-samples 300                           \
-      --width 75                                        \
-      --height 50                                       \
+      --width 96                                        \
+      --height 64                                       \
       --num-objects $objs                                \
       --max-stacks $stacks                               \
       --render-tile-size  $render_tile_size"

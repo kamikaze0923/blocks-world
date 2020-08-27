@@ -4,14 +4,14 @@ from fosae.gumble import device
 import numpy as np
 from torch.utils.data import DataLoader
 import torch
-from fosae.modules import IMG_H, IMG_W, IMG_C, A, N
+from fosae.modules import IMG_H, IMG_W, IMG_C, A, N, U
 
 N_EXAMPLES = 200
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 
 def init():
-    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
+    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
     print("View examples {}".format(len(test_set)))
 
     view_loader = DataLoader(test_set, batch_size=N_EXAMPLES, shuffle=True)
@@ -43,7 +43,7 @@ def run(vae, view_loader):
 
         data_np = data.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[0].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        args_np = args[0].view(-1, N , A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
+        args_np = args[0].view(-1, U, A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         preds_np = preds[0].detach().cpu().numpy()
 
         print(data_np.shape, recon_batch_np.shape, args_np.shape, preds_np.shape)
@@ -54,7 +54,7 @@ def run(vae, view_loader):
 
         data_np = data_next.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[1].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        args_np = args[1].view(-1, N , A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
+        args_np = args[1].view(-1, U, A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         preds_np = preds[1].detach().cpu().numpy()
 
         print(data_np.shape, recon_batch_np.shape, args_np.shape, preds_np.shape)

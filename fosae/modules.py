@@ -6,7 +6,7 @@ N = 9
 P = 36
 A = 2
 U = 18
-LAYER_SIZE = 648
+LAYER_SIZE = 100
 IMG_H = 50
 IMG_W = 75
 IMG_C = 3
@@ -32,13 +32,13 @@ class StateEncoder(nn.Module):
 
     def __init__(self):
         super(StateEncoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=N*N_OBJ_FEATURE, out_features=LAYER_SIZE)
-        self.bn1 = nn.BatchNorm1d(1)
+        self.conv1 = nn.Conv2d(in_channels=N*IMG_C, out_channels=LAYER_SIZE, kernel_size=(5,5))
+        self.bn1 = nn.BatchNorm2d(LAYER_SIZE)
         self.dpt1 = nn.Dropout(0.4)
         self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=A*N)
 
     def forward(self, input, temp):
-        h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, 1, N*N_OBJ_FEATURE))))
+        h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, N*IMG_C, IMG_H, IMG_W))))
         logits = self.fc2(h1)
         logits = logits.view(-1, A, N)
         prob = gumbel_softmax(logits, temp).unsqueeze(-1).expand(-1, -1, -1, N_OBJ_FEATURE)
