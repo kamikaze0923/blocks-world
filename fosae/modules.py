@@ -48,6 +48,7 @@ class PredicateNetwork(nn.Module):
 
     def forward(self, input, temp):
         logits = self.predicate_encoder(input, temp)
+        logits = logits.view(-1, 2)
         prob = gumbel_softmax(logits, temp)
         return prob
 
@@ -99,7 +100,7 @@ class PredicateUnit(nn.Module):
         preds_next = []
         for pred_net in self.predicate_nets:
             preds_next.append(pred_net(args_next, temp))
-        preds_next = torch.cat(preds_next, dim=1)
+        preds_next = torch.stack(preds_next, dim=1)
 
         action = self.action_encoder(torch.cat([state, action], dim=1), temp)
 
