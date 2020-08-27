@@ -6,25 +6,51 @@ N = 9
 P = 36
 A = 2
 U = 18
-LAYER_SIZE = 100
-IMG_H = 50
-IMG_W = 75
+CONV_CHANNELS = 32
+FC_LAYER_SIZE = 1000
+
+IMG_H = 64
+IMG_W = 96
+assert IMG_W % 4 == 0
+assert IMG_H % 4 == 0
+FMAP_H = IMG_H //4
+FMAP_W = IMG_W //4
 IMG_C = 3
-N_OBJ_FEATURE = IMG_H * IMG_W * IMG_C
 ACTION_A = 2
+
+class BackBoneImageObjectEncoder(nn.Module):
+
+    def __init__(self, in_objects, out_features):
+        super(BackBoneImageObjectEncoder, self).__init__()
+        self.in_objects = in_objects
+        self.conv1 = nn.Conv2d(in_channels=in_objects*IMG_C, out_channels=CONV_CHANNELS, kernel_size=(4,4), stride=(2,2), padding=1)
+        self.bn1 = nn.BatchNorm2d(CONV_CHANNELS)
+        self.dpt1 = nn.Dropout(0.4)
+        self.conv2 = nn.Conv2d(in_channels=CONV_CHANNELS, out_channels=CONV_CHANNELS, kernel_size=(2,2), stride=(2,2))
+        self.bn2 = nn.BatchNorm2d(CONV_CHANNELS)
+        self.dpt2 = nn.Dropout(0.4)
+        self.fc3 = nn.Linear(in_features=CONV_CHANNELS*FMAP_H*FMAP_W, out_features=FC_LAYER_SIZE)
+        self.bn3 = nn.BatchNorm1d(1)
+        self.dpt3 = nn.Dropout(0.4)
+        self.fc4 = nn.Linear(in_features=FC_LAYER_SIZE, out_features=out_features)
+
+    def forward(self, input, temp):
+        h1 = self.dpt1(self.bn1(self.conv1(input.view(-1, self.in_objects * IMG_C, IMG_H, IMG_W))))
+        h2 = self.dpt2(self.bn2(self.conv2(h1)))
+        h2 = h2.view(-1, 1, CONV_CHANNELS * FMAP_H * FMAP_W)
+        h3 = self.dpt3(self.bn3(self.fc3(h2)))
+        return self.fc4(h3)
+
 
 class PredicateNetwork(nn.Module):
 
     def __init__(self):
         super(PredicateNetwork, self).__init__()
-        self.fc1 = nn.Linear(in_features=A*N_OBJ_FEATURE, out_features=LAYER_SIZE)
-        self.bn1 = nn.BatchNorm1d(1)
-        self.dpt1 = nn.Dropout(0.4)
-        self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=P*2)
+        self.predicate_encoder = BackBoneImageObjectEncoder(in_objects=A, out_features=P*2)
 
     def forward(self, input, temp):
-        h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, 1, A*N_OBJ_FEATURE))))
-        logits = self.fc2(h1).view(-1, P, 2)
+        logits = self.predicate_encoder(input, temp)
+        logits = logits.view(-1, P, 2)
         prob = gumbel_softmax(logits, temp)
         return prob
 
@@ -32,31 +58,23 @@ class StateEncoder(nn.Module):
 
     def __init__(self):
         super(StateEncoder, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=N*IMG_C, out_channels=LAYER_SIZE, kernel_size=(5,5))
-        self.bn1 = nn.BatchNorm2d(LAYER_SIZE)
-        self.dpt1 = nn.Dropout(0.4)
-        self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=A*N)
+        self.objects_encoder = BackBoneImageObjectEncoder(in_objects=N, out_features=A*N)
 
     def forward(self, input, temp):
-        h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, N*IMG_C, IMG_H, IMG_W))))
-        logits = self.fc2(h1)
+        logits = self.objects_encoder(input, temp)
         logits = logits.view(-1, A, N)
-        prob = gumbel_softmax(logits, temp).unsqueeze(-1).expand(-1, -1, -1, N_OBJ_FEATURE)
-        dot = torch.mul(prob, input.unsqueeze(1).expand(-1, A, -1 ,-1)).sum(dim=2)
+        prob = gumbel_softmax(logits, temp).unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).expand(-1, A, -1, IMG_C, IMG_H, IMG_W)
+        dot = torch.mul(prob, input.unsqueeze(1).expand(-1, A, -1 ,-1, -1, -1)).sum(dim=2)
         return dot
 
 class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=(N+ACTION_A)*N_OBJ_FEATURE, out_features=LAYER_SIZE)
-        self.bn1 = nn.BatchNorm1d(1)
-        self.dpt1 = nn.Dropout(0.4)
-        self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=P*3)
+        self.state_action_encoder = BackBoneImageObjectEncoder(in_objects=N+ACTION_A, out_features=P*3)
 
     def forward(self, input, temp, action_base=torch.tensor([-1.0, 0.0, 1.0])):
-        h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, 1, (N+ACTION_A)*N_OBJ_FEATURE))))
-        logits = self.fc2(h1)
+        logits = self.state_action_encoder(input, temp)
         logits = logits.view(-1, P, 3)
         action_one_hot = gumbel_softmax(logits, temp)
         action_base_expand = action_base.expand_as(action_one_hot).to(device)
@@ -88,14 +106,18 @@ class PredicateDecoder(nn.Module):
 
     def __init__(self):
         super(PredicateDecoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=U*P*2, out_features=LAYER_SIZE)
+        self.fc1 = nn.Linear(in_features=U*P*2, out_features=FC_LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(1)
         self.dpt1 = nn.Dropout(0.4)
-        self.fc2 = nn.Linear(in_features=LAYER_SIZE, out_features=N*N_OBJ_FEATURE)
+        self.fc2 = nn.Linear(in_features=FC_LAYER_SIZE, out_features=FC_LAYER_SIZE)
+        self.bn2 = nn.BatchNorm1d(1)
+        self.dpt2 = nn.Dropout(0.4)
+        self.fc3 = nn.Linear(in_features=FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
 
     def forward(self, input):
         h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, 1, U*P*2))))
-        return torch.sigmoid(self.fc2(h1)).view(-1, N, N_OBJ_FEATURE)
+        h2 = self.dpt2(self.bn2(self.fc2(h1)))
+        return torch.sigmoid(self.fc3(h2)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
 class FoSae(nn.Module):
 

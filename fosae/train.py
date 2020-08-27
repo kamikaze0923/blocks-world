@@ -15,7 +15,7 @@ ANNEAL_RATE = 0.03
 TRAIN_BZ = 2
 TEST_BZ = 720
 ALPHA = 1
-BETA = 1000
+BETA = 1
 MARGIN = 1
 
 print("Model is FOSAE")
@@ -28,7 +28,11 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     return BCE
 
 # Action similarity in latent space
-def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none')):
+def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none'), detach_encoder=True):
+    if detach_encoder:
+        pred = pred.detach()
+        preds_next = preds_next.detach()
+
     sum_dim = [i for i in range(1, pred.dim())]
     MSE = criterion(pred+action, preds_next).sum(dim=sum_dim).mean()
     return MSE * ALPHA
@@ -45,16 +49,13 @@ def train(dataloader, vae, temp, optimizer):
     contrastive_loss = 0
     for i, data in enumerate(dataloader):
         _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
-        data = obj_mask.view(obj_mask.size()[0], obj_mask.size()[1], -1)
-        data = data.to(device)
-        data_next = next_obj_mask.view(next_obj_mask.size()[0], next_obj_mask.size()[1], -1)
-        data_next = data_next.to(device)
+        data = obj_mask.to(device)
+        data_next = next_obj_mask.to(device)
 
         action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
         batch_idx = torch.arange(action_idx.size()[0])
         batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
-        action = obj_mask[batch_idx, action_idx, : , :]
-        action = action.view(action.size()[0], action.size()[1], -1).to(device)
+        action = obj_mask[batch_idx, action_idx, : , :].to(device)
 
         noise1 = torch.normal(mean=0, std=0.4, size=data.size()).to(device)
         noise2 = torch.normal(mean=0, std=0.4, size=data_next.size()).to(device)
@@ -93,17 +94,13 @@ def test(dataloader, vae, temp=0):
     with torch.no_grad():
         for i, data in enumerate(dataloader):
             _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
-            data = obj_mask.view(obj_mask.size()[0], obj_mask.size()[1], -1)
-            data = data.to(device)
-            data_next = next_obj_mask.view(next_obj_mask.size()[0], next_obj_mask.size()[1], -1)
-            data_next = data_next.to(device)
+            data = obj_mask.to(device)
+            data_next = next_obj_mask.to(device)
 
             action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
             batch_idx = torch.arange(action_idx.size()[0])
             batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
-            action = obj_mask[batch_idx, action_idx, :, :]
-            action = action.view(action.size()[0], action.size()[1], -1).to(device)
-
+            action = obj_mask[batch_idx, action_idx, : , :].to(device)
 
             recon_batch, _, preds = vae((data, data_next, action), temp)
 
@@ -131,8 +128,6 @@ def test(dataloader, vae, temp=0):
 def load_model(vae):
     vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
     print("fosae/model/{}.pth loaded".format(MODEL_NAME))
-
-
 
 def run(n_epoch):
     sys.stdout.flush()
