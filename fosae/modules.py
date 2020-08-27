@@ -109,15 +109,11 @@ class PredicateDecoder(nn.Module):
         self.fc1 = nn.Linear(in_features=U*P*2, out_features=FC_LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(1)
         self.dpt1 = nn.Dropout(0.4)
-        self.fc2 = nn.Linear(in_features=FC_LAYER_SIZE, out_features=FC_LAYER_SIZE)
-        self.bn2 = nn.BatchNorm1d(1)
-        self.dpt2 = nn.Dropout(0.4)
-        self.fc3 = nn.Linear(in_features=FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
+        self.fc2 = nn.Linear(in_features=FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
 
     def forward(self, input):
         h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, 1, U*P*2))))
-        h2 = self.dpt2(self.bn2(self.fc2(h1)))
-        return torch.sigmoid(self.fc3(h2)).view(-1, N, IMG_C, IMG_H, IMG_W)
+        return torch.sigmoid(self.fc2(h1)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
 class FoSae(nn.Module):
 
