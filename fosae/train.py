@@ -10,7 +10,7 @@ import numpy as np
 import sys
 
 TEMP_BEGIN = 5
-TEMP_MIN = 0.01
+TEMP_MIN = 0.3
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 180
 TEST_BZ = 720
@@ -28,7 +28,7 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     return BCE
 
 # Action similarity in latent space
-def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none'), detach_encoder=False):
+def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none'), detach_encoder=True):
     if detach_encoder:
         pred = pred.detach()
         preds_next = preds_next.detach()
@@ -142,7 +142,7 @@ def run(n_epoch):
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
-    # load_model(vae)
+    load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 100 else 0.1)
     best_loss = float('inf')
