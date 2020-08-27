@@ -28,7 +28,7 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     return BCE
 
 # Action similarity in latent space
-def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none'), detach_encoder=True):
+def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none'), detach_encoder=False):
     if detach_encoder:
         pred = pred.detach()
         preds_next = preds_next.detach()
@@ -141,9 +141,9 @@ def run(n_epoch):
     # assert len(test_set) % TEST_BZ == 0
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
-    vae = eval(MODEL_NAME)()
+    vae = eval(MODEL_NAME)().to(device)
     # load_model(vae)
-    optimizer = Adam(vae.get_parameters(), lr=1e-3)
+    optimizer = Adam(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
