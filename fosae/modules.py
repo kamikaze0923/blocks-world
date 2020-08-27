@@ -3,9 +3,9 @@ from torch import nn
 from fosae.gumble import gumbel_softmax, device
 
 N = 9
-P = 18
+P = 9
 A = 2
-U = 18
+U = 9
 CONV_CHANNELS = 32
 ENCODER_FC_LAYER_SIZE = 200
 DECODER_FC_LAYER_SIZE = 1000
