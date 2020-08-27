@@ -9,6 +9,7 @@ U = 18
 CONV_CHANNELS = 32
 ENCODER_FC_LAYER_SIZE = 200
 DECODER_FC_LAYER_SIZE = 1000
+DROP_OUT_RATE = 0.7
 
 
 IMG_H = 64
@@ -27,10 +28,10 @@ class BackBoneImageObjectEncoder(nn.Module):
         self.in_objects = in_objects
         self.conv1 = nn.Conv2d(in_channels=in_objects*IMG_C, out_channels=CONV_CHANNELS, kernel_size=(8,8), stride=(4,4), padding=2)
         self.bn1 = nn.BatchNorm2d(CONV_CHANNELS)
-        self.dpt1 = nn.Dropout(0.4)
+        self.dpt1 = nn.Dropout(DROP_OUT_RATE)
         self.fc2 = nn.Linear(in_features=CONV_CHANNELS*FMAP_H*FMAP_W, out_features=ENCODER_FC_LAYER_SIZE)
         self.bn2 = nn.BatchNorm1d(1)
-        self.dpt2 = nn.Dropout(0.4)
+        self.dpt2 = nn.Dropout(DROP_OUT_RATE)
         self.fc3 = nn.Linear(in_features=ENCODER_FC_LAYER_SIZE, out_features=out_features)
 
     def forward(self, input, temp):
@@ -112,7 +113,7 @@ class PredicateDecoder(nn.Module):
         super(PredicateDecoder, self).__init__()
         self.fc1 = nn.Linear(in_features=U*P*2, out_features=DECODER_FC_LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(1)
-        self.dpt1 = nn.Dropout(0.4)
+        self.dpt1 = nn.Dropout(DROP_OUT_RATE)
         self.fc2 = nn.Linear(in_features=DECODER_FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
 
     def forward(self, input):
