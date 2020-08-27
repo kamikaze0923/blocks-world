@@ -131,19 +131,19 @@ def load_model(vae):
 
 def run(n_epoch):
     sys.stdout.flush()
-    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
-    # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
-    # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
+    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
+    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
+    print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
     train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
     print("Training Examples: {}".format(len(train_set)))
     sys.stdout.flush()
     assert len(train_set) % TRAIN_BZ == 0
     # assert len(test_set) % TEST_BZ == 0
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
-    # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
+    test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)()
     # load_model(vae)
-    optimizer = Adam(vae.parameters(), lr=1e-3)
+    optimizer = Adam(vae.get_parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):

@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from fosae.gumble import gumbel_softmax, device
+import itertools
 
 N = 9
 P = 18
@@ -77,10 +78,9 @@ class ActionEncoder(nn.Module):
         action = torch.mul(action_one_hot, action_base_expand).sum(dim=-1, keepdim=True)
         return torch.cat([action, -action], dim=-1)
 
-class PredicateUnit(nn.Module):
+class PredicateUnit:
 
     def __init__(self, predicate_nets):
-        super(PredicateUnit, self).__init__()
         self.state_encoder = StateEncoder().to(device)
         self.action_encoder = ActionEncoder().to(device)
         self.predicate_nets = predicate_nets
@@ -89,20 +89,18 @@ class PredicateUnit(nn.Module):
         state, state_next, action = input
 
         args = self.state_encoder(state, temp)
-        preds = []
-        for pred_net in self.predicate_nets:
-            preds.append(pred_net(args, temp))
+        preds = [pred_net(args, temp) for pred_net in self.predicate_nets]
         preds = torch.stack(preds, dim=1)
 
         args_next = self.state_encoder(state, temp)
-        preds_next = []
-        for pred_net in self.predicate_nets:
-            preds_next.append(pred_net(args_next, temp))
+        preds_next = [pred_net(args_next, temp) for pred_net in self.predicate_nets]
         preds_next = torch.stack(preds_next, dim=1)
 
         action = self.action_encoder(torch.cat([state, action], dim=1), temp)
 
         return args, args_next, preds, preds_next, action
+
+
 
 class PredicateDecoder(nn.Module):
 
@@ -116,16 +114,11 @@ class PredicateDecoder(nn.Module):
         h1 = self.bn1(self.fc1(input.view(-1, 1, U*P*2)))
         return torch.sigmoid(self.fc2(h1)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
-class FoSae(nn.Module):
+class FoSae:
 
     def __init__(self):
-        super(FoSae, self).__init__()
-        self.predicate_nets = []
-        for _ in range(P):
-            self.predicate_nets.append(PredicateNetwork().to(device))
-        self.pus = []
-        for _ in range(U):
-            self.pus.append(PredicateUnit(self.predicate_nets))
+        self.predicate_nets = [PredicateNetwork().to(device) for _ in range(P)]
+        self.predicate_units = [PredicateUnit(self.predicate_nets) for _ in range(U)]
         self.decoder = PredicateDecoder().to(device)
 
     def forward(self, x, temp):
@@ -136,8 +129,8 @@ class FoSae(nn.Module):
         all_preds_next = []
         all_actions = []
 
-        for pu in self.pus:
-            args, args_next, preds, preds_next, actions = pu(x, temp)
+        for pu in self.predicate_units:
+            args, args_next, preds, preds_next, actions = pu.forward(x, temp)
             all_args.append(args)
             all_args_next.append(args_next)
             all_preds.append(preds)
@@ -154,3 +147,10 @@ class FoSae(nn.Module):
         x_hat_next = self.decoder(all_preds_next)
 
         return (x_hat, x_hat_next), (all_args, all_args_next), (all_preds, all_preds_next, all_actions)
+
+    def get_parameters(self):
+        all_para = [self.decoder.parameters()] + \
+               [pn.parameters() for pn in self.predicate_nets] + \
+               [pu.state_encoder.parameters() for pu in self.predicate_units] + \
+               [pu.action_encoder.parameters() for pu in self.predicate_units]
+        return itertools.chain(*all_para)
