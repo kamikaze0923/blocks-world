@@ -7,7 +7,9 @@ P = 16
 A = 2
 U = 9
 CONV_CHANNELS = 32
-FC_LAYER_SIZE = 200
+ENCODER_FC_LAYER_SIZE = 200
+DECODER_FC_LAYER_SIZE = 1000
+
 
 IMG_H = 64
 IMG_W = 96
@@ -26,16 +28,16 @@ class BackBoneImageObjectEncoder(nn.Module):
         self.conv1 = nn.Conv2d(in_channels=in_objects*IMG_C, out_channels=CONV_CHANNELS, kernel_size=(8,8), stride=(4,4), padding=2)
         self.bn1 = nn.BatchNorm2d(CONV_CHANNELS)
         self.dpt1 = nn.Dropout(0.4)
-        self.fc2 = nn.Linear(in_features=CONV_CHANNELS*FMAP_H*FMAP_W, out_features=FC_LAYER_SIZE)
+        self.fc2 = nn.Linear(in_features=CONV_CHANNELS*FMAP_H*FMAP_W, out_features=ENCODER_FC_LAYER_SIZE)
         self.bn2 = nn.BatchNorm1d(1)
         self.dpt2 = nn.Dropout(0.4)
-        self.fc3 = nn.Linear(in_features=FC_LAYER_SIZE, out_features=out_features)
+        self.fc3 = nn.Linear(in_features=ENCODER_FC_LAYER_SIZE, out_features=out_features)
 
     def forward(self, input, temp):
         h1 = self.dpt1(self.bn1(self.conv1(input.view(-1, self.in_objects * IMG_C, IMG_H, IMG_W))))
-        h2 = h1.view(-1, 1, CONV_CHANNELS * FMAP_H * FMAP_W)
-        h3 = self.dpt2(self.bn2(self.fc2(h2)))
-        return self.fc4(h3)
+        h1 = h1.view(-1, 1, CONV_CHANNELS * FMAP_H * FMAP_W)
+        h2 = self.dpt2(self.bn2(self.fc2(h1)))
+        return self.fc3(h2)
 
 
 class PredicateNetwork(nn.Module):
@@ -107,10 +109,10 @@ class PredicateDecoder(nn.Module):
 
     def __init__(self):
         super(PredicateDecoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=U*P*2, out_features=FC_LAYER_SIZE)
+        self.fc1 = nn.Linear(in_features=U*P*2, out_features=DECODER_FC_LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(1)
         self.dpt1 = nn.Dropout(0.4)
-        self.fc2 = nn.Linear(in_features=FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
+        self.fc2 = nn.Linear(in_features=DECODER_FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
 
     def forward(self, input):
         h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, 1, U*P*2))))
