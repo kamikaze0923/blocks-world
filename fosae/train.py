@@ -28,7 +28,7 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     return BCE
 
 # Action similarity in latent space
-def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none'), detach_encoder=False):
+def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none'), detach_encoder=True):
     if detach_encoder:
         pred = pred.detach()
         preds_next = preds_next.detach()
@@ -135,9 +135,9 @@ def load_model(vae):
 
 def run(n_epoch):
     sys.stdout.flush()
-    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
-    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
-    print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
+    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
+    # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
+    # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
     train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
     print("Training Examples: {}".format(len(train_set)))
     sys.stdout.flush()
