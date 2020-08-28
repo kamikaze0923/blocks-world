@@ -14,7 +14,7 @@ TEMP_MIN = 0.7
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 180
 TEST_BZ = 720
-ALPHA = 1
+ALPHA = 100
 BETA = 1
 MARGIN = 1
 
@@ -146,7 +146,7 @@ def run(n_epoch):
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
-    # load_model(vae)
+    load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 100 else 0.1)
     best_loss = float('inf')

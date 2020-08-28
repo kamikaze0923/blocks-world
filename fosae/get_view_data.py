@@ -28,16 +28,13 @@ def run(vae, view_loader):
         data = view_loader.__iter__().__next__()
 
         _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
-        data = obj_mask.view(obj_mask.size()[0], obj_mask.size()[1], -1)
-        data = data.to(device)
-        data_next = next_obj_mask.view(next_obj_mask.size()[0], next_obj_mask.size()[1], -1)
-        data_next = data_next.to(device)
+        data = obj_mask.to(device)
+        data_next = next_obj_mask.to(device)
 
         action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
         batch_idx = torch.arange(action_idx.size()[0])
         batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
-        action = obj_mask[batch_idx, action_idx, :, :]
-        action = action.view(action.size()[0], action.size()[1], -1).to(device)
+        action = obj_mask[batch_idx, action_idx, :, :].to(device)
 
         recon_batch, args, preds = vae((data, data_next, action), 0)
 
@@ -66,17 +63,6 @@ def run(vae, view_loader):
         action_np = preds[2].detach().cpu().numpy()
         print(action_np.shape)
         np.save("fosae/block_data/block_action.npy", action_np)
-
-
-
-
-
-
-
-
-
-
-
 
 
 

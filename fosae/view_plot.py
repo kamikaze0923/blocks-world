@@ -23,9 +23,9 @@ print(action.shape, preds.shape, preds_next.shape)
 
 
 
-fig, axs = plt.subplots(4, 9, figsize=(12,12))
-for _, ax in np.ndenumerate(axs):
-    ax.axis('off')
+fig, axs = plt.subplots(4, 9, figsize=(16,16))
+# for _, ax in np.ndenumerate(axs):
+#     ax.axis('off')
 plt.gca()
 
 while True:
@@ -35,18 +35,19 @@ while True:
             zip(one_data, one_rec_batch, one_preds[:9], one_preds[9:], one_args[:9], one_args[9:], one_data_next, one_rec_batch_next, one_preds_next[:9], one_preds_next[9:], one_args_next)
         ):
             axs[0,i].imshow(np.transpose(d, (1,2,0)))
-            axs[1,i].imshow(np.transpose(r, (1,2,0)))
+            axs[1,i].imshow(np.transpose(d_nt, (1,2,0)))
+
             # axs[2,i].imshow(p0, cmap='gray')
             # axs[3,i].imshow(p1, cmap='gray')
             # axs[4+j,i].imshow(np.transpose(ars, (1,2,0)))
 
-            axs[2,i].imshow(np.transpose(d_nt, (1,2,0)))
+            axs[2,i].imshow(np.transpose(r, (1,2,0)))
             axs[3,i].imshow(np.transpose(r_nt, (1,2,0)))
             # axs[6,i].imshow(p_nt0, cmap='gray')
             # axs[7,i].imshow(p_nt1, cmap='gray')
 
 
-        plt.pause(0.01)
+        plt.pause(0.1)
 
 
 
