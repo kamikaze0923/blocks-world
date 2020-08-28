@@ -28,7 +28,7 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     return BCE
 
 # Action similarity in latent space
-def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none'), detach_encoder=True):
+def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none'), detach_encoder=False):
     if detach_encoder:
         pred = pred.detach()
         preds_next = preds_next.detach()
@@ -131,19 +131,20 @@ def load_model(vae):
 
 def run(n_epoch):
     sys.stdout.flush()
-    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
-    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
-    print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
-    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
-    print("Training Examples: {}".format(len(train_set)))
-    sys.stdout.flush()
-    assert len(train_set) % TRAIN_BZ == 0
-    # assert len(test_set) % TEST_BZ == 0
-    train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
-    test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
+    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
+    # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
+    # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
+    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
+    # print("Training Examples: {}".format(len(train_set)))
+    # sys.stdout.flush()
+    # assert len(train_set) % TRAIN_BZ == 0
+    # # assert len(test_set) % TEST_BZ == 0
+    # train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
+    # # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
-    load_model(vae)
+    # load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
+    exit(0)
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):

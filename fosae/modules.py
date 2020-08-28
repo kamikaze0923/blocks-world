@@ -93,7 +93,7 @@ class PredicateUnit(nn.Module):
         preds = [pred_net(args, temp) for pred_net in self.predicate_nets]
         preds = torch.stack(preds, dim=1)
 
-        args_next = self.state_encoder(state, temp)
+        args_next = self.state_encoder(state_next, temp)
         preds_next = [pred_net(args_next, temp) for pred_net in self.predicate_nets]
         preds_next = torch.stack(preds_next, dim=1)
 
