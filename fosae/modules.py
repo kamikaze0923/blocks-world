@@ -31,7 +31,7 @@ class BackBoneImageObjectEncoder(nn.Module):
         self.bn2 = nn.BatchNorm1d(1)
         self.fc3 = nn.Linear(in_features=ENCODER_FC_LAYER_SIZE, out_features=out_features)
 
-    def forward(self, input, temp):
+    def forward(self, input):
         h1 = self.bn1(self.conv1(input.view(-1, self.in_objects * IMG_C, IMG_H, IMG_W)))
         h1 = h1.view(-1, 1, CONV_CHANNELS * FMAP_H * FMAP_W)
         h2 = self.bn2(self.fc2(h1))
@@ -44,7 +44,7 @@ class PredicateNetwork(nn.Module):
         self.predicate_encoder = BackBoneImageObjectEncoder(in_objects=A, out_features=2)
 
     def forward(self, input, temp):
-        logits = self.predicate_encoder(input, temp)
+        logits = self.predicate_encoder(input)
         logits = logits.view(-1, 2)
         prob = gumbel_softmax(logits, temp)
         return prob
@@ -56,7 +56,7 @@ class StateEncoder(nn.Module):
         self.objects_encoder = BackBoneImageObjectEncoder(in_objects=N, out_features=A*N)
 
     def forward(self, input, temp):
-        logits = self.objects_encoder(input, temp)
+        logits = self.objects_encoder(input)
         logits = logits.view(-1, A, N)
         prob = gumbel_softmax(logits, temp).unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).expand(-1, A, -1, IMG_C, IMG_H, IMG_W)
         dot = torch.mul(prob, input.unsqueeze(1).expand(-1, A, -1 ,-1, -1, -1)).sum(dim=2)
@@ -66,15 +66,14 @@ class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BackBoneImageObjectEncoder(in_objects=N+ACTION_A, out_features=P*3)
+        self.state_action_encoder = BackBoneImageObjectEncoder(in_objects=N+ACTION_A, out_features=P*2)
+        self.hardTanh = nn.Hardtanh(-1,1)
+        self.hardShrink = nn.Hardshrink(1)
 
-    def forward(self, input, temp, action_base=torch.tensor([-1.0, 0.0, 1.0])):
-        logits = self.state_action_encoder(input, temp)
-        logits = logits.view(-1, P, 3)
-        action_one_hot = gumbel_softmax(logits, temp)
-        action_base_expand = action_base.expand_as(action_one_hot).to(device)
-        action = torch.mul(action_one_hot, action_base_expand).sum(dim=-1, keepdim=True)
-        return torch.cat([action, -action], dim=-1)
+    def forward(self, input):
+        logits = self.state_action_encoder(input)
+        logits = logits.view(-1, P, 2)
+        return self.hardShrink(self.hardTanh(logits))
 
 class PredicateUnit(nn.Module):
 
@@ -95,7 +94,7 @@ class PredicateUnit(nn.Module):
         preds_next = [pred_net(args_next, temp) for pred_net in self.predicate_nets]
         preds_next = torch.stack(preds_next, dim=1)
 
-        action = self.action_encoder(torch.cat([state, action], dim=1), temp)
+        action = self.action_encoder(torch.cat([state, action], dim=1))
 
         return args, args_next, preds, preds_next, action
 
