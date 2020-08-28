@@ -33,11 +33,11 @@ def action_loss_function(pred, preds_next, action, criterion=nn.BCELoss(reductio
         pred = pred.detach()
         preds_next = preds_next.detach()
 
-    def range_reg(x):
+    def range_normalize(x):
         return (x + 1.0) / 3.0
 
     sum_dim = [i for i in range(1, pred.dim())]
-    MSE = criterion(range_reg(pred+action), range_reg(preds_next)).sum(dim=sum_dim).mean()
+    MSE = criterion(range_normalize(pred+action), range_normalize(preds_next)).sum(dim=sum_dim).mean()
     return MSE * ALPHA
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
