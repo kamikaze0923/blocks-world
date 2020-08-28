@@ -9,7 +9,6 @@ U = 18
 CONV_CHANNELS = 32
 ENCODER_FC_LAYER_SIZE = 200
 DECODER_FC_LAYER_SIZE = 1000
-DROP_OUT_RATE = 0.7
 
 IMG_H = 64
 IMG_W = 96
@@ -29,13 +28,12 @@ class BackBoneImageObjectEncoder(nn.Module):
         self.bn1 = nn.BatchNorm2d(CONV_CHANNELS)
         self.fc2 = nn.Linear(in_features=CONV_CHANNELS*FMAP_H*FMAP_W, out_features=ENCODER_FC_LAYER_SIZE)
         self.bn2 = nn.BatchNorm1d(1)
-        self.dpt2 = nn.Dropout(DROP_OUT_RATE)
         self.fc3 = nn.Linear(in_features=ENCODER_FC_LAYER_SIZE, out_features=out_features)
 
     def forward(self, input, temp):
         h1 = self.bn1(self.conv1(input.view(-1, self.in_objects * IMG_C, IMG_H, IMG_W)))
         h1 = h1.view(-1, 1, CONV_CHANNELS * FMAP_H * FMAP_W)
-        h2 = self.dpt2(self.bn2(self.fc2(h1)))
+        h2 = self.bn2(self.fc2(h1))
         return self.fc3(h2)
 
 class PredicateNetwork(nn.Module):
@@ -107,11 +105,10 @@ class PredicateDecoder(nn.Module):
         super(PredicateDecoder, self).__init__()
         self.fc1 = nn.Linear(in_features=U*P*2, out_features=DECODER_FC_LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(1)
-        self.dpt1 = nn.Dropout(DROP_OUT_RATE)
         self.fc2 = nn.Linear(in_features=DECODER_FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
 
     def forward(self, input):
-        h1 = self.dpt1(self.bn1(self.fc1(input.view(-1, 1, U*P*2))))
+        h1 = self.bn1(self.fc1(input.view(-1, 1, U*P*2)))
         return torch.sigmoid(self.fc2(h1)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
 class FoSae(nn.Module):
