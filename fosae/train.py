@@ -44,7 +44,8 @@ def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='
 
 def train(dataloader, vae, temp, optimizer):
     vae.train()
-    recon_loss = 0
+    recon_loss0 = 0
+    recon_loss1 = 0
     action_loss = 0
     contrastive_loss = 0
     for i, data in enumerate(dataloader):
@@ -70,25 +71,27 @@ def train(dataloader, vae, temp, optimizer):
         optimizer.zero_grad()
         loss.backward()
 
-        recon_loss += rec_loss0.item()
-        recon_loss += rec_loss1.item()
+        recon_loss0 += rec_loss0.item()
+        recon_loss1 += rec_loss1.item()
         action_loss += act_loss.item()
         contrastive_loss += ctrs_loss.item()
         optimizer.step()
 
-    print("{:.2f}, {:.2f}, {:.2f}".format
+    print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format
         (
-            recon_loss / len(dataloader),
+            recon_loss0 / len(dataloader),
+            recon_loss1 / len(dataloader),
             action_loss / len(dataloader),
             contrastive_loss / len(dataloader)
         )
     )
 
-    return (recon_loss + action_loss + contrastive_loss) / len(dataloader)
+    return (recon_loss0 + recon_loss1 + action_loss + contrastive_loss) / len(dataloader)
 
 def test(dataloader, vae, temp=0):
     vae.eval()
-    recon_loss = 0
+    recon_loss0 = 0
+    recon_loss1 = 0
     action_loss = 0
     contrastive_loss = 0
     with torch.no_grad():
@@ -109,21 +112,22 @@ def test(dataloader, vae, temp=0):
             act_loss = action_loss_function(*preds)
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
-            recon_loss += rec_loss0.item()
-            recon_loss += rec_loss1.item()
+            recon_loss0 += rec_loss0.item()
+            recon_loss1 += rec_loss1.item()
             action_loss += act_loss.item()
             contrastive_loss += ctrs_loss.item()
 
 
-    print("{:.2f}, {:.2f}, {:.2f}".format
+    print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format
         (
-            recon_loss / len(dataloader),
+            recon_loss0 / len(dataloader),
+            recon_loss1 / len(dataloader),
             action_loss / len(dataloader),
             contrastive_loss / len(dataloader)
         )
     )
 
-    return (recon_loss + action_loss + contrastive_loss) / len(dataloader)
+    return (recon_loss0 + recon_loss1 + action_loss + contrastive_loss) / len(dataloader)
 
 def load_model(vae):
     vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
@@ -144,7 +148,6 @@ def run(n_epoch):
     vae = eval(MODEL_NAME)().to(device)
     # load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
-    exit(0)
     scheculer = LambdaLR(optimizer, lambda e: 1.0 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
