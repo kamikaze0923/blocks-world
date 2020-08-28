@@ -10,7 +10,7 @@ import numpy as np
 import sys
 
 TEMP_BEGIN = 5
-TEMP_MIN = 0.3
+TEMP_MIN = 0.7
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 180
 TEST_BZ = 720
@@ -131,15 +131,15 @@ def load_model(vae):
 
 def run(n_epoch):
     sys.stdout.flush()
-    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
-    # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
-    # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
-    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
-    # print("Training Examples: {}".format(len(train_set)))
-    # sys.stdout.flush()
-    # assert len(train_set) % TRAIN_BZ == 0
-    # # assert len(test_set) % TEST_BZ == 0
-    # train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
+    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
+    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
+    print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
+    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
+    print("Training Examples: {}".format(len(train_set)))
+    sys.stdout.flush()
+    assert len(train_set) % TRAIN_BZ == 0
+    # assert len(test_set) % TEST_BZ == 0
+    train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
     # load_model(vae)
