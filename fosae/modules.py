@@ -8,7 +8,8 @@ A = 2
 U = 9
 CONV_CHANNELS = 16
 ENCODER_FC_LAYER_SIZE = 100
-DECODER_FC_LAYER_SIZE = 3000
+DECODER_FC1_LAYER_SIZE = 1000
+DECODER_FC2_LAYER_SIZE = 3000
 
 IMG_H = 64
 IMG_W = 96
@@ -103,13 +104,16 @@ class PredicateDecoder(nn.Module):
 
     def __init__(self):
         super(PredicateDecoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=U*P*2, out_features=DECODER_FC_LAYER_SIZE)
+        self.fc1 = nn.Linear(in_features=U*P*2, out_features=DECODER_FC1_LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(1)
-        self.fc2 = nn.Linear(in_features=DECODER_FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
+        self.fc2 = nn.Linear(in_features=DECODER_FC1_LAYER_SIZE, out_features=DECODER_FC2_LAYER_SIZE)
+        self.bn2 = nn.BatchNorm1d(1)
+        self.fc3 = nn.Linear(in_features=DECODER_FC2_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
 
     def forward(self, input):
         h1 = self.bn1(self.fc1(input.view(-1, 1, U*P*2)))
-        return torch.sigmoid(self.fc2(h1)).view(-1, N, IMG_C, IMG_H, IMG_W)
+        h2 = self.bn1(self.fc2(h1))
+        return torch.sigmoid(self.fc2(h2)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
 class FoSae(nn.Module):
 
