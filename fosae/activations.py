@@ -6,9 +6,10 @@ class TrinaryStep(autograd.Function):
 
     @staticmethod
     def forward(ctx, input):
-        output = torch.zeros(size=input.size(), device=input.device)
+        output = input.clone()
         output[input > 1] = 1
         output[input < -1] = -1
+        output[torch.logical_and(-0.5 < input, input < 0.5 )] = 0
         return output
 
     @staticmethod
