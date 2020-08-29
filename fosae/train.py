@@ -9,6 +9,7 @@ from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
 
+
 TEMP_BEGIN = 5
 TEMP_MIN = 0.3
 ANNEAL_RATE = 0.05
@@ -35,19 +36,27 @@ def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reductio
 
     sum_dim = [i for i in range(1, pred.dim())]
     MSE = criterion(pred+action, preds_next).sum(dim=sum_dim).mean()
-    return MSE * ALPHA
+
+    return MSE * ALPHA, torch.abs(0.5 - pred).sum(dim=-1).mean(), torch.abs(0.5 - preds_next).sum(dim=-1).mean()
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
     MSE = criterion(pred, preds_next).sum(dim=sum_dim).mean()
     return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - MSE) * BETA
 
-def train(dataloader, vae, temp, optimizer):
-    vae.train()
+def epoch_routine(dataloader, vae, temp, optimizer=None):
+    if optimizer is not None:
+        vae.train()
+    else:
+        vae.eval()
     recon_loss0 = 0
     recon_loss1 = 0
     action_loss = 0
     contrastive_loss = 0
+    metric_pred = 0
+    metric_pred_next = 0
+
+
     for i, data in enumerate(dataloader):
         _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
         data = obj_mask.to(device)
@@ -61,69 +70,41 @@ def train(dataloader, vae, temp, optimizer):
         noise1 = torch.normal(mean=0, std=0.4, size=data.size()).to(device)
         noise2 = torch.normal(mean=0, std=0.4, size=data_next.size()).to(device)
         noise3 = torch.normal(mean=0, std=0.4, size=action.size()).to(device)
-        recon_batch, _ , preds = vae((data+noise1, data_next+noise2, action+noise3), temp)
 
-        rec_loss0 = rec_loss_function(recon_batch[0], data)
-        rec_loss1 = rec_loss_function(recon_batch[1], data_next)
-        act_loss = action_loss_function(*preds)
-        ctrs_loss = contrastive_loss_function(preds[0], preds[1])
-        loss = rec_loss0 + rec_loss1 + act_loss + ctrs_loss
-        optimizer.zero_grad()
-        loss.backward()
+        if optimizer is None:
+            with torch.no_grad():
+                recon_batch, _ , preds = vae((data+noise1, data_next+noise2, action+noise3), temp)
+                rec_loss0 = rec_loss_function(recon_batch[0], data)
+                rec_loss1 = rec_loss_function(recon_batch[1], data_next)
+                act_loss, m0, m1 = action_loss_function(*preds)
+                ctrs_loss = contrastive_loss_function(preds[0], preds[1])
+        else:
+            recon_batch, _, preds = vae((data + noise1, data_next + noise2, action + noise3), temp)
+            rec_loss0 = rec_loss_function(recon_batch[0], data)
+            rec_loss1 = rec_loss_function(recon_batch[1], data_next)
+            act_loss, m0, m1 = action_loss_function(*preds)
+            ctrs_loss = contrastive_loss_function(preds[0], preds[1])
+            loss = rec_loss0 + rec_loss1 + act_loss + ctrs_loss
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
         recon_loss0 += rec_loss0.item()
         recon_loss1 += rec_loss1.item()
         action_loss += act_loss.item()
         contrastive_loss += ctrs_loss.item()
-        optimizer.step()
+        metric_pred += m0
+        metric_pred_next += m1
 
-    print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format
+
+    print("{:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
         (
             recon_loss0 / len(dataloader),
             recon_loss1 / len(dataloader),
             action_loss / len(dataloader),
-            contrastive_loss / len(dataloader)
-        )
-    )
-
-    return (recon_loss0 + recon_loss1 + action_loss + contrastive_loss) / len(dataloader)
-
-def test(dataloader, vae, temp=0):
-    vae.eval()
-    recon_loss0 = 0
-    recon_loss1 = 0
-    action_loss = 0
-    contrastive_loss = 0
-    with torch.no_grad():
-        for i, data in enumerate(dataloader):
-            _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
-            data = obj_mask.to(device)
-            data_next = next_obj_mask.to(device)
-
-            action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
-            batch_idx = torch.arange(action_idx.size()[0])
-            batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
-            action = obj_mask[batch_idx, action_idx, : , :].to(device)
-
-            recon_batch, _, preds = vae((data, data_next, action), temp)
-
-            rec_loss0 = rec_loss_function(recon_batch[0], data)
-            rec_loss1 = rec_loss_function(recon_batch[1], data_next)
-            act_loss = action_loss_function(*preds)
-            ctrs_loss = contrastive_loss_function(preds[0], preds[1])
-
-            recon_loss0 += rec_loss0.item()
-            recon_loss1 += rec_loss1.item()
-            action_loss += act_loss.item()
-            contrastive_loss += ctrs_loss.item()
-
-
-    print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format
-        (
-            recon_loss0 / len(dataloader),
-            recon_loss1 / len(dataloader),
-            action_loss / len(dataloader),
-            contrastive_loss / len(dataloader)
+            contrastive_loss / len(dataloader),
+            metric_pred / len(dataloader),
+            metric_pred_next / len(dataloader)
         )
     )
 
@@ -152,11 +133,11 @@ def run(n_epoch):
     best_loss = float('inf')
     for e in range(n_epoch):
         temp = np.maximum(TEMP_BEGIN * np.exp(-ANNEAL_RATE * e), TEMP_MIN)
-        print("Epoch: {}, Temperature: {}, Lr: {}".format(e, temp, scheculer.get_lr()))
+        print("Epoch: {}, Temperature: {}, Lr: {}".format(e, temp, scheculer.get_last_lr()))
         sys.stdout.flush()
-        train_loss = train(train_loader, vae, temp, optimizer)
+        train_loss = epoch_routine(train_loader, vae, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
-        test_loss = test(train_loader, vae)
+        test_loss = epoch_routine(train_loader, vae, 0)
         print('====> Epoch: {} Average test loss: {:.4f}'.format(e, test_loss))
         if test_loss < best_loss:
             print("Save Model")

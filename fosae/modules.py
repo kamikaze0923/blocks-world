@@ -94,8 +94,6 @@ class PredicateUnit(nn.Module):
         preds_next = torch.stack(preds_next, dim=1)
 
         action = self.action_encoder(torch.cat([state, action], dim=1))
-        print(action.size())
-        exit(0)
 
         return args, args_next, preds, preds_next, action
 
