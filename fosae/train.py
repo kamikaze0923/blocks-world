@@ -33,11 +33,9 @@ def action_loss_function(pred, preds_next, action, criterion=nn.BCELoss(reductio
         pred = pred.detach()
         preds_next = preds_next.detach()
 
-    def range_normalize(x):
-        return (x + 1.0) / 3.0
 
     sum_dim = [i for i in range(1, pred.dim())]
-    MSE = criterion(range_normalize(pred+action), range_normalize(preds_next)).sum(dim=sum_dim).mean()
+    MSE = criterion(pred+action, preds_next).sum(dim=sum_dim).mean()
     return MSE * ALPHA
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
@@ -144,7 +142,7 @@ def run(n_epoch):
     train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
     print("Training Examples: {}".format(len(train_set)))
     sys.stdout.flush()
-    assert len(train_set) % TRAIN_BZ == 0
+    # assert len(train_set) % TRAIN_BZ == 0
     # assert len(test_set) % TEST_BZ == 0
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
