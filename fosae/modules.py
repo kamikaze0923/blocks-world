@@ -107,8 +107,7 @@ class PredicateDecoder(nn.Module):
 
     def forward(self, input):
         h1 = self.bn1(self.fc1(input.view(-1, 1, U*P*2)))
-        h2 = self.bn1(self.fc2(h1))
-        return torch.sigmoid(self.fc2(h2)).view(-1, N, IMG_C, IMG_H, IMG_W)
+        return torch.sigmoid(self.fc2(h1)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
 class FoSae(nn.Module):
 
