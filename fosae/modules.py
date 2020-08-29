@@ -1,15 +1,15 @@
 import torch
 from torch import nn
 from fosae.gumble import gumbel_softmax, device
+from fosae.activations import TrinaryStep
 
 N = 9
-P = 9
+P = 36
 A = 2
 U = 9
 CONV_CHANNELS = 16
 ENCODER_FC_LAYER_SIZE = 100
-DECODER_FC1_LAYER_SIZE = 1000
-DECODER_FC2_LAYER_SIZE = 3000
+DECODER_FC_LAYER_SIZE = 3000
 
 IMG_H = 64
 IMG_W = 96
@@ -20,10 +20,10 @@ FMAP_W = IMG_W //4
 IMG_C = 3
 ACTION_A = 2
 
-class BackBoneImageObjectEncoder(nn.Module):
+class BaseObjectImageEncoder(nn.Module):
 
     def __init__(self, in_objects, out_features):
-        super(BackBoneImageObjectEncoder, self).__init__()
+        super(BaseObjectImageEncoder, self).__init__()
         self.in_objects = in_objects
         self.conv1 = nn.Conv2d(in_channels=in_objects*IMG_C, out_channels=CONV_CHANNELS, kernel_size=(8,8), stride=(4,4), padding=2)
         self.bn1 = nn.BatchNorm2d(CONV_CHANNELS)
@@ -41,7 +41,7 @@ class PredicateNetwork(nn.Module):
 
     def __init__(self):
         super(PredicateNetwork, self).__init__()
-        self.predicate_encoder = BackBoneImageObjectEncoder(in_objects=A, out_features=2)
+        self.predicate_encoder = BaseObjectImageEncoder(in_objects=A, out_features=2)
 
     def forward(self, input, temp):
         logits = self.predicate_encoder(input)
@@ -53,7 +53,7 @@ class StateEncoder(nn.Module):
 
     def __init__(self):
         super(StateEncoder, self).__init__()
-        self.objects_encoder = BackBoneImageObjectEncoder(in_objects=N, out_features=A*N)
+        self.objects_encoder = BaseObjectImageEncoder(in_objects=N, out_features=A*N)
 
     def forward(self, input, temp):
         logits = self.objects_encoder(input)
@@ -66,14 +66,12 @@ class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BackBoneImageObjectEncoder(in_objects=N+ACTION_A, out_features=P*2)
-        self.hardTanh = nn.Hardtanh(-1,1)
-        self.hardShrink = nn.Hardshrink(1)
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=P*2)
 
     def forward(self, input):
         logits = self.state_action_encoder(input)
         logits = logits.view(-1, P, 2)
-        return self.hardShrink(self.hardTanh(logits))
+        return TrinaryStep.apply(logits)
 
 class PredicateUnit(nn.Module):
 
@@ -103,16 +101,14 @@ class PredicateDecoder(nn.Module):
 
     def __init__(self):
         super(PredicateDecoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=U*P*2, out_features=DECODER_FC1_LAYER_SIZE)
+        self.fc1 = nn.Linear(in_features=U*P*2, out_features=DECODER_FC_LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(1)
-        self.fc2 = nn.Linear(in_features=DECODER_FC1_LAYER_SIZE, out_features=DECODER_FC2_LAYER_SIZE)
-        self.bn2 = nn.BatchNorm1d(1)
-        self.fc3 = nn.Linear(in_features=DECODER_FC2_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
+        self.fc2 = nn.Linear(in_features=DECODER_FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
 
     def forward(self, input):
         h1 = self.bn1(self.fc1(input.view(-1, 1, U*P*2)))
         h2 = self.bn1(self.fc2(h1))
-        return torch.sigmoid(self.fc3(h2)).view(-1, N, IMG_C, IMG_H, IMG_W)
+        return torch.sigmoid(self.fc2(h2)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
 class FoSae(nn.Module):
 
