@@ -4,12 +4,12 @@ from fosae.gumble import gumbel_softmax, device
 from fosae.activations import TrinaryStep
 
 N = 9
-P = 36
+P = 9
 A = 2
 U = 9
 CONV_CHANNELS = 16
 ENCODER_FC_LAYER_SIZE = 100
-DECODER_FC_LAYER_SIZE = 3000
+DECODER_FC_LAYER_SIZE = 1000
 
 IMG_H = 64
 IMG_W = 96

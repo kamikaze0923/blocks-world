@@ -9,9 +9,9 @@ from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
 
-TEMP_BEGIN = 10
-TEMP_MIN = 0.3
-ANNEAL_RATE = 0.03
+TEMP_BEGIN = 5
+TEMP_MIN = 0.01
+ANNEAL_RATE = 0.05
 TRAIN_BZ = 180
 TEST_BZ = 720
 ALPHA = 1

@@ -24,13 +24,12 @@ print(action.shape, preds.shape, preds_next.shape)
 
 
 
-fig, axs = plt.subplots(11, 9, figsize=(8, 6))
+fig, axs = plt.subplots(8, 9, figsize=(8, 6))
 for _, ax in np.ndenumerate(axs):
     ax.set_xticks([])
     ax.set_yticks([])
 plt.gca()
 
-MARGIN = np.zeros(shape=(P, 8))
 
 while True:
     for one_data, one_rec_batch, one_preds, one_args, one_data_next, one_rec_batch_next, one_preds_next, one_args_next\
@@ -38,21 +37,21 @@ while True:
         for i, (d, r, p, ars, d_nt, r_nt, p_nt, ars_nt) in enumerate(
             zip(one_data, one_rec_batch, one_preds, one_args, one_data_next, one_rec_batch_next, one_preds_next, one_args_next)
         ):
-            axs[0,i].imshow(np.transpose(d, (1,2,0)))
-            axs[1,i].imshow(np.transpose(d_nt, (1,2,0)))
 
-            axs[2,i].imshow(np.transpose(r, (1,2,0)))
-            axs[3,i].imshow(np.transpose(r_nt, (1,2,0)))
 
-            axs[4,i].imshow(p, cmap='gray')
-            axs[5,i].imshow(p_nt, cmap='gray')
+            axs[0,i].imshow(np.transpose(r, (1,2,0)))
+            axs[1,i].imshow(np.transpose(r_nt, (1,2,0)))
 
-            axs[6,i].imshow(np.abs(p - p_nt), cmap='gray')
+            axs[2,i].imshow(p[:18], cmap='gray')
+            axs[3,i].imshow(p_nt[:18], cmap='gray')
 
-            axs[7,i].imshow(np.transpose(ars[0], (1,2,0)))
-            axs[8,i].imshow(np.transpose(ars[1], (1,2,0)))
-            axs[9,i].imshow(np.transpose(ars_nt[0], (1,2,0)))
-            axs[10,i].imshow(np.transpose(ars_nt[1], (1,2,0)))
+            axs[4,i].imshow(p[18:], cmap='gray')
+            axs[5,i].imshow(p_nt[18:], cmap='gray')
+
+            axs[6,i].imshow(np.abs(p - p_nt)[:18], cmap='gray')
+            axs[7, i].imshow(np.abs(p - p_nt)[18:], cmap='gray')
+
+
 
 
         plt.pause(0.2)
