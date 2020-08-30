@@ -90,7 +90,7 @@ class PredicateUnit(nn.Module):
 
         action_latent = torch.stack([act_net(torch.cat([args, action], dim=1)) for act_net in self.action_encoders], dim=1)
 
-        return args, args_next, gumbel_softmax(preds, temp), gumbel_softmax(preds_next, temp), gumbel_softmax(preds + action_latent, temp)
+        return args, args_next, gumbel_softmax(preds, temp), gumbel_softmax(preds_next, temp), gumbel_softmax(preds.detach() + action_latent, temp)
 
 
 class PredicateDecoder(nn.Module):
