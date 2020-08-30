@@ -124,23 +124,23 @@ class FoSae(nn.Module):
         all_args_next = []
         all_preds = []
         all_preds_next = []
-        all_actions = []
+        all_preds_next_by_action = []
 
         for pu in self.predicate_units:
-            args, args_next, preds, preds_next, actions = pu(x, temp)
+            args, args_next, preds, preds_next, preds_next_by_action = pu(x, temp)
             all_args.append(args)
             all_args_next.append(args_next)
             all_preds.append(preds)
             all_preds_next.append(preds_next)
-            all_actions.append(actions)
+            all_preds_next_by_action.append(preds_next_by_action)
 
         all_args = torch.stack(all_args, dim=1)
         all_args_next = torch.stack(all_args_next, dim=1)
         all_preds = torch.stack(all_preds, dim=1)
         all_preds_next = torch.stack(all_preds_next, dim=1)
-        all_actions = torch.stack(all_actions, dim=1)
+        all_preds_next_by_action = torch.stack(all_preds_next_by_action, dim=1)
 
         x_hat = self.decoder(all_preds)
-        x_hat_next = self.decoder(all_preds_next)
+        x_hat_next = self.decoder(all_preds_next_by_action)
 
-        return (x_hat, x_hat_next), (all_args, all_args_next), (all_preds, all_preds_next, all_actions)
+        return (x_hat, x_hat_next), (all_args, all_args_next), (all_preds, all_preds_next, all_preds_next_by_action)
