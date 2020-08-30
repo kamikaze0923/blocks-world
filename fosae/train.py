@@ -13,7 +13,7 @@ import sys
 TEMP_BEGIN = 5
 TEMP_MIN = 0.3
 ANNEAL_RATE = 0.05
-TRAIN_BZ = 2
+TRAIN_BZ = 180
 TEST_BZ = 720
 ALPHA = 1
 BETA = 1
@@ -46,6 +46,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         vae.eval()
     recon_loss0 = 0
     recon_loss1 = 0
+    recon_loss2 = 0
     action_loss = 0
     contrastive_loss = 0
     metric_pred = 0
@@ -71,31 +72,35 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
                 recon_batch, _ , preds = vae((data+noise1, data_next+noise2, action+noise3), temp)
                 rec_loss0 = rec_loss_function(recon_batch[0], data)
                 rec_loss1 = rec_loss_function(recon_batch[1], data_next)
+                rec_loss2 = rec_loss_function(recon_batch[2], data_next)
                 act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
                 ctrs_loss = contrastive_loss_function(preds[0], preds[1])
         else:
             recon_batch, _, preds = vae((data + noise1, data_next + noise2, action + noise3), temp)
             rec_loss0 = rec_loss_function(recon_batch[0], data)
             rec_loss1 = rec_loss_function(recon_batch[1], data_next)
+            rec_loss2 = rec_loss_function(recon_batch[2], data_next)
             act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
-            loss = rec_loss0 + rec_loss1 + act_loss + ctrs_loss
+            loss = rec_loss0 + rec_loss1 + rec_loss1 + act_loss + ctrs_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
         recon_loss0 += rec_loss0.item()
         recon_loss1 += rec_loss1.item()
+        recon_loss2 += rec_loss2.item()
         action_loss += act_loss.item()
         contrastive_loss += ctrs_loss.item()
         metric_pred += m0
         metric_pred_next += m1
 
 
-    print("{:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
+    print("{:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
         (
             recon_loss0 / len(dataloader),
             recon_loss1 / len(dataloader),
+            recon_loss2 / len(dataloader),
             action_loss / len(dataloader),
             contrastive_loss / len(dataloader),
             metric_pred / len(dataloader),
@@ -103,7 +108,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         )
     )
 
-    return (recon_loss0 + recon_loss1 + action_loss + contrastive_loss) / len(dataloader)
+    return (recon_loss0 + recon_loss1 + recon_loss2 + action_loss + contrastive_loss) / len(dataloader)
 
 def load_model(vae):
     vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
