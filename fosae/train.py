@@ -13,7 +13,7 @@ import sys
 TEMP_BEGIN = 5
 TEMP_MIN = 0.3
 ANNEAL_RATE = 0.05
-TRAIN_BZ = 180
+TRAIN_BZ = 2
 TEST_BZ = 720
 ALPHA = 1
 BETA = 1
@@ -29,15 +29,10 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     return BCE
 
 # Action similarity in latent space
-def action_loss_function(pred, preds_next, action, criterion=nn.MSELoss(reduction='none'), detach_encoder=False):
-    if detach_encoder:
-        pred = pred.detach()
-        preds_next = preds_next.detach()
-
-    sum_dim = [i for i in range(1, pred.dim())]
-    MSE = criterion(pred+action, preds_next).sum(dim=sum_dim).mean()
-
-    return MSE * ALPHA, torch.abs(0.5 - pred).sum(dim=-1).mean(), torch.abs(0.5 - preds_next).sum(dim=-1).mean()
+def action_loss_function(preds_next, preds_next_by_action, criterion=nn.BCELoss(reduction='none')):
+    sum_dim = [i for i in range(1, preds_next.dim())]
+    BCE = criterion(preds_next_by_action, preds_next).sum(dim=sum_dim).mean()
+    return BCE * ALPHA, torch.abs(0.5 - preds_next).sum(dim=-1).mean(), torch.abs(0.5 - preds_next_by_action).sum(dim=-1).mean()
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
@@ -76,13 +71,13 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
                 recon_batch, _ , preds = vae((data+noise1, data_next+noise2, action+noise3), temp)
                 rec_loss0 = rec_loss_function(recon_batch[0], data)
                 rec_loss1 = rec_loss_function(recon_batch[1], data_next)
-                act_loss, m0, m1 = action_loss_function(*preds)
+                act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
                 ctrs_loss = contrastive_loss_function(preds[0], preds[1])
         else:
             recon_batch, _, preds = vae((data + noise1, data_next + noise2, action + noise3), temp)
             rec_loss0 = rec_loss_function(recon_batch[0], data)
             rec_loss1 = rec_loss_function(recon_batch[1], data_next)
-            act_loss, m0, m1 = action_loss_function(*preds)
+            act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
             loss = rec_loss0 + rec_loss1 + act_loss + ctrs_loss
             optimizer.zero_grad()

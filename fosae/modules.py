@@ -43,11 +43,10 @@ class PredicateNetwork(nn.Module):
         super(PredicateNetwork, self).__init__()
         self.predicate_encoder = BaseObjectImageEncoder(in_objects=A, out_features=2)
 
-    def forward(self, input, temp):
+    def forward(self, input):
         logits = self.predicate_encoder(input)
-        logits = logits.view(-1, 2)
-        prob = gumbel_softmax(logits, temp)
-        return prob
+        return logits.view(-1, 2)
+
 
 class StateEncoder(nn.Module):
 
@@ -66,13 +65,12 @@ class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=A+ACTION_A, out_features=1)
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=A+ACTION_A, out_features=2)
 
     def forward(self, input):
         logits = self.state_action_encoder(input)
-        logits = logits.view(-1, 1, 1)
-        action = TrinaryStep.apply(logits)
-        return torch.cat([action, -action], dim=-1)
+        return logits.view(-1, 2)
+
 
 class PredicateUnit(nn.Module):
 
@@ -86,17 +84,17 @@ class PredicateUnit(nn.Module):
         state, state_next, action = input
 
         args = self.state_encoder(state, temp)
-        preds = [pred_net(args, temp) for pred_net in self.predicate_nets]
+        preds = [pred_net(args) for pred_net in self.predicate_nets]
         preds = torch.stack(preds, dim=1)
 
         args_next = self.state_encoder(state_next, temp)
-        preds_next = [pred_net(args_next, temp) for pred_net in self.predicate_nets]
+        preds_next = [pred_net(args_next) for pred_net in self.predicate_nets]
         preds_next = torch.stack(preds_next, dim=1)
 
         action_latent = [act_net(torch.cat([args, action], dim=1)) for act_net in self.action_encoders]
-        action_latent = torch.cat(action_latent, dim=1)
+        action_latent = torch.stack(action_latent, dim=1)
 
-        return args, args_next, preds, preds_next, action_latent
+        return args, args_next, gumbel_softmax(preds, temp), gumbel_softmax(preds_next, temp), gumbel_softmax(preds + action_latent, temp)
 
 
 class PredicateDecoder(nn.Module):
