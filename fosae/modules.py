@@ -66,20 +66,20 @@ class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=P)
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=A+ACTION_A, out_features=1)
 
     def forward(self, input):
         logits = self.state_action_encoder(input)
-        logits = logits.view(-1, P, 1)
+        logits = logits.view(-1, 1, 1)
         action = TrinaryStep.apply(logits)
         return torch.cat([action, -action], dim=-1)
 
 class PredicateUnit(nn.Module):
 
-    def __init__(self, predicate_nets):
+    def __init__(self, predicate_nets, action_encoders):
         super(PredicateUnit, self).__init__()
         self.state_encoder = StateEncoder()
-        self.action_encoder = ActionEncoder()
+        self.action_encoders = action_encoders
         self.predicate_nets = predicate_nets
 
     def forward(self, input, temp):
@@ -93,9 +93,10 @@ class PredicateUnit(nn.Module):
         preds_next = [pred_net(args_next, temp) for pred_net in self.predicate_nets]
         preds_next = torch.stack(preds_next, dim=1)
 
-        action = self.action_encoder(torch.cat([state, action], dim=1))
+        action_latent = [act_net(torch.cat([args, action], dim=1)) for act_net in self.action_encoders]
+        action_latent = torch.cat(action_latent, dim=1)
 
-        return args, args_next, preds, preds_next, action
+        return args, args_next, preds, preds_next, action_latent
 
 
 class PredicateDecoder(nn.Module):
@@ -115,7 +116,8 @@ class FoSae(nn.Module):
     def __init__(self):
         super(FoSae, self).__init__()
         self.predicate_nets = nn.ModuleList([PredicateNetwork() for _ in range(P)])
-        self.predicate_units = nn.ModuleList([PredicateUnit(self.predicate_nets) for _ in range(U)])
+        self.action_encoders = nn.ModuleList([ActionEncoder() for _ in range(P)])
+        self.predicate_units = nn.ModuleList([PredicateUnit(self.predicate_nets, self.action_encoders) for _ in range(U)])
         self.decoder = PredicateDecoder()
 
     def forward(self, x, temp):
