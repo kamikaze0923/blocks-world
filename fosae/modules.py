@@ -83,15 +83,12 @@ class PredicateUnit(nn.Module):
         state, state_next, action = input
 
         args = self.state_encoder(state, temp)
-        preds = [pred_net(args) for pred_net in self.predicate_nets]
-        preds = torch.stack(preds, dim=1)
+        preds = torch.stack([pred_net(args) for pred_net in self.predicate_nets], dim=1)
 
         args_next = self.state_encoder(state_next, temp)
-        preds_next = [pred_net(args_next) for pred_net in self.predicate_nets]
-        preds_next = torch.stack(preds_next, dim=1)
+        preds_next = torch.stack([pred_net(args_next) for pred_net in self.predicate_nets], dim=1)
 
-        action_latent = [act_net(torch.cat([args, action], dim=1)) for act_net in self.action_encoders]
-        action_latent = torch.stack(action_latent, dim=1)
+        action_latent = torch.stack([act_net(torch.cat([args, action], dim=1)) for act_net in self.action_encoders], dim=1)
 
         return args, args_next, gumbel_softmax(preds, temp), gumbel_softmax(preds_next, temp), gumbel_softmax(preds + action_latent, temp)
 

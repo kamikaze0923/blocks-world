@@ -10,12 +10,12 @@ import numpy as np
 import sys
 
 
-TEMP_BEGIN = 5
-TEMP_MIN = 0.3
-ANNEAL_RATE = 0.05
+TEMP_BEGIN = 2
+TEMP_MIN = 0.1
+ANNEAL_RATE = 0.03
 TRAIN_BZ = 180
 TEST_BZ = 720
-ALPHA = 1
+ALPHA = 100
 BETA = 1
 MARGIN = 1
 
