@@ -142,6 +142,6 @@ class FoSae(nn.Module):
 
         x_hat = self.decoder(all_preds)
         x_hat_next = self.decoder(all_preds_next)
-        x_hat_next_by_action = self.decoder(all_preds_next, all_preds_next_by_action)
+        x_hat_next_by_action = self.decoder(all_preds_next_by_action)
 
         return (x_hat, x_hat_next, x_hat_next_by_action), (all_args, all_args_next), (all_preds, all_preds_next, all_preds_next_by_action)
