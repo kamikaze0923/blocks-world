@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 from fosae.gumble import gumbel_softmax, device
-from fosae.activations import TrinaryStep
 
 N = 9
 P = 9
@@ -32,9 +31,9 @@ class BaseObjectImageEncoder(nn.Module):
         self.fc3 = nn.Linear(in_features=ENCODER_FC_LAYER_SIZE, out_features=out_features)
 
     def forward(self, input):
-        h1 = self.bn1(self.conv1(input.view(-1, self.in_objects * IMG_C, IMG_H, IMG_W)))
+        h1 = self.bn1(torch.relu(self.conv1(input.view(-1, self.in_objects * IMG_C, IMG_H, IMG_W))))
         h1 = h1.view(-1, 1, CONV_CHANNELS * FMAP_H * FMAP_W)
-        h2 = self.bn2(self.fc2(h1))
+        h2 = self.bn2(torch.relu(self.fc2(h1)))
         return self.fc3(h2)
 
 class PredicateNetwork(nn.Module):
@@ -106,7 +105,7 @@ class PredicateDecoder(nn.Module):
         self.fc2 = nn.Linear(in_features=DECODER_FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
 
     def forward(self, input):
-        h1 = self.bn1(self.fc1(input.view(-1, 1, U*P*2)))
+        h1 = self.bn1(torch.relu(self.fc1(input.view(-1, 1, U*P*2))))
         return torch.sigmoid(self.fc2(h1)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
 class FoSae(nn.Module):
