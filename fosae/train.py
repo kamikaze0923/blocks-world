@@ -31,7 +31,7 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
 # Action similarity in latent space
 def action_loss_function(preds_next, preds_next_by_action, criterion=nn.BCELoss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
-    BCE = criterion(preds_next_by_action, preds_next).sum(dim=sum_dim).mean()
+    BCE = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
     return BCE * ALPHA, torch.abs(0.5 - preds_next).sum(dim=-1).mean(), torch.abs(0.5 - preds_next_by_action).sum(dim=-1).mean()
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
