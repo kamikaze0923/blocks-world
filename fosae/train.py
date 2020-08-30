@@ -10,7 +10,7 @@ import numpy as np
 import sys
 
 
-TEMP_BEGIN = 2
+TEMP_BEGIN = 5
 TEMP_MIN = 0.1
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 180
