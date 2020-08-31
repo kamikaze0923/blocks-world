@@ -22,6 +22,10 @@ MARGIN = 1
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 TRAIN_ACTION_MODEL = False
+if TRAIN_ACTION_MODEL:
+    print("Training Action Model")
+else:
+    print("Training FOSE")
 
 # Reconstruction
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
