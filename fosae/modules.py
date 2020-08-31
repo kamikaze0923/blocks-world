@@ -64,7 +64,7 @@ class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=A+ACTION_A, out_features=2)
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=2)
 
     def forward(self, input):
         logits = self.state_action_encoder(input)
@@ -88,7 +88,7 @@ class PredicateUnit(nn.Module):
         args_next = self.state_encoder(state_next, temp)
         preds_next = torch.stack([pred_net(args_next) for pred_net in self.predicate_nets], dim=1)
 
-        action_latent = torch.stack([act_net(torch.cat([args, action], dim=1)) for act_net in self.action_encoders], dim=1)
+        action_latent = torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1)
 
         return args, args_next, gumbel_softmax(preds, temp), gumbel_softmax(preds_next, temp), gumbel_softmax(preds.detach() + action_latent, temp)
 
