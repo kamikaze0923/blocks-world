@@ -136,7 +136,7 @@ def run(n_epoch):
     if TRAIN_ACTION_MODEL:
         load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
-    scheculer = LambdaLR(optimizer, lambda e: 1 if e < 0.5 * n_epoch else 0.1)
+    scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
         temp = np.maximum(TEMP_BEGIN * np.exp(-ANNEAL_RATE * e), TEMP_MIN)
@@ -155,7 +155,7 @@ def run(n_epoch):
 
 
 if __name__ == "__main__":
-    run(50)
+    run(1000)
 
 
 
