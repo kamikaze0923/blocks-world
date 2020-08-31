@@ -34,7 +34,7 @@ plt.gca()
 while True:
     for one_data, one_rec_batch, one_preds, one_args, one_data_next, one_rec_batch_next, one_preds_next, one_args_next, one_action\
             in zip(data, rec_batch, preds, args, data_next, rec_batch_next, preds_next, args_next, action):
-        for i, (d, r, p, ars, d_nt, r_nt, p_nt, ars_nt, a) in enumerate(
+        for i, (d, r, p, ars, d_nt, r_nt, p_nt, ars_nt, p_a) in enumerate(
             zip(one_data, one_rec_batch, one_preds, one_args, one_data_next, one_rec_batch_next, one_preds_next, one_args_next, one_action)
         ):
 
@@ -47,10 +47,10 @@ while True:
 
             axs[4,i].imshow(p, cmap='gray')
             axs[5,i].imshow(p_nt, cmap='gray')
-            axs[6,i].imshow(p+a, cmap='gray')
-            print(a)
+            axs[6,i].imshow(p_a, cmap='gray')
+            print(p_a)
 
-            axs[7,i].imshow(np.abs(p+a - p_nt), cmap='gray')
+            axs[7,i].imshow(np.abs(p_a - p_nt), cmap='gray')
 
             axs[8,i].imshow(np.transpose(ars[0], (1,2,0)))
             axs[9,i].imshow(np.transpose(ars[1], (1,2,0)))

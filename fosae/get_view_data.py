@@ -5,8 +5,9 @@ import numpy as np
 from torch.utils.data import DataLoader
 import torch
 from fosae.modules import IMG_H, IMG_W, IMG_C, A, N, U
+import matplotlib.pyplot as plt
 
-N_EXAMPLES = 200
+N_EXAMPLES = 2
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 
@@ -34,7 +35,7 @@ def run(vae, view_loader):
         action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
         batch_idx = torch.arange(action_idx.size()[0])
         batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
-        action = obj_mask[batch_idx, action_idx, :, :].to(device)
+        action = obj_mask[batch_idx, action_idx, :, :, :].to(device)
 
         recon_batch, args, preds = vae((data, data_next, action), 0)
 
