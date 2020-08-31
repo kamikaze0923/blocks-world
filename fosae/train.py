@@ -13,7 +13,7 @@ import sys
 TEMP_BEGIN = 5
 TEMP_MIN = 0.3
 ANNEAL_RATE = 0.03
-TRAIN_BZ = 90
+TRAIN_BZ = 180
 TEST_BZ = 720
 ALPHA = 1
 BETA = 1
@@ -25,7 +25,7 @@ TRAIN_ACTION_MODEL = False
 if TRAIN_ACTION_MODEL:
     print("Training Action Model")
 else:
-    print("Training FOSE")
+    print("Training FOSAE")
 
 # Reconstruction
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
