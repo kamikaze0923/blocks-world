@@ -87,10 +87,8 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             rec_loss2 = rec_loss_function(recon_batch[2], data_next)
             act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
-            if TRAIN_ACTION_MODEL:
-                loss = rec_loss0.detach() + rec_loss1.detach() + rec_loss2.detach() + ctrs_loss.detach() + action_loss
-            else:
-                loss = rec_loss0 + rec_loss1 + rec_loss2 + ctrs_loss + action_loss
+
+            loss = rec_loss0 + rec_loss1 + rec_loss2 + ctrs_loss + action_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
