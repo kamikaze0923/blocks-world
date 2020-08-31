@@ -21,6 +21,11 @@ MARGIN = 1
 
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
+TRAIN_ACTION_MODEL = False
+if TRAIN_ACTION_MODEL:
+    print("Training Action Model")
+else:
+    print("Training FOSAE")
 
 # Reconstruction
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
@@ -82,7 +87,10 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             rec_loss2 = rec_loss_function(recon_batch[2], data_next)
             act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
-            loss = rec_loss0 + rec_loss1 + rec_loss1 + act_loss + ctrs_loss
+            if TRAIN_ACTION_MODEL:
+                loss = act_loss
+            else:
+                loss = rec_loss0 + rec_loss1 + rec_loss1 + ctrs_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -127,9 +135,10 @@ def run(n_epoch):
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
-    # load_model(vae)
+    if TRAIN_ACTION_MODEL:
+        load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
-    scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
+    scheculer = LambdaLR(optimizer, lambda e: 1 if e < 0.5 * n_epoch else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
         temp = np.maximum(TEMP_BEGIN * np.exp(-ANNEAL_RATE * e), TEMP_MIN)
@@ -148,7 +157,7 @@ def run(n_epoch):
 
 
 if __name__ == "__main__":
-    run(1000)
+    run(50)
 
 
 
