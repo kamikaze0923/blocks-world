@@ -45,9 +45,10 @@ def action_loss_function(preds_next, preds_next_by_action, criterion=nn.BCELoss(
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
     MSE = criterion(pred, preds_next).sum(dim=sum_dim).mean()
+    loss = torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - MSE) * BETA
     if TRAIN_ACTION_MODEL:
-        MSE.detach_()
-    return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - MSE) * BETA
+        loss.detach_()
+    return loss
 
 def epoch_routine(dataloader, vae, temp, optimizer=None):
     if optimizer is not None:
