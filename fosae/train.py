@@ -8,6 +8,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
+import itertools
 
 
 TEMP_BEGIN = 5
@@ -31,17 +32,23 @@ else:
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     sum_dim = [i for i in range(1, x.dim())]
     BCE = criterion(recon_x, x).sum(dim=sum_dim).mean()
+    if TRAIN_ACTION_MODEL:
+        BCE.detach_()
     return BCE
 
 # Action similarity in latent space
 def action_loss_function(preds_next, preds_next_by_action, criterion=nn.BCELoss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
     BCE = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
-    return BCE * ALPHA, torch.abs(0.5 - preds_next).sum(dim=-1).mean(), torch.abs(0.5 - preds_next_by_action).sum(dim=-1).mean()
+    if not TRAIN_ACTION_MODEL:
+        BCE.detach_()
+    return BCE * ALPHA, torch.abs(0.5 - preds_next).sum(dim=-1).mean().detach(), torch.abs(0.5 - preds_next_by_action).sum(dim=-1).mean().detach()
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
     MSE = criterion(pred, preds_next).sum(dim=sum_dim).mean()
+    if TRAIN_ACTION_MODEL:
+        MSE.detach_()
     return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - MSE) * BETA
 
 def epoch_routine(dataloader, vae, temp, optimizer=None):
@@ -133,8 +140,12 @@ def run(n_epoch):
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
-    # load_model(vae)
-    optimizer = Adam(vae.parameters(), lr=1e-3)
+    if TRAIN_ACTION_MODEL:
+        load_model(vae)
+        optimizer = Adam(vae.action_encoders.parameters(), lr=1e-3)
+    else:
+        para = itertools.chain(vae.predicate_nets.parameters(), vae.predicate_units.parameters(), vae.decoder.parameters())
+        optimizer = Adam(para, lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
