@@ -22,7 +22,7 @@ MARGIN = 1
 
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
-TRAIN_ACTION_MODEL = False
+TRAIN_ACTION_MODEL = True
 if TRAIN_ACTION_MODEL:
     print("Training Action Model")
 else:
@@ -40,8 +40,6 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
 def action_loss_function(preds_next, preds_next_by_action, criterion=nn.BCELoss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
     BCE = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
-    if not TRAIN_ACTION_MODEL:
-        BCE.detach_()
     return BCE * ALPHA, torch.abs(0.5 - preds_next).sum(dim=-1).mean().detach(), torch.abs(0.5 - preds_next_by_action).sum(dim=-1).mean().detach()
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
@@ -128,24 +126,24 @@ def load_model(vae):
     print("fosae/model/{}.pth loaded".format(MODEL_NAME))
 
 def run(n_epoch):
-    sys.stdout.flush()
-    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
-    # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
-    # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
-    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
-    print("Training Examples: {}".format(len(train_set)))
-    sys.stdout.flush()
-    # assert len(train_set) % TRAIN_BZ == 0
-    # assert len(test_set) % TEST_BZ == 0
-    train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
+    # sys.stdout.flush()
+    # # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
+    # # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
+    # # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
+    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
+    # print("Training Examples: {}".format(len(train_set)))
+    # sys.stdout.flush()
+    # # assert len(train_set) % TRAIN_BZ == 0
+    # # assert len(test_set) % TEST_BZ == 0
+    # train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
     if TRAIN_ACTION_MODEL:
         load_model(vae)
         optimizer = Adam(vae.action_encoders.parameters(), lr=1e-3)
     else:
-        para = itertools.chain(vae.predicate_nets.parameters(), vae.predicate_units.parameters(), vae.decoder.parameters())
-        optimizer = Adam(para, lr=1e-3)
+        optimizer = Adam(vae.parameters(), lr=1e-3)
+
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
