@@ -14,7 +14,7 @@ import itertools
 TEMP_BEGIN = 5
 TEMP_MIN = 0.1
 ANNEAL_RATE = 0.03
-TRAIN_BZ = 180
+TRAIN_BZ = 2
 TEST_BZ = 720
 ALPHA = 1
 BETA = 1
@@ -22,7 +22,7 @@ MARGIN = 1
 
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
-TRAIN_ACTION_MODEL = True
+TRAIN_ACTION_MODEL = False
 if TRAIN_ACTION_MODEL:
     print("Training Action Model")
 else:
@@ -32,8 +32,6 @@ else:
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     sum_dim = [i for i in range(1, x.dim())]
     BCE = criterion(recon_x, x).sum(dim=sum_dim).mean()
-    if TRAIN_ACTION_MODEL:
-        BCE.detach_()
     return BCE
 
 # Action similarity in latent space
@@ -45,10 +43,7 @@ def action_loss_function(preds_next, preds_next_by_action, criterion=nn.BCELoss(
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
     MSE = criterion(pred, preds_next).sum(dim=sum_dim).mean()
-    loss = torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - MSE) * BETA
-    if TRAIN_ACTION_MODEL:
-        loss.detach_()
-    return loss
+    return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - MSE) * BETA
 
 def epoch_routine(dataloader, vae, temp, optimizer=None):
     if optimizer is not None:
@@ -94,7 +89,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
-            loss = rec_loss0 + rec_loss1 + rec_loss2 + ctrs_loss + action_loss
+            loss = rec_loss0 + rec_loss1 + rec_loss2 + ctrs_loss + act_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
