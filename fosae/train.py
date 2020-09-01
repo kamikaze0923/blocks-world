@@ -126,24 +126,21 @@ def load_model(vae):
     print("fosae/model/{}.pth loaded".format(MODEL_NAME))
 
 def run(n_epoch):
-    # sys.stdout.flush()
-    # # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
-    # # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
-    # # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
-    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
-    # print("Training Examples: {}".format(len(train_set)))
-    # sys.stdout.flush()
-    # # assert len(train_set) % TRAIN_BZ == 0
-    # # assert len(test_set) % TEST_BZ == 0
-    # train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
-    # # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
+    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
+    # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
+    # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
+    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
+    print("Training Examples: {}".format(len(train_set)))
+    assert len(train_set) % TRAIN_BZ == 0
+    # assert len(test_set) % TEST_BZ == 0
+    train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
+    # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
     if TRAIN_ACTION_MODEL:
         load_model(vae)
         optimizer = Adam(vae.action_encoders.parameters(), lr=1e-3)
     else:
         optimizer = Adam(vae.parameters(), lr=1e-3)
-
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
