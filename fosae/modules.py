@@ -102,12 +102,12 @@ class PredicateDecoder(nn.Module):
 
     def __init__(self):
         super(PredicateDecoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=P*N**A, out_features=DECODER_FC_LAYER_SIZE)
+        self.fc1 = nn.Linear(in_features=P*N**A*2, out_features=DECODER_FC_LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(1)
         self.fc2 = nn.Linear(in_features=DECODER_FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
 
     def forward(self, input):
-        h1 = self.bn1(torch.relu(self.fc1(input.view(-1, 1, P*N**A))))
+        h1 = self.bn1(torch.relu(self.fc1(input.view(-1, 1, P*N**A*2))))
         return torch.sigmoid(self.fc2(h1)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
 class FoSae(nn.Module):
