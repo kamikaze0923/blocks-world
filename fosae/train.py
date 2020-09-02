@@ -37,7 +37,7 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
 def action_loss_function(preds_next, preds_next_by_action, criterion=nn.BCELoss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
     bce = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
-    return bce * ALPHA, torch.abs(0.5 - preds_next).mean().detach(), torch.abs(0.5 - preds_next_by_action).mean().detach()
+    return bce * ALPHA, torch.abs(0.5 - preds_next).sum(dim=-1).mean().detach(), torch.abs(0.5 - preds_next_by_action).sum(dim=-1).mean().detach()
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]

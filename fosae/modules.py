@@ -143,7 +143,7 @@ class FoSae(nn.Module):
 
         all_preds = gumbel_softmax(all_preds, temp)[:,:,:,0]
         all_preds_next = gumbel_softmax(all_preds_next, temp)[:,:,:,0]
-        all_preds_next_by_action = gumbel_softmax(all_preds_next_by_action, temp)[:,:,:,0]
+        all_preds_next_by_action = gumbel_softmax(all_preds_next_by_action, temp)
 
         x_hat = self.decoder(all_preds)
         x_hat_next = self.decoder(all_preds_next)
