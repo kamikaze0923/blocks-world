@@ -45,13 +45,13 @@ class PredicateNetwork(nn.Module):
         self.predicate_encoder = BaseObjectImageEncoder(in_objects=A, out_features=2)
         self.cartesian_prod_table = torch.cartesian_prod(torch.arange(0,N), torch.arange(0,N)).to(device)
 
-    def forward(self, input, prob, temp):
+    def forward(self, input, prob):
         prod = prob[:, 0, :]
         for i in range(1, A):
             prod = prod.unsqueeze(-1)
             prod = torch.bmm(prod, prob[:, i, :].unsqueeze(1)).flatten(start_dim=1)
         logits = self.predicate_encoder(input).view(-1, 2).unsqueeze(1).expand(-1, N**A, -1)
-        return torch.mul(gumbel_softmax(logits, temp), prod.unsqueeze(-1).expand(-1, -1, 2))[:,:,0]
+        return torch.mul(logits, prod.unsqueeze(-1).expand(-1, -1, 2))
 
 
 
@@ -75,12 +75,11 @@ class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A)
-        self.step_func = TrinaryStep()
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A*2)
 
     def forward(self, input):
         logits = self.state_action_encoder(input)
-        return self.step_func.apply(logits.view(-1, N**A))
+        return logits.view(-1, N**A, 2)
 
 class PredicateUnit(nn.Module):
 
@@ -92,10 +91,10 @@ class PredicateUnit(nn.Module):
     def forward(self, state, state_next, temp):
 
         args, probs = self.state_encoder(state, temp)
-        preds = torch.stack([pred_net(args, probs, temp) for pred_net in self.predicate_nets], dim=1)
+        preds = torch.stack([pred_net(args, probs) for pred_net in self.predicate_nets], dim=1)
 
         args_next, probs_next = self.state_encoder(state_next, temp)
-        preds_next = torch.stack([pred_net(args_next, probs_next, temp) for pred_net in self.predicate_nets], dim=1)
+        preds_next = torch.stack([pred_net(args_next, probs_next) for pred_net in self.predicate_nets], dim=1)
 
         return args, args_next, preds, preds_next
 
@@ -142,10 +141,14 @@ class FoSae(nn.Module):
 
         all_preds_next_by_action = torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1) + all_preds_next
 
+        all_preds = gumbel_softmax(all_preds, temp)[:,:,:,0]
+        all_preds_next = gumbel_softmax(all_preds_next, temp)[:,:,:,0]
+        all_preds_next_by_action = gumbel_softmax(all_preds_next_by_action, temp)[:,:,:,0]
+
         x_hat = self.decoder(all_preds)
         x_hat_next = self.decoder(all_preds_next)
         x_hat_next_by_action = self.decoder(all_preds_next_by_action)
 
-        return (x_hat, x_hat_next, x_hat_next_by_action), (all_args, all_args_next), (all_preds, all_preds_next, all_preds + all_preds_next_by_action)
+        return (x_hat, x_hat_next, x_hat_next_by_action), (all_args, all_args_next), (all_preds, all_preds_next, all_preds_next_by_action)
 
 

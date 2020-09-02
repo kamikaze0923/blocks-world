@@ -13,7 +13,7 @@ import sys
 TEMP_BEGIN = 5
 TEMP_MIN = 0.1
 ANNEAL_RATE = 0.03
-TRAIN_BZ = 180
+TRAIN_BZ = 2
 TEST_BZ = 720
 ALPHA = 1
 BETA = 1
@@ -34,15 +34,15 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     return BCE
 
 # Action similarity in latent space
-def action_loss_function(preds_next, preds_next_by_action, criterion=nn.L1Loss(reduction='none')):
+def action_loss_function(preds_next, preds_next_by_action, criterion=nn.BCELoss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
-    L1 = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
-    return L1 * ALPHA, torch.abs(0.5 - preds_next).mean().detach(), torch.abs(0.5 - preds_next_by_action).mean().detach()
+    bce = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
+    return bce * ALPHA, torch.abs(0.5 - preds_next).mean().detach(), torch.abs(0.5 - preds_next_by_action).mean().detach()
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
-    MSE = criterion(pred, preds_next).sum(dim=sum_dim).mean()
-    return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - MSE) * BETA
+    mse = criterion(pred, preds_next).sum(dim=sum_dim).mean()
+    return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - mse) * BETA
 
 def epoch_routine(dataloader, vae, temp, optimizer=None):
     if optimizer is not None:

@@ -42,7 +42,7 @@ def run(vae, view_loader):
         data_np = data.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[0].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         args_np = args[0].view(-1, U, A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        preds_np = preds[0].detach().cpu().numpy()
+        preds_np = preds[0].detach().cpu().numpy().reshape(-1, 9, 9, 9)
 
         print(data_np.shape, recon_batch_np.shape, args_np.shape, preds_np.shape)
         np.save("fosae/block_data/block_data.npy", data_np)
@@ -53,7 +53,7 @@ def run(vae, view_loader):
         data_np = data_next.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[1].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         args_np = args[1].view(-1, U, A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        preds_np = preds[1].detach().cpu().numpy()
+        preds_np = preds[1].detach().cpu().numpy().reshape(-1, 9, 9, 9)
 
         print(data_np.shape, recon_batch_np.shape, args_np.shape, preds_np.shape)
         np.save("fosae/block_data/block_data_next.npy", data_np)
@@ -61,7 +61,7 @@ def run(vae, view_loader):
         np.save("fosae/block_data/block_args_next.npy", args_np)
         np.save("fosae/block_data/block_preds_next.npy", preds_np)
 
-        action_np = preds[2].detach().cpu().numpy()
+        action_np = preds[2].detach().cpu().numpy().reshape(-1, 9, 9, 9)
         print(action_np.shape)
         np.save("fosae/block_data/block_action.npy", action_np)
 

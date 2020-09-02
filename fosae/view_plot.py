@@ -48,9 +48,9 @@ while True:
             axs[4,i].imshow(p, cmap='gray')
             axs[5,i].imshow(p_nt, cmap='gray')
             axs[6,i].imshow(p_a, cmap='gray')
-            print(p_a)
+            print(p_a.max(), p_a.min())
 
-            axs[7,i].imshow(np.abs(p_a - p_nt), cmap='gray')
+            axs[7,i].imshow(np.abs(p - p_nt), cmap='gray')
 
             axs[8,i].imshow(np.transpose(ars[0], (1,2,0)))
             axs[9,i].imshow(np.transpose(ars[1], (1,2,0)))
