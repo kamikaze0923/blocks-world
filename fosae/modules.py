@@ -7,7 +7,7 @@ import itertools
 N = 9
 P = 9
 A = 2
-U = 18
+U = 9
 CONV_CHANNELS = 16
 ENCODER_FC_LAYER_SIZE = 200
 DECODER_FC_LAYER_SIZE = 2000
