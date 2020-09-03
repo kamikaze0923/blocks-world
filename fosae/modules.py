@@ -43,7 +43,6 @@ class PredicateNetwork(nn.Module):
     def __init__(self):
         super(PredicateNetwork, self).__init__()
         self.predicate_encoder = BaseObjectImageEncoder(in_objects=A, out_features=2)
-        self.cartesian_prod_table = torch.cartesian_prod(torch.arange(0,N), torch.arange(0,N)).to(device)
 
     def forward(self, input, prob, temp):
         prod = prob[:, 0, :]
@@ -141,14 +140,11 @@ class FoSae(nn.Module):
         all_preds, _ = torch.stack(all_preds, dim=1).max(dim=1)
         all_preds_next, _ = torch.stack(all_preds_next, dim=1).max(dim=1)
 
-        all_preds_next_by_action = all_preds.detach() + \
+        all_preds_next_by_action = all_preds + \
                                    torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1)
-
 
         x_hat = self.decoder(all_preds)
         x_hat_next = self.decoder(all_preds_next)
         x_hat_next_by_action = self.decoder(all_preds_next_by_action)
 
         return (x_hat, x_hat_next, x_hat_next_by_action), (all_args, all_args_next), (all_preds, all_preds_next, all_preds_next_by_action)
-
-
