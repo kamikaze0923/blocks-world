@@ -11,8 +11,8 @@ import sys
 
 
 TEMP_BEGIN = 5
-TEMP_MIN = 0.1
-ANNEAL_RATE = 0.01
+TEMP_MIN = 0.7
+ANNEAL_RATE = 0.03
 TRAIN_BZ = 180
 TEST_BZ = 720
 ALPHA = 1
@@ -144,7 +144,7 @@ def run(n_epoch):
         sys.stdout.flush()
         train_loss = epoch_routine(train_loader, vae, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
-        test_loss = epoch_routine(train_loader, vae, 0)
+        test_loss = epoch_routine(train_loader, vae, TEMP_MIN)
         print('====> Epoch: {} Average test loss: {:.4f}'.format(e, test_loss))
         if test_loss < best_loss:
             print("Save Model")
