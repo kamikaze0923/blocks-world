@@ -75,12 +75,12 @@ class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A*2)
-        self.step_func = TrinaryStep()
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A)
 
     def forward(self, input):
         logits = self.state_action_encoder(input)
-        return self.step_func.apply(logits.view(-1, N**A, 2))
+        logits = logits.view(-1, N**A, 1)
+        return torch.tanh(torch.cat([logits, -logits], dim=-1))
 
 class PredicateUnit(nn.Module):
 
