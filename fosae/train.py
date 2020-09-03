@@ -8,6 +8,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
+import pickle
 
 
 TEMP_BEGIN = 5
@@ -121,6 +122,7 @@ def load_model(vae):
     print("fosae/model/{}.pth loaded".format(MODEL_NAME))
 
 def run(n_epoch):
+    meta_file = 'fosae/model/metadata.pkl'
     # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
     # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
     # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
@@ -144,11 +146,12 @@ def run(n_epoch):
         sys.stdout.flush()
         train_loss = epoch_routine(train_loader, vae, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
-        test_loss = epoch_routine(train_loader, vae, TEMP_MIN)
+        test_loss = epoch_routine(train_loader, vae, temp)
         print('====> Epoch: {} Average test loss: {:.4f}'.format(e, test_loss))
         if test_loss < best_loss:
             print("Save Model")
             torch.save(vae.state_dict(), "fosae/model/{}.pth".format(MODEL_NAME))
+            pickle.dump({'temp': temp}, open("fosae/model/metafile.pkl", "wb"))
             best_loss = test_loss
         scheculer.step()
 
