@@ -81,7 +81,7 @@ class ActionEncoder(nn.Module):
     def forward(self, input):
         logits = self.state_action_encoder(input)
         logits = logits.view(-1, N**A, 1)
-        return self.step_func.apply(torch.cat([logits, -logits], dim=-1))
+        return torch.tanh(torch.cat([logits, -logits], dim=-1))
 
 class PredicateUnit(nn.Module):
 
