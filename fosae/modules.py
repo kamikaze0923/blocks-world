@@ -76,11 +76,12 @@ class ActionEncoder(nn.Module):
     def __init__(self):
         super(ActionEncoder, self).__init__()
         self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A)
+        self.step_func = TrinaryStep()
 
     def forward(self, input):
         logits = self.state_action_encoder(input)
         logits = logits.view(-1, N**A, 1)
-        return torch.tanh(torch.cat([logits, -logits], dim=-1))
+        return self.step_func.apply(torch.cat([logits, -logits], dim=-1))
 
 class PredicateUnit(nn.Module):
 
@@ -140,7 +141,7 @@ class FoSae(nn.Module):
         all_preds, _ = torch.stack(all_preds, dim=1).max(dim=1)
         all_preds_next, _ = torch.stack(all_preds_next, dim=1).max(dim=1)
 
-        all_preds_next_by_action = torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1).detach() + all_preds_next
+        all_preds_next_by_action = torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1).detach() + all_preds
 
 
         x_hat = self.decoder(all_preds)
