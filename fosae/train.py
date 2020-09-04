@@ -12,7 +12,7 @@ import pickle
 
 
 TEMP_BEGIN = 5
-TEMP_MIN = 0.1
+TEMP_MIN = 0.7
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 180
 TEST_BZ = 720
@@ -25,6 +25,7 @@ MODEL_NAME = "FoSae"
 TRAIN_ACTION_MODEL = False
 if TRAIN_ACTION_MODEL:
     print("Training Action Model")
+    TEMP_BEGIN = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
 else:
     print("Training FOSAE")
 
