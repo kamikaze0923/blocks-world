@@ -28,6 +28,8 @@ if TRAIN_ACTION_MODEL:
 else:
     print("Training FOSAE")
 
+torch.seed(0)
+
 # Reconstruction
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     sum_dim = [i for i in range(1, x.dim())]
