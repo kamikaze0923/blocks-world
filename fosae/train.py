@@ -24,8 +24,8 @@ print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 TRAIN_ACTION_MODEL = False
 if TRAIN_ACTION_MODEL:
-    print("Training Action Model")
     TEMP_BEGIN = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
+    print("Training Action Model, temp begin {}".format(TEMP_BEGIN))
 else:
     print("Training FOSAE")
 
