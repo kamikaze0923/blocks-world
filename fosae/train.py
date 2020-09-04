@@ -89,7 +89,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
-            loss = rec_loss0 + rec_loss1 + rec_loss2 + ctrs_loss + act_loss
+            loss = rec_loss0 + rec_loss1 + ctrs_loss + act_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -115,7 +115,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         )
     )
 
-    return (recon_loss0 + recon_loss1 + recon_loss2 + action_loss + contrastive_loss) / len(dataloader)
+    return (recon_loss0 + recon_loss1 + action_loss + contrastive_loss) / len(dataloader)
 
 def load_model(vae):
     vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
