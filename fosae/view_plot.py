@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from fosae.modules import P
+import pickle
+
 
 def dis(preds, preds_next):
     for a,b in zip(preds, preds_next):
@@ -21,8 +22,6 @@ preds_next = np.load("fosae/block_data/block_preds_next.npy")
 
 action = np.load("fosae/block_data/block_action.npy")
 print(action.shape, preds.shape, preds_next.shape)
-
-
 
 fig, axs = plt.subplots(12, 9, figsize=(8, 6))
 for _, ax in np.ndenumerate(axs):

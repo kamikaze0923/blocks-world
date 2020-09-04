@@ -5,11 +5,15 @@ import numpy as np
 from torch.utils.data import DataLoader
 import torch
 from fosae.modules import IMG_H, IMG_W, IMG_C, A, N, U
-import matplotlib.pyplot as plt
+import pickle
 
 N_EXAMPLES = 2
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
+
+
+temp = args = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
+print("Temperature: {}".format(temp))
 
 def init():
     test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
@@ -37,7 +41,7 @@ def run(vae, view_loader):
         batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
         action = obj_mask[batch_idx, action_idx, :, :, :].to(device)
 
-        recon_batch, args, preds = vae((data, data_next, action), 0)
+        recon_batch, args, preds = vae((data, data_next, action), temp)
 
         data_np = data.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[0].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()

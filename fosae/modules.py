@@ -140,7 +140,7 @@ class FoSae(nn.Module):
         all_preds, _ = torch.stack(all_preds, dim=1).max(dim=1)
         all_preds_next, _ = torch.stack(all_preds_next, dim=1).max(dim=1)
 
-        all_preds_next_by_action = all_preds + \
+        all_preds_next_by_action = all_preds.detach() + \
                                    torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1)
 
         x_hat = self.decoder(all_preds)
