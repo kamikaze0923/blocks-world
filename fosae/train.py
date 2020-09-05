@@ -18,7 +18,7 @@ TRAIN_BZ = 180
 TEST_BZ = 720
 ALPHA = 1
 BETA = 1
-MARGIN = 1
+MARGIN = 9
 
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
