@@ -12,7 +12,7 @@ import pickle
 
 
 TEMP_BEGIN = 5
-TEMP_MIN = 0.2
+TEMP_MIN = 0.6
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 180
 TEST_BZ = 720
@@ -22,12 +22,13 @@ MARGIN = 1
 
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
-TRAIN_ACTION_MODEL = False
-if TRAIN_ACTION_MODEL:
+
+TRAIN_DECODER = False
+if TRAIN_DECODER:
     TEMP_BEGIN = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
-    print("Training Action Model, temp begin {}".format(TEMP_BEGIN))
+    print("Training Decoder, temp begin {}".format(TEMP_BEGIN))
 else:
-    print("Training FOSAE")
+    print("Training Action Model")
 
 
 # Reconstruction
@@ -91,7 +92,10 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
-            loss = rec_loss0 + rec_loss1 + rec_loss2 + ctrs_loss + act_loss
+            if not TRAIN_DECODER:
+                loss = ctrs_loss + act_loss
+            else:
+                loss = rec_loss0 + rec_loss1 + rec_loss2
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -117,7 +121,12 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         )
     )
 
-    return (recon_loss0 + recon_loss1 + recon_loss2 + action_loss + contrastive_loss) / len(dataloader)
+    if TRAIN_DECODER:
+        metric = (recon_loss0 + recon_loss1 + recon_loss2) / len(dataloader)
+    else:
+        metric = (action_loss + contrastive_loss) / len(dataloader)
+
+    return metric
 
 def load_model(vae):
     vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
@@ -135,11 +144,9 @@ def run(n_epoch):
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
-    if TRAIN_ACTION_MODEL:
+    if TRAIN_DECODER:
         load_model(vae)
-        optimizer = Adam(vae.action_encoders.parameters(), lr=1e-3)
-    else:
-        optimizer = Adam(vae.parameters(), lr=1e-3)
+    optimizer = Adam(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
