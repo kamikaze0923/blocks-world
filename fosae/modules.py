@@ -2,7 +2,6 @@ import torch
 from torch import nn
 from fosae.gumble import gumbel_softmax, device
 from fosae.activations import TrinaryStep
-import itertools
 
 N = 9
 P = 9
@@ -12,6 +11,7 @@ CONV_CHANNELS = 16
 ENCODER_FC_LAYER_SIZE = 200
 DECODER_FC_LAYER_SIZE = 2000
 PRED_BITS = 1
+assert PRED_BITS == 1 or PRED_BITS == 2
 
 IMG_H = 64
 IMG_W = 96
