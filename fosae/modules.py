@@ -11,6 +11,7 @@ U = 9
 CONV_CHANNELS = 16
 ENCODER_FC_LAYER_SIZE = 200
 DECODER_FC_LAYER_SIZE = 2000
+PRED_BITS = 1
 
 IMG_H = 64
 IMG_W = 96
@@ -42,15 +43,15 @@ class PredicateNetwork(nn.Module):
 
     def __init__(self):
         super(PredicateNetwork, self).__init__()
-        self.predicate_encoder = BaseObjectImageEncoder(in_objects=A, out_features=2)
+        self.predicate_encoder = BaseObjectImageEncoder(in_objects=A, out_features=PRED_BITS)
 
     def forward(self, input, prob, temp):
         prod = prob[:, 0, :]
         for i in range(1, A):
             prod = prod.unsqueeze(-1)
             prod = torch.bmm(prod, prob[:, i, :].unsqueeze(1)).flatten(start_dim=1)
-        logits = self.predicate_encoder(input).view(-1, 2).unsqueeze(1).expand(-1, N**A, -1)
-        return gumbel_softmax(torch.mul(logits, prod.unsqueeze(-1).expand(-1, -1, 2)), temp)
+        logits = self.predicate_encoder(input).expand(-1, N**A, -1)
+        return gumbel_softmax(torch.mul(logits, prod.unsqueeze(-1).expand(-1, -1, PRED_BITS)), temp)
 
 
 
@@ -80,7 +81,7 @@ class ActionEncoder(nn.Module):
     def forward(self, input):
         logits = self.state_action_encoder(input)
         logits = logits.view(-1, N**A, 1)
-        return self.step_func.apply(torch.cat([logits, -logits], dim=-1))
+        return self.step_func.apply(logits)
 
 class PredicateUnit(nn.Module):
 
@@ -103,12 +104,12 @@ class PredicateDecoder(nn.Module):
 
     def __init__(self):
         super(PredicateDecoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=P*N**A*2, out_features=DECODER_FC_LAYER_SIZE)
+        self.fc1 = nn.Linear(in_features=P*N**A, out_features=DECODER_FC_LAYER_SIZE)
         self.bn1 = nn.BatchNorm1d(1)
         self.fc2 = nn.Linear(in_features=DECODER_FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
 
     def forward(self, input):
-        h1 = self.bn1(torch.relu(self.fc1(input.view(-1, 1, P*N**A*2))))
+        h1 = self.bn1(torch.relu(self.fc1(input.view(-1, 1, P*N**A))))
         return torch.sigmoid(self.fc2(h1)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
 class FoSae(nn.Module):
@@ -137,11 +138,13 @@ class FoSae(nn.Module):
 
         all_args = torch.stack(all_args, dim=1)
         all_args_next = torch.stack(all_args_next, dim=1)
-        all_preds, _ = torch.stack(all_preds, dim=1).max(dim=1)
-        all_preds_next, _ = torch.stack(all_preds_next, dim=1).max(dim=1)
+        all_preds, _ = torch.stack(all_preds, dim=1)[:,:,:,:,[0]].max(dim=1)
+        all_preds_next, _ = torch.stack(all_preds_next, dim=1)[:,:,:,:,[0]].max(dim=1)
 
-        all_preds_next_by_action = all_preds.detach() + \
-                                   torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1)
+        all_actions = torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1)
+
+        all_preds_next_by_action = all_preds.detach() + all_actions
+
 
         x_hat = self.decoder(all_preds)
         x_hat_next = self.decoder(all_preds_next)

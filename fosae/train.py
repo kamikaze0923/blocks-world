@@ -11,10 +11,10 @@ import sys
 import pickle
 
 
-TEMP_BEGIN = 0.7
-TEMP_MIN = 0.3
+TEMP_BEGIN = 5
+TEMP_MIN = 0.2
 ANNEAL_RATE = 0.03
-TRAIN_BZ = 180
+TRAIN_BZ = 1
 TEST_BZ = 720
 ALPHA = 1
 BETA = 1
@@ -22,7 +22,7 @@ MARGIN = 1
 
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
-TRAIN_ACTION_MODEL = True
+TRAIN_ACTION_MODEL = False
 if TRAIN_ACTION_MODEL:
     TEMP_BEGIN = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
     print("Training Action Model, temp begin {}".format(TEMP_BEGIN))
@@ -91,7 +91,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
-            loss = rec_loss0 + rec_loss1 + ctrs_loss + act_loss
+            loss = rec_loss0 + rec_loss1 + rec_loss2 + ctrs_loss + act_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -117,7 +117,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         )
     )
 
-    return (recon_loss0 + recon_loss1 + action_loss + contrastive_loss) / len(dataloader)
+    return (recon_loss0 + recon_loss1 + recon_loss2 + action_loss + contrastive_loss) / len(dataloader)
 
 def load_model(vae):
     vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
