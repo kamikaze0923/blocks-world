@@ -93,7 +93,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
             if not TRAIN_DECODER:
-                loss = ctrs_loss + act_loss + rec_loss0 + rec_loss1 + rec_loss2
+                loss = ctrs_loss + act_loss
             else:
                 loss = rec_loss0 + rec_loss1 + rec_loss2
             optimizer.zero_grad()
@@ -124,7 +124,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     if TRAIN_DECODER:
         metric = (recon_loss0 + recon_loss1 + recon_loss2) / len(dataloader)
     else:
-        metric = (recon_loss0 + recon_loss1 + recon_loss2 + action_loss + contrastive_loss) / len(dataloader)
+        metric = (action_loss + contrastive_loss) / len(dataloader)
 
     return metric
 
