@@ -93,7 +93,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
             if not TRAIN_DECODER:
-                loss = ctrs_loss + act_loss
+                loss = ctrs_loss + act_loss + rec_loss0 + rec_loss1 + rec_loss2
             else:
                 loss = rec_loss0 + rec_loss1 + rec_loss2
             optimizer.zero_grad()
