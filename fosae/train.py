@@ -124,7 +124,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     if TRAIN_DECODER:
         metric = (recon_loss0 + recon_loss1 + recon_loss2) / len(dataloader)
     else:
-        metric = (action_loss + contrastive_loss) / len(dataloader)
+        metric = (recon_loss0 + recon_loss1 + recon_loss2 + action_loss + contrastive_loss) / len(dataloader)
 
     return metric
 
