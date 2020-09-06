@@ -16,7 +16,7 @@ TEMP_MIN = 0.6
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 180
 TEST_BZ = 720
-ALPHA = 1
+ALPHA = 10
 BETA = 1
 MARGIN = 9
 
@@ -40,7 +40,7 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
 # Action similarity in latent space
 def action_loss_function(preds_next, preds_next_by_action, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
-    mse = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
+    mse = criterion(preds_next_by_action, preds_next).sum(dim=sum_dim).mean()
     return mse * ALPHA, torch.abs(0.5 - preds_next).sum(dim=-1).mean().detach(), torch.abs(0.5 - preds_next_by_action).sum(dim=-1).mean().detach()
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
