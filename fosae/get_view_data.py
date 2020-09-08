@@ -16,7 +16,7 @@ temp = args = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
 print("Temperature: {}".format(temp))
 
 def init():
-    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
+    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_all.h5", n_obj=9)
     print("View examples {}".format(len(test_set)))
 
     view_loader = DataLoader(test_set, batch_size=N_EXAMPLES, shuffle=True)

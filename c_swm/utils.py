@@ -139,7 +139,7 @@ def get_masked_obj(obs, idx, idx_matirx):
 class StateTransitionsDataset(data.Dataset):
     """Create dataset of (o_t, a_t, o_{t+1}) transitions from replay buffer."""
 
-    def __init__(self, hdf5_file, n_obj, truncate=float('inf')):
+    def __init__(self, hdf5_file, n_obj, remove_bg=True, truncate=float('inf')):
         """
         Args:
             hdf5_file (string): Path to the hdf5 file that contains experience
@@ -149,7 +149,11 @@ class StateTransitionsDataset(data.Dataset):
 
         # Build table for conversion between linear idx -> episode/step idx
         self.idx2episode = list()
+        self.remove_bg = remove_bg
         step = 0
+
+        if not remove_bg:
+            n_obj += 1
 
         for ep in range(len(self.experience_buffer)):
             num_steps = len(self.experience_buffer[ep]['action_one_hot'])
@@ -168,17 +172,18 @@ class StateTransitionsDataset(data.Dataset):
 
             # plt.gca()
             # plt.imshow(np.transpose(self.experience_buffer[ep]['obs'][0], (1,2,0)))
-            # plt.pause(1)
+            # plt.pause(0.1)
             # plt.imshow(np.transpose(self.experience_buffer[ep]['next_obs'][0], (1,2,0)))
-            # plt.pause(1)
+            # plt.pause(0.1)
 
+            # 0's channel is the background, skip it if remove_bg
             for i in range(n_obj):
-                obj_mask_sep[i] = get_masked_obj(obs, i, obj_mask_idx)
-                next_obj_mask_sep[i] = get_masked_obj(next_obs, i, next_obj_mask_idx)
+                obj_mask_sep[i] = get_masked_obj(obs, i+(1 if remove_bg else 0), obj_mask_idx)
+                next_obj_mask_sep[i] = get_masked_obj(next_obs, i+(1 if remove_bg else 0), next_obj_mask_idx)
             #     plt.imshow(np.transpose(obj_mask_sep[i], (1,2,0)))
-            #     plt.pause(1)
+            #     plt.pause(0.1)
             #     plt.imshow(np.transpose(next_obj_mask_sep[i], (1,2,0)))
-            #     plt.pause(1)
+            #     plt.pause(0.1)
             # exit(0)
 
             self.experience_buffer[ep]['obj_mask_sep'] = obj_mask_sep
@@ -200,8 +205,8 @@ class StateTransitionsDataset(data.Dataset):
         obj_mask = self.experience_buffer[ep]['obj_mask_sep']
         next_obj_mask = self.experience_buffer[ep]['next_obj_mask_sep']
 
-        action_mov_obj_index = self.experience_buffer[ep]['action_mov_obj_index']
-        action_tar_obj_index = self.experience_buffer[ep]['action_tar_obj_index']
+        action_mov_obj_index = self.experience_buffer[ep]['action_mov_obj_index'] - (1 if self.remove_bg else 0)
+        action_tar_obj_index = self.experience_buffer[ep]['action_tar_obj_index'] - (1 if self.remove_bg else 0)
 
         return obs, next_obs, action_one_hot, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index
 
@@ -239,10 +244,9 @@ class PathDataset(data.Dataset):
         return observations, actions
 
 
-
 if __name__ == "__main__":
-
-    dataset = StateTransitionsDataset(hdf5_file="data/blocks_eval.h5", n_obj=9, truncate=50)
+    from fosae.modules import OBJS, STACKS, REMOVE_BG
+    dataset = StateTransitionsDataset(hdf5_file="data/blocks-{}-{}-det_eval.h5".format(OBJS, STACKS), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG, truncate=50)
     eval_loader = data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4)
 
     for batch_idx, data_batch in enumerate(eval_loader):

@@ -56,7 +56,7 @@ parser.add_argument('--log-interval', type=int, default=20,
                          'training status.')
 
 parser.add_argument('--train-dataset', type=str,
-                    default='data/blocks_train.h5',
+                    default='data/blocks-4-4-det_train.h5',
                     help='Path to replay buffer.')
 parser.add_argument('--eval-dataset', type=str,
                     default='data/shapes_eval.h5',

@@ -1,5 +1,5 @@
 from c_swm.utils import StateTransitionsDataset
-from fosae.modules import FoSae
+from fosae.modules import FoSae, OBJS, STACKS, REMOVE_BG
 from fosae.gumble import device
 import torch
 import torch.nn as nn
@@ -14,14 +14,17 @@ import pickle
 TEMP_BEGIN = 5
 TEMP_MIN = 0.6
 ANNEAL_RATE = 0.03
-TRAIN_BZ = 180
-TEST_BZ = 720
-ALPHA = 10
+TRAIN_BZ = 12
+TEST_BZ = 12
+ALPHA = 1
 BETA = 1
 MARGIN = 9
 
+
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
+
+PREFIX = "blocks-{}-{}-det".format(OBJS, STACKS)
 
 TRAIN_DECODER = False
 if TRAIN_DECODER:
@@ -29,7 +32,6 @@ if TRAIN_DECODER:
     print("Training Decoder, temp begin {}".format(TEMP_BEGIN))
 else:
     print("Training Action Model")
-
 
 # Reconstruction
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
@@ -134,10 +136,10 @@ def load_model(vae):
 
 def run(n_epoch):
     meta_file = 'fosae/model/metadata.pkl'
-    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_train.h5", n_obj=9)
-    # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_eval.h5", n_obj=9)
+    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_train.h5", n_obj=9)
+    # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_eval.h5", n_obj=9)
     # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
-    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks_all.h5", n_obj=9)
+    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
     print("Training Examples: {}".format(len(train_set)))
     assert len(train_set) % TRAIN_BZ == 0
     # assert len(test_set) % TEST_BZ == 0

@@ -1,5 +1,5 @@
 import os
-from get_block_data.block import Block, prefix, extract_predicate, objs
+from get_block_data.block import Block, prefix, extract_predicate, stacks, objs
 import matplotlib.pyplot as plt
 import numpy as np
 from c_swm.utils import save_list_dict_h5py
@@ -7,8 +7,8 @@ from c_swm.utils import save_list_dict_h5py
 
 NUM_EPISODE = 100
 EPISODE_LENGTH = 10
-N_TRAIN = 5000
-N_EVAL = 760
+N_TRAIN = 10
+N_EVAL = 2
 
 np.random.seed(0)
 np.set_printoptions(threshold=np.inf, linewidth=np.inf)
@@ -44,7 +44,7 @@ def gen_episode(num_episode, episode_length):
     mask_tr_files = os.listdir(os.path.join(prefix, "mask_image_tr"))
     mask_tr_files.sort()
 
-    ACTIONS = [(i, j) for i in range(objs) for j in range(objs) if j != i]  # (SOURCE, TARGET)
+    ACTIONS = [(i, j) for i in range(stacks) for j in range(stacks) if j != i]  # (SOURCE, TARGET)
 
     replay_buffer_train = []
     replay_buffer_eval = []
@@ -106,7 +106,7 @@ def gen_episode(num_episode, episode_length):
             next_objs_index_matrix[suc_obj_index[0], suc_obj_index[1]] = suc_pad.id
 
         for m in [pre_objs_index_matrix, next_objs_index_matrix]:
-            assert np.unique(m).shape[0] == 9
+            assert np.unique(m).shape[0] == objs + 1 + 4
 
         assert action is not None
         assert target_obj is not None
@@ -127,8 +127,8 @@ def gen_episode(num_episode, episode_length):
 
         obs_colors = np.unique(np.resize(mask, (-1, mask.shape[-1])), axis=0)
         next_obs_colors = np.unique(np.resize(next_mask, (-1, next_mask.shape[-1])), axis=0)
-        assert obs_colors.shape[0] == 9
-        assert next_obs_colors.shape[0] == 9
+        assert obs_colors.shape[0] == objs + 1 + 4
+        assert next_obs_colors.shape[0] == objs + 1 + 4
 
         # action_mov_obs = set_image_action(obs, moving_obj.color)
         # action_tar_obs = set_image_action(obs, target_obj.color)
@@ -175,9 +175,9 @@ def gen_episode(num_episode, episode_length):
 
         replay_buffer.append(replay)
 
-    save_list_dict_h5py(replay_buffer_train, "{}/{}/{}".format("c_swm", "data", "blocks_train.h5"))
-    save_list_dict_h5py(replay_buffer_eval, "{}/{}/{}".format("c_swm", "data", "blocks_eval.h5"))
-    save_list_dict_h5py(replay_buffer_eval + replay_buffer_train, "{}/{}/{}".format("c_swm", "data", "blocks_all.h5"))
+    save_list_dict_h5py(replay_buffer_train, "{}/{}/{}".format("c_swm", "data", "{}_train.h5".format(prefix)))
+    save_list_dict_h5py(replay_buffer_eval, "{}/{}/{}".format("c_swm", "data", "{}_eval.h5".format(prefix)))
+    save_list_dict_h5py(replay_buffer_eval + replay_buffer_train, "{}/{}/{}".format("c_swm", "data", "{}_all.h5".format(prefix)))
 
 
 if __name__ == "__main__":

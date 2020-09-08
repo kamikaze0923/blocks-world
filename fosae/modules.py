@@ -3,10 +3,14 @@ from torch import nn
 from fosae.gumble import gumbel_softmax, device
 from fosae.activations import TrinaryStep
 
-N = 9
-P = 9
+OBJS = 1
+STACKS = 4
+REMOVE_BG = False
+
+N = OBJS + STACKS + (0 if REMOVE_BG else 1)
+P = 1
 A = 2
-U = 9
+U = 4
 CONV_CHANNELS = 16
 ENCODER_FC_LAYER_SIZE = 200
 DECODER_FC_LAYER_SIZE = 2000
@@ -52,8 +56,6 @@ class PredicateNetwork(nn.Module):
             prod = torch.bmm(prod, prob[:, i, :].unsqueeze(1)).flatten(start_dim=1)
         logits = self.predicate_encoder(input).expand(-1, N**A, -1)
         return gumbel_softmax(torch.mul(logits, prod.unsqueeze(-1).expand(-1, -1, PRED_BITS)), temp)
-
-
 
 class StateEncoder(nn.Module):
 
@@ -143,10 +145,10 @@ class FoSae(nn.Module):
 
         all_actions = torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1)
 
-        all_preds_next_by_action = all_preds + all_actions
+        all_preds_next_by_action = all_preds.detach() + all_actions
 
-        x_hat = self.decoder(all_preds.detach())
-        x_hat_next = self.decoder(all_preds_next.detach())
-        x_hat_next_by_action = self.decoder(all_preds_next_by_action.detach())
+        x_hat = self.decoder(all_preds)
+        x_hat_next = self.decoder(all_preds_next)
+        x_hat_next_by_action = self.decoder(all_preds_next_by_action)
 
         return (x_hat, x_hat_next, x_hat_next_by_action), (all_args, all_args_next), (all_preds, all_preds_next, all_preds_next_by_action)

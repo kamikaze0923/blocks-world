@@ -250,7 +250,7 @@ def main(args):
   scene_cnt = 0
   for objects, stacks in enumerate_stack(objects, stack_x):
     scene_cnt += 1
-    assert len(objects) == 4
+    # assert len(objects) == 4
     # for o in objects:
     #     print(o)
     # print("-"*20)
