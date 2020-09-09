@@ -17,18 +17,18 @@ def gumbel_softmax_sample(logits, temperature):
         if temperature == 0: # make it to sigmoid if it is a bit choice
             ret = (logits > 0.5).float()
         else:
-            noise1 = sample_gumbel(logits.size())
-            noise2 = sample_gumbel(logits.size())
-            y = (logits + noise1) / (1 + noise2)
-            ret = torch.sigmoid(y / temperature)
+            # noise1 = sample_gumbel(logits.size())
+            # noise2 = sample_gumbel(logits.size())
+            # logits = (logits + noise1) / (1 + noise2)
+            ret = torch.sigmoid(logits / temperature)
     else:
         if temperature == 0: # not differentiable in test case, but it is ok
             _, ind = torch.max(logits, dim=-1)
             ret = torch.zeros(size=logits.size()).to(device).scatter(dim=-1, index=ind.unsqueeze(-1), value=1)
         else:
-            noise = sample_gumbel(logits.size())
-            y = logits + noise
-            ret = torch.softmax(y / temperature, dim=-1)
+            # noise = sample_gumbel(logits.size())
+            # logits = logits + noise
+            ret = torch.softmax(logits / temperature, dim=-1)
     return ret
 
 def gumbel_softmax(q_y, temperature, hard=False):
