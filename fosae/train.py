@@ -12,7 +12,7 @@ import pickle
 
 
 TEMP_BEGIN = 5
-TEMP_MIN = 0.3
+TEMP_MIN = 0.1
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 12
 TEST_BZ = 12
