@@ -25,8 +25,8 @@ MODEL_NAME = "FoSae"
 
 PREFIX = "blocks-{}-{}-det".format(OBJS, STACKS)
 
-TRAIN_DECODER = True
-if TRAIN_DECODER:
+TRAIN_ACTION_MODEL = True
+if TRAIN_ACTION_MODEL:
     TEMP_BEGIN = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
     print("Training Decoder, temp begin {}".format(TEMP_BEGIN))
 else:
@@ -93,10 +93,10 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
-            if not TRAIN_DECODER:
+            if not TRAIN_ACTION_MODEL:
                 loss = ctrs_loss + act_loss + rec_loss0 + rec_loss1 + rec_loss2
             else:
-                loss = rec_loss0 + rec_loss1 + rec_loss2
+                loss = action_loss + contrastive_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -122,8 +122,8 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         )
     )
 
-    if TRAIN_DECODER:
-        metric = (recon_loss0 + recon_loss1 + recon_loss2) / len(dataloader)
+    if TRAIN_ACTION_MODEL:
+        metric = (action_loss + contrastive_loss) / len(dataloader)
     else:
         metric = (action_loss + contrastive_loss +  recon_loss0 + recon_loss1 + recon_loss2) / len(dataloader)
 
@@ -145,7 +145,7 @@ def run(n_epoch):
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
-    if TRAIN_DECODER:
+    if TRAIN_ACTION_MODEL:
         load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
