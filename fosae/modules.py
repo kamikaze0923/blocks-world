@@ -100,7 +100,7 @@ class PredicateUnit(nn.Module):
         args_next, probs_next = self.state_encoder(state_next, temp)
         preds_next = torch.stack([pred_net(args_next, probs_next, temp) for pred_net in self.predicate_nets], dim=1)
 
-        return args, args_next, preds, preds_next
+        return args, args_next, preds, preds_next, probs, probs_next
 
 class PredicateDecoder(nn.Module):
 
@@ -130,18 +130,24 @@ class FoSae(nn.Module):
         all_args_next = []
         all_preds = []
         all_preds_next = []
+        all_probs = []
+        all_probs_next = []
 
         for pu in self.predicate_units:
-            args, args_next, preds, preds_next = pu(state, state_next, temp)
+            args, args_next, preds, preds_next, probs, probs_next = pu(state, state_next, temp)
             all_args.append(args)
             all_args_next.append(args_next)
             all_preds.append(preds)
             all_preds_next.append(preds_next)
+            all_probs.append(probs)
+            all_probs_next.append(probs_next)
 
         all_args = torch.stack(all_args, dim=1)
         all_args_next = torch.stack(all_args_next, dim=1)
         all_preds, _ = torch.stack(all_preds, dim=1)[:,:,:,:,[0]].max(dim=1)
         all_preds_next, _ = torch.stack(all_preds_next, dim=1)[:,:,:,:,[0]].max(dim=1)
+        all_probs = torch.stack(all_probs, dim=1)
+        all_probs_next = torch.stack(all_probs_next, dim=1)
 
         all_actions = torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1)
 
@@ -151,4 +157,4 @@ class FoSae(nn.Module):
         x_hat_next = self.decoder(all_preds_next)
         x_hat_next_by_action = self.decoder(all_preds_next_by_action)
 
-        return (x_hat, x_hat_next, x_hat_next_by_action), (all_args, all_args_next), (all_preds, all_preds_next, all_preds_next_by_action)
+        return (x_hat, x_hat_next, x_hat_next_by_action), (all_args, all_args_next), (all_preds, all_preds_next, all_preds_next_by_action), (all_probs, all_probs_next)

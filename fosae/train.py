@@ -44,6 +44,10 @@ def action_loss_function(preds_next, preds_next_by_action, criterion=nn.MSELoss(
     mse = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
     return mse * ALPHA, torch.abs(0.5 - preds_next).sum(dim=-1).mean().detach(), torch.abs(0.5 - preds_next_by_action).sum(dim=-1).mean().detach()
 
+def probs_metric(probs, probs_next):
+    return torch.abs(0.5 - probs).mean().detach(), torch.abs(0.5 - probs_next).mean().detach()
+
+
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
     mse = criterion(pred, preds_next).sum(dim=sum_dim).mean()
@@ -61,6 +65,8 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     contrastive_loss = 0
     metric_pred = 0
     metric_pred_next = 0
+    metric_prob = 0
+    metric_prob_next = 0
 
 
     for i, data in enumerate(dataloader):
@@ -79,18 +85,20 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
 
         if optimizer is None:
             with torch.no_grad():
-                recon_batch, _ , preds = vae((data+noise1, data_next+noise2, action+noise3), temp)
+                recon_batch, _ , preds, probs = vae((data+noise1, data_next+noise2, action+noise3), temp)
                 rec_loss0 = rec_loss_function(recon_batch[0], data)
                 rec_loss1 = rec_loss_function(recon_batch[1], data_next)
                 rec_loss2 = rec_loss_function(recon_batch[2], data_next)
                 act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
+                m3, m4 = probs_metric(probs[0], probs[1])
                 ctrs_loss = contrastive_loss_function(preds[0], preds[1])
         else:
-            recon_batch, _, preds = vae((data + noise1, data_next + noise2, action + noise3), temp)
+            recon_batch, _, preds, probs = vae((data + noise1, data_next + noise2, action + noise3), temp)
             rec_loss0 = rec_loss_function(recon_batch[0], data)
             rec_loss1 = rec_loss_function(recon_batch[1], data_next)
             rec_loss2 = rec_loss_function(recon_batch[2], data_next)
             act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
+            m3, m4 = probs_metric(probs[0], probs[1])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
             if not TRAIN_ACTION_MODEL:
@@ -107,11 +115,13 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         recon_loss2 += rec_loss2.item()
         action_loss += act_loss.item()
         contrastive_loss += ctrs_loss.item()
-        metric_pred += m0
-        metric_pred_next += m1
+        metric_pred += m0.item()
+        metric_pred_next += m1.item()
+        metric_prob += m3.item()
+        metric_prob_next += m4.item()
 
 
-    print("{:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
+    print("{:.2f}, {:.2f}, {:.2f}, | {:.2f}, {:.2f}, | {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
         (
             recon_loss0 / len(dataloader),
             recon_loss1 / len(dataloader),
@@ -119,7 +129,9 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             action_loss / len(dataloader),
             contrastive_loss / len(dataloader),
             metric_pred / len(dataloader),
-            metric_pred_next / len(dataloader)
+            metric_pred_next / len(dataloader),
+            metric_prob / len(dataloader),
+            metric_prob_next / len(dataloader)
         )
     )
 
