@@ -25,7 +25,7 @@ MODEL_NAME = "FoSae"
 
 PREFIX = "blocks-{}-{}-det".format(OBJS, STACKS)
 
-TRAIN_ACTION_MODEL = True
+TRAIN_ACTION_MODEL = False
 if TRAIN_ACTION_MODEL:
     TEMP_BEGIN = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
     print("Training Action Model, temp begin {}".format(TEMP_BEGIN))
