@@ -30,7 +30,7 @@ if TRAIN_ACTION_MODEL:
     TEMP_BEGIN = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
     print("Training Action Model, temp begin {}".format(TEMP_BEGIN))
 else:
-    print("Training EVERYTHING")
+    print("Training Encoder and Decoder")
 
 # Reconstruction
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
@@ -41,7 +41,7 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
 # Action similarity in latent space
 def action_loss_function(preds_next, preds_next_by_action, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
-    mse = criterion(preds_next_by_action, preds_next).sum(dim=sum_dim).mean()
+    mse = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
     return mse * ALPHA, torch.abs(0.5 - preds_next).sum(dim=-1).mean().detach(), torch.abs(0.5 - preds_next_by_action).sum(dim=-1).mean().detach()
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
@@ -94,9 +94,9 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
             if not TRAIN_ACTION_MODEL:
-                loss = ctrs_loss + act_loss + rec_loss0 + rec_loss1 + rec_loss2
+                loss = rec_loss0 + rec_loss1
             else:
-                loss = ctrs_loss + act_loss
+                loss = act_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -123,9 +123,9 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     )
 
     if TRAIN_ACTION_MODEL:
-        metric = (action_loss + contrastive_loss) / len(dataloader)
+        metric = (action_loss) / len(dataloader)
     else:
-        metric = (action_loss + contrastive_loss +  recon_loss0 + recon_loss1 + recon_loss2) / len(dataloader)
+        metric = (recon_loss0 + recon_loss1) / len(dataloader)
 
     return metric
 
