@@ -134,7 +134,7 @@ def load_model(vae):
     vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
     print("fosae/model/{}.pth loaded".format(MODEL_NAME))
 
-def run(n_epoch):
+def run(n_epoch, test_only=False):
     meta_file = 'fosae/model/metadata.pkl'
     # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_train.h5", n_obj=9)
     # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_eval.h5", n_obj=9)
@@ -146,7 +146,7 @@ def run(n_epoch):
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = eval(MODEL_NAME)().to(device)
-    if TRAIN_ACTION_MODEL:
+    if TRAIN_ACTION_MODEL or test_only:
         load_model(vae)
     optimizer = Adam(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
@@ -155,6 +155,10 @@ def run(n_epoch):
         temp = np.maximum(TEMP_BEGIN * np.exp(-ANNEAL_RATE * e), TEMP_MIN)
         print("Epoch: {}, Temperature: {}, Lr: {}".format(e, temp, scheculer.get_last_lr()))
         sys.stdout.flush()
+        if test_only:
+            test_loss = epoch_routine(train_loader, vae, temp)
+            print('====> Epoch: {} Average test loss: {:.4f}'.format(e, test_loss))
+            exit(0)
         train_loss = epoch_routine(train_loader, vae, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
         test_loss = epoch_routine(train_loader, vae, temp)
@@ -169,7 +173,7 @@ def run(n_epoch):
 
 
 if __name__ == "__main__":
-    run(5000)
+    run(5000, test_only=False)
 
 
 
