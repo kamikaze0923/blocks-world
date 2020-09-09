@@ -9,7 +9,7 @@ import pickle
 from fosae.modules import OBJS, STACKS, REMOVE_BG
 
 N_OBJ = OBJS + STACKS + (0 if REMOVE_BG else 1)
-N_EXAMPLES = 12
+N_EXAMPLES = 96
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 
@@ -19,7 +19,7 @@ print("Temperature: {}".format(temp))
 
 def init():
 
-    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG, truncate=50)
+    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
     print("View examples {}".format(len(test_set)))
 
     view_loader = DataLoader(test_set, batch_size=N_EXAMPLES, shuffle=True)

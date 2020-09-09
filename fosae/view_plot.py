@@ -23,7 +23,7 @@ preds_next = np.load("fosae/block_data/block_preds_next.npy")
 
 action = np.load("fosae/block_data/block_action.npy")
 
-fig, axs = plt.subplots(8, N, figsize=(8, 6))
+fig, axs = plt.subplots(10, N, figsize=(8, 6))
 for _, ax in np.ndenumerate(axs):
     ax.set_xticks([])
     ax.set_yticks([])
@@ -31,11 +31,6 @@ plt.gca()
 
 def show_img(ax, arr):
     ax.imshow(np.transpose(arr, (1,2,0)))
-
-
-for i in [5,7]:
-    axs[i, 4].axis('off')
-
 
 
 while True:
@@ -55,14 +50,13 @@ while True:
             show_img(axs[6,i], ar_nt[0])
             show_img(axs[7,i], ar_nt[1])
 
+        for i, (p, p_nt) in enumerate(zip(one_p, one_p_nt)):
+            axs[8,i].imshow(p, cmap='gray')
+            axs[9,i].imshow(p_nt, cmap='gray')
 
 
-        axs[4,4].imshow(one_p[0], cmap='gray')
-        print(one_p[0])
-        axs[6,4].imshow(one_p_nt[0], cmap='gray')
-        print(one_p_nt[0])
         plt.pause(0.2)
-        a = 1
+        # a = 1
 
 
 
