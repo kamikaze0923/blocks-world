@@ -55,7 +55,7 @@ class PredicateNetwork(nn.Module):
             prod = prod.unsqueeze(-1)
             prod = torch.bmm(prod, prob[:, i, :].unsqueeze(1)).flatten(start_dim=1)
         logits = self.predicate_encoder(input).expand(-1, N**A, -1)
-        return gumbel_softmax(torch.mul(logits, prod.unsqueeze(-1).expand(-1, -1, PRED_BITS)), temp)
+        return torch.mul(gumbel_softmax(logits, temp), prod.unsqueeze(-1).expand(-1, -1, PRED_BITS))
 
 class StateEncoder(nn.Module):
 
