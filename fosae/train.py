@@ -161,7 +161,7 @@ def run(n_epoch, test_only=False):
             exit(0)
         train_loss = epoch_routine(train_loader, vae, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
-        test_loss = epoch_routine(train_loader, vae, 0)
+        test_loss = epoch_routine(train_loader, vae, TEMP_MIN)
         print('====> Epoch: {} Average test loss: {:.4f}'.format(e, test_loss))
         if test_loss < best_loss:
             print("Save Model")
@@ -173,7 +173,7 @@ def run(n_epoch, test_only=False):
 
 
 if __name__ == "__main__":
-    run(50000, test_only=False)
+    run(2000, test_only=False)
 
 
 
