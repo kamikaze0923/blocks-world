@@ -44,7 +44,7 @@ def run(vae, view_loader):
         batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
         action = obj_mask[batch_idx, action_idx, :, :, :].to(device)
 
-        recon_batch, args, preds = vae((data, data_next, action), temp)
+        recon_batch, args, preds = vae((data, data_next, action), 0)
 
         data_np = data.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[0].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
