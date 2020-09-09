@@ -11,9 +11,9 @@ import sys
 import pickle
 
 
-TEMP_BEGIN = 5
+TEMP_BEGIN = 20
 TEMP_MIN = 0.7
-ANNEAL_RATE = 0.003
+ANNEAL_RATE = 0.0001
 TRAIN_BZ = 12
 TEST_BZ = 12
 ALPHA = 1
@@ -173,7 +173,7 @@ def run(n_epoch, test_only=False):
 
 
 if __name__ == "__main__":
-    run(1000, test_only=False)
+    run(2000, test_only=False)
 
 
 
