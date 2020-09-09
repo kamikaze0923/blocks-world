@@ -28,9 +28,9 @@ PREFIX = "blocks-{}-{}-det".format(OBJS, STACKS)
 TRAIN_ACTION_MODEL = True
 if TRAIN_ACTION_MODEL:
     TEMP_BEGIN = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
-    print("Training Decoder, temp begin {}".format(TEMP_BEGIN))
+    print("Training Action Model, temp begin {}".format(TEMP_BEGIN))
 else:
-    print("Training Action Model")
+    print("Training EVERYTHING")
 
 # Reconstruction
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
