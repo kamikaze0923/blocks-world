@@ -58,7 +58,9 @@ while True:
 
 
         axs[4,4].imshow(one_p[0], cmap='gray')
+        print(one_p[0])
         axs[6,4].imshow(one_p_nt[0], cmap='gray')
+        print(one_p_nt[0])
         plt.pause(0.2)
         a = 1
 
