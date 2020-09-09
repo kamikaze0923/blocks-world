@@ -173,7 +173,7 @@ def run(n_epoch, test_only=False):
 
 
 if __name__ == "__main__":
-    run(5000, test_only=False)
+    run(50000, test_only=False)
 
 
 
