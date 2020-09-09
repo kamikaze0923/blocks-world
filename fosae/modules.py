@@ -47,14 +47,14 @@ class PredicateNetwork(nn.Module):
 
     def __init__(self):
         super(PredicateNetwork, self).__init__()
-        self.predicate_encoder = BaseObjectImageEncoder(in_objects=A, out_features=N**A*PRED_BITS)
+        self.predicate_encoder = BaseObjectImageEncoder(in_objects=A, out_features=PRED_BITS)
 
     def forward(self, input, prob, temp):
         prod = prob[:, 0, :]
         for i in range(1, A):
             prod = prod.unsqueeze(-1)
             prod = torch.bmm(prod, prob[:, i, :].unsqueeze(1)).flatten(start_dim=1)
-        logits = self.predicate_encoder(input).view(-1, N**A, PRED_BITS)
+        logits = self.predicate_encoder(input).expand(-1, N**A, -1)
         return torch.mul(gumbel_softmax(logits, temp), prod.unsqueeze(-1).expand(-1, -1, PRED_BITS))
 
 class StateEncoder(nn.Module):
