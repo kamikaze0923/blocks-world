@@ -96,7 +96,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             if not TRAIN_ACTION_MODEL:
                 loss = ctrs_loss + act_loss + rec_loss0 + rec_loss1 + rec_loss2
             else:
-                loss = action_loss + contrastive_loss
+                loss = ctrs_loss + act_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
