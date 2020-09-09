@@ -47,7 +47,7 @@ class PredicateNetwork(nn.Module):
 
     def __init__(self):
         super(PredicateNetwork, self).__init__()
-        self.predicate_encoder = BaseObjectImageEncoder(in_objects=N, out_features=N**A*PRED_BITS)
+        self.predicate_encoder = BaseObjectImageEncoder(in_objects=A, out_features=N**A*PRED_BITS)
 
     def forward(self, input, prob, temp):
         prod = prob[:, 0, :]
@@ -95,10 +95,10 @@ class PredicateUnit(nn.Module):
     def forward(self, state, state_next, temp):
 
         args, probs = self.state_encoder(state, temp)
-        preds = torch.stack([pred_net(state, probs, temp) for pred_net in self.predicate_nets], dim=1)
+        preds = torch.stack([pred_net(args, probs, temp) for pred_net in self.predicate_nets], dim=1)
 
         args_next, probs_next = self.state_encoder(state_next, temp)
-        preds_next = torch.stack([pred_net(state_next, probs_next, temp) for pred_net in self.predicate_nets], dim=1)
+        preds_next = torch.stack([pred_net(args_next, probs_next, temp) for pred_net in self.predicate_nets], dim=1)
 
         return args, args_next, preds, preds_next
 
