@@ -23,39 +23,42 @@ preds_next = np.load("fosae/block_data/block_preds_next.npy")
 
 action = np.load("fosae/block_data/block_action.npy")
 
-fig, axs = plt.subplots(6, N, figsize=(8, 6))
+fig, axs = plt.subplots(8, N, figsize=(8, 6))
 for _, ax in np.ndenumerate(axs):
     ax.set_xticks([])
     ax.set_yticks([])
 plt.gca()
 
+def show_img(ax, arr):
+    ax.imshow(np.transpose(arr, (1,2,0)))
+
+
+for i in [5,7]:
+    axs[i, 4].axis('off')
+
+
 
 while True:
-    for one_data, one_rec_batch, one_data_next, one_rec_batch_next, one_p, one_p_nt in zip(
-        data, rec_batch, data_next, rec_batch_next, preds, preds_next
+    for one_data, one_rec_batch, one_data_next, one_rec_batch_next, one_args, one_args_next, one_p, one_p_nt in zip(
+        data, rec_batch, data_next, rec_batch_next, args, args_next, preds, preds_next
     ):
         for i, (d, r, d_nt, r_nt) in enumerate(zip(one_data, one_rec_batch, one_data_next, one_rec_batch_next)):
 
-            axs[0,i].imshow(np.transpose(r, (1,2,0)))
-            axs[1,i].imshow(np.transpose(r_nt, (1,2,0)))
+            show_img(axs[0,i], r)
+            show_img(axs[1,i], r_nt)
+            show_img(axs[2,i], d)
+            show_img(axs[3,i], d_nt)
 
-            axs[2,i].imshow(np.transpose(d, (1,2,0)))
-            axs[3,i].imshow(np.transpose(d_nt, (1,2,0)))
+        for i, (ar, ar_nt) in enumerate(zip(one_args, one_args_next)):
+            show_img(axs[4,i], ar[0])
+            show_img(axs[5,i], ar[1])
+            show_img(axs[6,i], ar_nt[0])
+            show_img(axs[7,i], ar_nt[1])
 
 
 
-            # axs[6,i].imshow(p_a, cmap='gray')
-            #one_p
-            #
-            # axs[7,i].imshow(np.abs(p_nt - p_a), cmap='gray')
-            #
-            # axs[8,i].imshow(np.transpose(ars[0], (1,2,0)))
-            # axs[9,i].imshow(np.transpose(ars[1], (1,2,0)))
-            # axs[10,i].imshow(np.transpose(ars_nt[0], (1,2,0)))
-            # axs[11,i].imshow(np.transpose(ars_nt[1], (1,2,0)))
-
-        axs[4,0].imshow(one_p[0], cmap='gray')
-        axs[5,0].imshow(one_p_nt[0], cmap='gray')
+        axs[4,4].imshow(one_p[0], cmap='gray')
+        axs[6,4].imshow(one_p_nt[0], cmap='gray')
         plt.pause(0.2)
 
 
