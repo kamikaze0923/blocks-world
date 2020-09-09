@@ -12,7 +12,7 @@ import pickle
 
 
 TEMP_BEGIN = 5
-TEMP_MIN = 0.6
+TEMP_MIN = 0.3
 ANNEAL_RATE = 0.03
 TRAIN_BZ = 12
 TEST_BZ = 12
@@ -20,13 +20,12 @@ ALPHA = 1
 BETA = 1
 MARGIN = 1
 
-
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 
 PREFIX = "blocks-{}-{}-det".format(OBJS, STACKS)
 
-TRAIN_DECODER = False
+TRAIN_DECODER = True
 if TRAIN_DECODER:
     TEMP_BEGIN = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
     print("Training Decoder, temp begin {}".format(TEMP_BEGIN))
