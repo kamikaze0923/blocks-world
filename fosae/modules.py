@@ -54,7 +54,7 @@ class PredicateNetwork(nn.Module):
         for i in range(1, A):
             prod = prod.unsqueeze(-1)
             prod = torch.bmm(prod, prob[:, i, :].unsqueeze(1)).flatten(start_dim=1)
-        prod = prod.unsqueeze(-1).expand(-1, -1, PRED_BITS).detach()
+        prod = prod.unsqueeze(-1).expand(-1, -1, PRED_BITS)
         logits = self.predicate_encoder(input).expand(-1, N**A, -1)
         return torch.mul(gumbel_softmax(logits, temp), prod)
 
