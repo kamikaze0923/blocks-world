@@ -4,10 +4,12 @@ from fosae.gumble import device
 import numpy as np
 from torch.utils.data import DataLoader
 import torch
-from fosae.modules import IMG_H, IMG_W, IMG_C, A, N, U
+from fosae.modules import IMG_H, IMG_W, IMG_C, A, N, U, P
 import pickle
+from fosae.modules import OBJS, STACKS, REMOVE_BG
 
-N_EXAMPLES = 2
+N_OBJ = OBJS + STACKS + (0 if REMOVE_BG else 1)
+N_EXAMPLES = 12
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 
@@ -16,7 +18,8 @@ temp = args = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
 print("Temperature: {}".format(temp))
 
 def init():
-    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_all.h5", n_obj=9)
+
+    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG, truncate=50)
     print("View examples {}".format(len(test_set)))
 
     view_loader = DataLoader(test_set, batch_size=N_EXAMPLES, shuffle=True)
@@ -46,7 +49,7 @@ def run(vae, view_loader):
         data_np = data.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[0].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         args_np = args[0].view(-1, U, A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        preds_np = preds[0].detach().cpu().numpy().reshape(-1, 9, 9, 9, 2)
+        preds_np = preds[0].detach().cpu().numpy().reshape(-1, P, N, N)
 
         print(data_np.shape, recon_batch_np.shape, args_np.shape, preds_np.shape)
         np.save("fosae/block_data/block_data.npy", data_np)
@@ -57,7 +60,7 @@ def run(vae, view_loader):
         data_np = data_next.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[1].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         args_np = args[1].view(-1, U, A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        preds_np = preds[1].detach().cpu().numpy().reshape(-1, 9, 9, 9, 2)
+        preds_np = preds[1].detach().cpu().numpy().reshape(-1, P, N, N)
 
         print(data_np.shape, recon_batch_np.shape, args_np.shape, preds_np.shape)
         np.save("fosae/block_data/block_data_next.npy", data_np)
@@ -65,7 +68,7 @@ def run(vae, view_loader):
         np.save("fosae/block_data/block_args_next.npy", args_np)
         np.save("fosae/block_data/block_preds_next.npy", preds_np)
 
-        action_np = preds[2].detach().cpu().numpy().reshape(-1, 9, 9, 9, 2)
+        action_np = preds[2].detach().cpu().numpy().reshape(-1, P, N, N)
         print(action_np.shape)
         np.save("fosae/block_data/block_action.npy", action_np)
 
