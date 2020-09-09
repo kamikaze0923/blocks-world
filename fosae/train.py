@@ -11,9 +11,9 @@ import sys
 import pickle
 
 
-TEMP_BEGIN = 20
+TEMP_BEGIN = 10
 TEMP_MIN = 0.7
-ANNEAL_RATE = 0.0005
+ANNEAL_RATE = 0.003
 TRAIN_BZ = 12
 TEST_BZ = 12
 ALPHA = 1
