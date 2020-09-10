@@ -172,7 +172,7 @@ def run(n_epoch, test_only=False):
         train_loss = epoch_routine(train_loader, vae, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
         test_loss = epoch_routine(train_loader, vae, temp)
-        print('====> Epoch: {} Average test loss: {:.4f}'.format(e, test_loss))
+        print('====> Epoch: {} Average test loss: {:.4f}, Best Test loss: {:.4f}'.format(e, test_loss, best_loss))
         if test_loss < best_loss:
             print("Save Model")
             torch.save(vae.state_dict(), "fosae/model/{}.pth".format(MODEL_NAME))
