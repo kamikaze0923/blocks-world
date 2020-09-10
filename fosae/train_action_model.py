@@ -24,10 +24,10 @@ print("Training Action Model")
 
 
 # Action similarity in latent space
-def action_loss_function(preds_next, preds_next_by_action, criterion=nn.MSELoss(reduction='none')):
+def action_loss_function(preds_next, preds_next_by_action, criterion=nn.L1Loss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
-    mse = criterion(preds_next_by_action, preds_next).sum(dim=sum_dim).mean()
-    return mse * ALPHA
+    l1 = criterion(preds_next_by_action, preds_next).sum(dim=sum_dim).mean()
+    return l1 * ALPHA
 
 def probs_metric(probs, probs_next):
     return torch.abs(0.5 - probs).mean().detach(), torch.abs(0.5 - probs_next).mean().detach()
@@ -86,7 +86,7 @@ def run(n_epoch):
     vae.load_state_dict(torch.load("fosae/model/{}.pth".format(FOSAE_MODEL_NAME), map_location='cpu'))
     vae.eval()
 
-    action_model = FoSae_Action()
+    action_model = FoSae_Action().to(device)
     optimizer = Adam(action_model.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')

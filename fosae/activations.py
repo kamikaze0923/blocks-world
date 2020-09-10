@@ -9,7 +9,7 @@ class TrinaryStep(autograd.Function):
         output = input.clone()
         output[input > 1] = 1
         output[input < -1] = -1
-        output[torch.logical_and(-0.5 < input, input < 0.5 )] = 0
+        output[torch.logical_and(-0.5 < input, input < 0.5)] = 0
         return output
 
     @staticmethod
