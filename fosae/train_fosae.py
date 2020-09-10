@@ -12,8 +12,8 @@ import pickle
 
 
 TEMP_BEGIN = 5
-TEMP_MIN = 0.01
-ANNEAL_RATE = 0.003
+TEMP_MIN = 0.1
+ANNEAL_RATE = 0.001
 TRAIN_BZ = 2
 TEST_BZ = 12
 BETA = 1
@@ -62,7 +62,6 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
 
         noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
         noise2 = torch.normal(mean=0, std=0.2, size=data_next.size()).to(device)
-        noise3 = torch.normal(mean=0, std=0.2, size=action.size()).to(device)
 
         if optimizer is None:
             with torch.no_grad():
@@ -134,7 +133,7 @@ def run(n_epoch):
 
 
 if __name__ == "__main__":
-    run(20000)
+    run(10000)
 
 
 

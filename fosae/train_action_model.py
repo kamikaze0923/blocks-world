@@ -54,17 +54,17 @@ def epoch_routine(dataloader, vae, action_model, temp, optimizer=None):
         batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
         action = obj_mask[batch_idx, action_idx, : , :, :].to(device)
 
+        with torch.no_grad():
+            _, preds_all = vae((data, data_next), 0)
+        preds, preds_next = preds_all
+
         noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
         noise2 = torch.normal(mean=0, std=0.2, size=data_next.size()).to(device)
-        noise3 = torch.normal(mean=0, std=0.2, size=action.size()).to(device)
 
         if optimizer is None:
             with torch.no_grad():
-                recon_batch, preds = vae((data, data_next, action), temp)
-                rec_loss0 = rec_loss_function(recon_batch[0], data)
-                rec_loss1 = rec_loss_function(recon_batch[1], data_next)
-                m1, m2 = probs_metric(preds[0], preds[1])
-                ctrs_loss = contrastive_loss_function(preds[0], preds[1])
+                changes = action_model((data+noise1, action+noise2), temp)
+                act_loss = action_loss_function(preds_next, preds+changes)
         else:
             recon_batch, preds = vae((data + noise1, data_next + noise2, action + noise3), temp)
             rec_loss0 = rec_loss_function(recon_batch[0], data)
