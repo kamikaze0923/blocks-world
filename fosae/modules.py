@@ -53,17 +53,6 @@ class PredicateNetwork(nn.Module):
         logits = self.predicate_encoder(input).view(-1, N**A, PRED_BITS)
         return gumbel_softmax(logits, temp)
 
-class ActionEncoder(nn.Module):
-
-    def __init__(self):
-        super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A)
-        self.step_func = TrinaryStep()
-
-    def forward(self, input):
-        logits = self.state_action_encoder(input)
-        logits = logits.view(-1, N**A, 1)
-        return self.step_func.apply(logits)
 
 class PredicateUnit(nn.Module):
 
@@ -89,10 +78,6 @@ class PredicateUnit(nn.Module):
         all_tuples = torch.stack(all_tuples, dim=1)
         return all_tuples
 
-
-
-
-
 class PredicateDecoder(nn.Module):
 
     def __init__(self):
@@ -105,18 +90,16 @@ class PredicateDecoder(nn.Module):
         h1 = torch.relu(self.fc1(input.view(-1, 1, P*N**A)))
         return torch.sigmoid(self.fc2(h1)).view(-1, N, IMG_C, IMG_H, IMG_W)
 
-
 class FoSae(nn.Module):
 
     def __init__(self):
         super(FoSae, self).__init__()
         self.predicate_nets = nn.ModuleList([PredicateNetwork() for _ in range(P)])
-        # self.action_encoders = nn.ModuleList([ActionEncoder() for _ in range(P)])
         self.predicate_units = nn.ModuleList([PredicateUnit(self.predicate_nets, N) for _ in range(U)])
         self.decoder = PredicateDecoder()
 
     def forward(self, input, temp):
-        state, state_next, action = input
+        state, state_next = input
 
         all_preds = []
         all_preds_next = []
@@ -130,12 +113,39 @@ class FoSae(nn.Module):
         all_preds, _ = torch.stack(all_preds, dim=1)[:,:,:,:,[0]].max(dim=1)
         all_preds_next, _ = torch.stack(all_preds_next, dim=1)[:,:,:,:,[0]].max(dim=1)
 
-        # all_actions = torch.stack([act_net(torch.cat([state, action], dim=1)) for act_net in self.action_encoders], dim=1)
-        #
-        # all_preds_next_by_action = all_preds.detach() + all_actions
-
         x_hat = self.decoder(all_preds)
         x_hat_next = self.decoder(all_preds_next)
-        # x_hat_next_by_action = self.decoder(all_preds_next_by_action)
 
-        return (x_hat, x_hat_next, None), (all_preds, all_preds_next, None)
+        return (x_hat, x_hat_next), (all_preds, all_preds_next)
+
+
+class ActionEncoder(nn.Module):
+
+    def __init__(self):
+        super(ActionEncoder, self).__init__()
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A)
+        self.step_func = TrinaryStep()
+
+    def forward(self, input):
+        logits = self.state_action_encoder(input)
+        logits = logits.view(-1, N**A, 1)
+        return self.step_func.apply(logits)
+
+
+class FoSae_Action(nn.Module):
+
+    def __init__(self):
+        super(FoSae_Action, self).__init__()
+        self.action_models = nn.ModuleList([ActionEncoder() for _ in range(P)])
+
+    def forward(self, input, temp):
+
+        all_changes = []
+
+        for model in self.action_models:
+            preds_change = model(torch.cat(input, dim=1), temp)
+            all_changes.append(preds_change)
+
+        all_changes = torch.stack(all_changes, dim=1)
+
+        return all_changes

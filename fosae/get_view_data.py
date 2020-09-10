@@ -14,7 +14,7 @@ print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 
 
-temp = args = pickle.load(open("fosae/model/metafile.pkl", 'rb'))['temp']
+temp = args = pickle.load(open("fosae/model/metafile_fosae.pkl", 'rb'))['temp']
 print("Temperature: {}".format(temp))
 
 def init():
@@ -50,7 +50,6 @@ def run(vae, view_loader):
         recon_batch_np = recon_batch[0].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         preds_np = preds[0].detach().cpu().numpy().reshape(-1, P, N, N)
 
-
         print(data_np.shape, recon_batch_np.shape, preds_np.shape)
         np.save("fosae/block_data/block_data.npy", data_np)
         np.save("fosae/block_data/block_rec.npy", recon_batch_np)
@@ -68,8 +67,6 @@ def run(vae, view_loader):
         # action_np = preds[2].detach().cpu().numpy().reshape(-1, P, N, N)
         # print(action_np.shape)
         # np.save("fosae/block_data/block_action.npy", action_np)
-
-
 
 
 if __name__ == "__main__":
