@@ -44,11 +44,11 @@ while True:
             show_img(axs[2,i], d)
             show_img(axs[3,i], d_nt)
 
-        for i, (ar, ar_nt) in enumerate(zip(one_args, one_args_next)):
-            show_img(axs[4,i], ar[0])
-            show_img(axs[5,i], ar[1])
-            show_img(axs[6,i], ar_nt[0])
-            show_img(axs[7,i], ar_nt[1])
+        # for i, (ar, ar_nt) in enumerate(zip(one_args, one_args_next)):
+        #     show_img(axs[4,i], ar[0])
+        #     show_img(axs[5,i], ar[1])
+        #     show_img(axs[6,i], ar_nt[0])
+        #     show_img(axs[7,i], ar_nt[1])
 
         for i, (p, p_nt) in enumerate(zip(one_p, one_p_nt)):
             axs[8,i].imshow(p, cmap='gray')
