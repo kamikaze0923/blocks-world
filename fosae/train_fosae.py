@@ -53,14 +53,9 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     metric_pred_next = 0
 
     for i, data in enumerate(dataloader):
-        _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
+        _, _, _, obj_mask, next_obj_mask, _, _ = data
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
-
-        action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
-        batch_idx = torch.arange(action_idx.size()[0])
-        batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
-        action = obj_mask[batch_idx, action_idx, : , :, :].to(device)
 
         noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
         noise2 = torch.normal(mean=0, std=0.2, size=data_next.size()).to(device)
