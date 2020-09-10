@@ -15,7 +15,7 @@ from fosae.train_fosae import MODEL_NAME as FOSAE_MODEL_NAME
 TEMP_BEGIN = 5
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.003
-TRAIN_BZ = 2
+TRAIN_BZ = 12
 ALPHA = 1
 
 print("Model is FoSae_Action")
