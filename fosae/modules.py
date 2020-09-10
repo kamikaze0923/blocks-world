@@ -111,7 +111,7 @@ class FoSae(nn.Module):
     def __init__(self):
         super(FoSae, self).__init__()
         self.predicate_nets = nn.ModuleList([PredicateNetwork() for _ in range(P)])
-        self.action_encoders = nn.ModuleList([ActionEncoder() for _ in range(P)])
+        # self.action_encoders = nn.ModuleList([ActionEncoder() for _ in range(P)])
         self.predicate_units = nn.ModuleList([PredicateUnit(self.predicate_nets, N) for _ in range(U)])
         self.decoder = PredicateDecoder()
 
