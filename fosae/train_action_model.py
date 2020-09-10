@@ -8,9 +8,9 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
-import pickle
 from fosae.train_fosae import PREFIX, OBJS, STACKS, REMOVE_BG
 from fosae.train_fosae import MODEL_NAME as FOSAE_MODEL_NAME
+import os
 
 TEMP_BEGIN = 5
 TEMP_MIN = 0.01
@@ -18,6 +18,7 @@ ANNEAL_RATE = 0.003
 TRAIN_BZ = 12
 ALPHA = 1
 
+os.makedirs("fosae/model_{}".format(PREFIX), exist_ok=True)
 print("Model is FoSae_Action")
 ACTION_MODEL_NAME = "FoSae_Action"
 print("Training Action Model")
@@ -83,7 +84,7 @@ def run(n_epoch):
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = FoSae().to(device)
-    vae.load_state_dict(torch.load("fosae/model/{}.pth".format(FOSAE_MODEL_NAME), map_location='cpu'))
+    vae.load_state_dict(torch.load("fosae/model_{}/{}.pth".format(PREFIX, FOSAE_MODEL_NAME), map_location='cpu'))
     vae.eval()
 
     action_model = FoSae_Action().to(device)
@@ -100,8 +101,7 @@ def run(n_epoch):
         print('====> Epoch: {} Average test loss: {:.4f}, Best Test loss: {:.4f}'.format(e, test_loss, best_loss))
         if test_loss < best_loss:
             print("Save Model")
-            torch.save(action_model.state_dict(), "fosae/model/{}.pth".format(ACTION_MODEL_NAME))
-            pickle.dump({'temp': temp}, open("fosae/model/metafile_action.pkl", "wb"))
+            torch.save(action_model.state_dict(), "fosae/model_{}/{}.pth".format(PREFIX, ACTION_MODEL_NAME))
             best_loss = test_loss
         scheculer.step()
 

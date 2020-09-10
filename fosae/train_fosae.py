@@ -8,7 +8,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
-import pickle
+import os
 
 
 TEMP_BEGIN = 5
@@ -23,6 +23,7 @@ print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 
 PREFIX = "blocks-{}-{}-det".format(OBJS, STACKS)
+os.makedirs("fosae/model_{}".format(PREFIX), exist_ok=True)
 print("Training Encoder and Decoder")
 
 torch.manual_seed(0)
@@ -122,8 +123,7 @@ def run(n_epoch):
         print('====> Epoch: {} Average test loss: {:.4f}, Best Test loss: {:.4f}'.format(e, test_loss, best_loss))
         if test_loss < best_loss:
             print("Save Model")
-            torch.save(vae.state_dict(), "fosae/model/{}.pth".format(MODEL_NAME))
-            pickle.dump({'temp': temp}, open("fosae/model/metafile_fosae.pkl", "wb"))
+            torch.save(vae.state_dict(), "fosae/model_{}/{}.pth".format(PREFIX, MODEL_NAME))
             best_loss = test_loss
         scheculer.step()
 
