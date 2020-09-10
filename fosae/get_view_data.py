@@ -44,37 +44,30 @@ def run(vae, view_loader):
         batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
         action = obj_mask[batch_idx, action_idx, :, :, :].to(device)
 
-        recon_batch, args, preds, probs = vae((data, data_next, action), 0)
+        recon_batch, preds = vae((data, data_next, action), temp)
 
         data_np = data.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[0].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        args_np = args[0].view(-1, U, A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         preds_np = preds[0].detach().cpu().numpy().reshape(-1, P, N, N)
-        probs_np = probs[0].detach().cpu().numpy()
 
-        print(data_np.shape, recon_batch_np.shape, args_np.shape, preds_np.shape)
+
+        print(data_np.shape, recon_batch_np.shape, preds_np.shape)
         np.save("fosae/block_data/block_data.npy", data_np)
         np.save("fosae/block_data/block_rec.npy", recon_batch_np)
-        np.save("fosae/block_data/block_args.npy", args_np)
         np.save("fosae/block_data/block_preds.npy", preds_np)
-        np.save("fosae/block_data/block_probs.npy", probs_np)
 
         data_np = data_next.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[1].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        args_np = args[1].view(-1, U, A, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         preds_np = preds[1].detach().cpu().numpy().reshape(-1, P, N, N)
-        probs_np = probs[1].detach().cpu().numpy()
 
-        print(data_np.shape, recon_batch_np.shape, args_np.shape, preds_np.shape)
+        print(data_np.shape, recon_batch_np.shape, preds_np.shape)
         np.save("fosae/block_data/block_data_next.npy", data_np)
         np.save("fosae/block_data/block_rec_next.npy", recon_batch_np)
-        np.save("fosae/block_data/block_args_next.npy", args_np)
         np.save("fosae/block_data/block_preds_next.npy", preds_np)
-        np.save("fosae/block_data/block_probs_next.npy", probs_np)
 
-        action_np = preds[2].detach().cpu().numpy().reshape(-1, P, N, N)
-        print(action_np.shape)
-        np.save("fosae/block_data/block_action.npy", action_np)
+        # action_np = preds[2].detach().cpu().numpy().reshape(-1, P, N, N)
+        # print(action_np.shape)
+        # np.save("fosae/block_data/block_action.npy", action_np)
 
 
 
