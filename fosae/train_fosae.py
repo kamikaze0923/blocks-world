@@ -11,10 +11,10 @@ import sys
 import pickle
 
 
-TEMP_BEGIN = 10
+TEMP_BEGIN = 5
 TEMP_MIN = 0.1
 ANNEAL_RATE = 0.001
-TRAIN_BZ = 2
+TRAIN_BZ = 1
 TEST_BZ = 12
 BETA = 1
 MARGIN = 1
