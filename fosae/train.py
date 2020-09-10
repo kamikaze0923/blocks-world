@@ -93,7 +93,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
                 # m3, m4 = probs_metric(probs[0], probs[1])
                 ctrs_loss = contrastive_loss_function(preds[0], preds[1])
         else:
-            recon_batch, _, preds, probs = vae((data + noise1, data_next + noise2, action + noise3), temp)
+            recon_batch, preds = vae((data + noise1, data_next + noise2, action + noise3), temp)
             rec_loss0 = rec_loss_function(recon_batch[0], data)
             rec_loss1 = rec_loss_function(recon_batch[1], data_next)
             # rec_loss2 = rec_loss_function(recon_batch[2], data_next)
