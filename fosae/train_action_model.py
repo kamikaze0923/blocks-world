@@ -26,7 +26,7 @@ print("Training Action Model")
 # Action similarity in latent space
 def action_loss_function(preds_next, preds_next_by_action, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
-    mse = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
+    mse = criterion(preds_next_by_action, preds_next).sum(dim=sum_dim).mean()
     return mse * ALPHA
 
 def probs_metric(probs, probs_next):
@@ -38,11 +38,8 @@ def epoch_routine(dataloader, vae, action_model, temp, optimizer=None):
         action_model.train()
     else:
         action_model.eval()
-    recon_loss0 = 0
-    recon_loss1 = 0
-    contrastive_loss = 0
-    metric_pred = 0
-    metric_pred_next = 0
+
+    action_loss = 0
 
     for i, data in enumerate(dataloader):
         _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
@@ -59,41 +56,23 @@ def epoch_routine(dataloader, vae, action_model, temp, optimizer=None):
         preds, preds_next = preds_all
 
         noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
-        noise2 = torch.normal(mean=0, std=0.2, size=data_next.size()).to(device)
+        noise2 = torch.normal(mean=0, std=0.2, size=action.size()).to(device)
 
         if optimizer is None:
             with torch.no_grad():
                 changes = action_model((data+noise1, action+noise2), temp)
                 act_loss = action_loss_function(preds_next, preds+changes)
         else:
-            recon_batch, preds = vae((data + noise1, data_next + noise2, action + noise3), temp)
-            rec_loss0 = rec_loss_function(recon_batch[0], data)
-            rec_loss1 = rec_loss_function(recon_batch[1], data_next)
-            m1, m2 = probs_metric(preds[0], preds[1])
-            ctrs_loss = contrastive_loss_function(preds[0], preds[1])
-            loss = rec_loss0 + rec_loss1
+            changes = action_model((data + noise1, action + noise2), temp)
+            act_loss = action_loss_function(preds_next, preds + changes)
+            loss = act_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-        recon_loss0 += rec_loss0.item()
-        recon_loss1 += rec_loss1.item()
-        contrastive_loss += ctrs_loss.item()
-        metric_pred += m1.item()
-        metric_pred_next += m2.item()
+        action_loss += act_loss.item()
 
-
-    print("{:.2f}, {:.2f} | {:.2f}, | {:.2f}, {:.2f}".format
-        (
-            recon_loss0 / len(dataloader),
-            recon_loss1 / len(dataloader),
-            contrastive_loss / len(dataloader),
-            metric_pred / len(dataloader),
-            metric_pred_next / len(dataloader),
-        )
-    )
-
-    return (recon_loss0 + recon_loss1) / len(dataloader)
+    return action_loss / len(dataloader)
 
 
 def run(n_epoch):
@@ -117,7 +96,7 @@ def run(n_epoch):
         sys.stdout.flush()
         train_loss = epoch_routine(train_loader, vae, action_model, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
-        test_loss = epoch_routine(train_loader, vae, temp)
+        test_loss = epoch_routine(train_loader, vae, action_model, temp)
         print('====> Epoch: {} Average test loss: {:.4f}, Best Test loss: {:.4f}'.format(e, test_loss, best_loss))
         if test_loss < best_loss:
             print("Save Model")

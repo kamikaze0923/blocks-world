@@ -39,12 +39,7 @@ def run(vae, view_loader):
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
 
-        action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
-        batch_idx = torch.arange(action_idx.size()[0])
-        batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
-        action = obj_mask[batch_idx, action_idx, :, :, :].to(device)
-
-        recon_batch, preds = vae((data, data_next, action), 0)
+        recon_batch, preds = vae((data, data_next), 0)
 
         data_np = data.view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
         recon_batch_np = recon_batch[0].view(-1, N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()

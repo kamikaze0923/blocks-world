@@ -126,7 +126,7 @@ class ActionEncoder(nn.Module):
         self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A)
         self.step_func = TrinaryStep()
 
-    def forward(self, input):
+    def forward(self, input, temp):
         logits = self.state_action_encoder(input)
         logits = logits.view(-1, N**A, 1)
         return self.step_func.apply(logits)
