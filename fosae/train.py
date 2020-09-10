@@ -11,8 +11,8 @@ import sys
 import pickle
 
 
-TEMP_BEGIN = 10
-TEMP_MIN = 0.7
+TEMP_BEGIN = 5
+TEMP_MIN = 0.3
 ANNEAL_RATE = 0.003
 TRAIN_BZ = 12
 TEST_BZ = 12
@@ -44,8 +44,8 @@ def action_loss_function(preds_next, preds_next_by_action, criterion=nn.MSELoss(
     mse = criterion(preds_next_by_action, preds_next.detach()).sum(dim=sum_dim).mean()
     return mse * ALPHA, torch.abs(0.5 - preds_next).sum(dim=-1).mean().detach(), torch.abs(0.5 - preds_next_by_action).sum(dim=-1).mean().detach()
 
-def probs_metric(probs, probs_next):
-    return torch.abs(0.5 - probs).mean().detach(), torch.abs(0.5 - probs_next).mean().detach()
+# def probs_metric(probs, probs_next):
+#     return torch.abs(0.5 - probs).mean().detach(), torch.abs(0.5 - probs_next).mean().detach()
 
 
 def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
@@ -85,26 +85,27 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
 
         if optimizer is None:
             with torch.no_grad():
-                recon_batch, _ , preds, probs = vae((data+noise1, data_next+noise2, action+noise3), temp)
+                recon_batch, preds = vae((data+noise1, data_next+noise2, action+noise3), temp)
                 rec_loss0 = rec_loss_function(recon_batch[0], data)
                 rec_loss1 = rec_loss_function(recon_batch[1], data_next)
-                rec_loss2 = rec_loss_function(recon_batch[2], data_next)
-                act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
-                m3, m4 = probs_metric(probs[0], probs[1])
+                # rec_loss2 = rec_loss_function(recon_batch[2], data_next)
+                # act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
+                # m3, m4 = probs_metric(probs[0], probs[1])
                 ctrs_loss = contrastive_loss_function(preds[0], preds[1])
         else:
             recon_batch, _, preds, probs = vae((data + noise1, data_next + noise2, action + noise3), temp)
             rec_loss0 = rec_loss_function(recon_batch[0], data)
             rec_loss1 = rec_loss_function(recon_batch[1], data_next)
-            rec_loss2 = rec_loss_function(recon_batch[2], data_next)
-            act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
-            m3, m4 = probs_metric(probs[0], probs[1])
+            # rec_loss2 = rec_loss_function(recon_batch[2], data_next)
+            # act_loss, m0, m1 = action_loss_function(preds[1], preds[2])
+            # m3, m4 = probs_metric(probs[0], probs[1])
             ctrs_loss = contrastive_loss_function(preds[0], preds[1])
 
             if not TRAIN_ACTION_MODEL:
                 loss = rec_loss0 + rec_loss1
             else:
-                loss = act_loss
+                # loss = act_loss
+                loss = None
 
             optimizer.zero_grad()
             loss.backward()
@@ -112,13 +113,13 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
 
         recon_loss0 += rec_loss0.item()
         recon_loss1 += rec_loss1.item()
-        recon_loss2 += rec_loss2.item()
-        action_loss += act_loss.item()
+        # recon_loss2 += rec_loss2.item()
+        # action_loss += act_loss.item()
         contrastive_loss += ctrs_loss.item()
-        metric_pred += m0.item()
-        metric_pred_next += m1.item()
-        metric_prob += m3.item()
-        metric_prob_next += m4.item()
+        # metric_pred += m0.item()
+        # metric_pred_next += m1.item()
+        # metric_prob += m3.item()
+        # metric_prob_next += m4.item()
 
 
     print("{:.2f}, {:.2f}, {:.2f}, | {:.2f}, {:.2f}, | {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
@@ -147,7 +148,6 @@ def load_model(vae):
     print("fosae/model/{}.pth loaded".format(MODEL_NAME))
 
 def run(n_epoch, test_only=False):
-    meta_file = 'fosae/model/metadata.pkl'
     # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_train.h5", n_obj=9)
     # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_eval.h5", n_obj=9)
     # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))

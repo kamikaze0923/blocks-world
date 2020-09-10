@@ -38,7 +38,6 @@ while True:
         data, rec_batch, data_next, rec_batch_next, args, args_next, preds, preds_next
     ):
         for i, (d, r, d_nt, r_nt) in enumerate(zip(one_data, one_rec_batch, one_data_next, one_rec_batch_next)):
-
             show_img(axs[0,i], r)
             show_img(axs[1,i], r_nt)
             show_img(axs[2,i], d)
