@@ -25,6 +25,8 @@ MODEL_NAME = "FoSae"
 PREFIX = "blocks-{}-{}-det".format(OBJS, STACKS)
 print("Training Encoder and Decoder")
 
+torch.manual_seed(0)
+
 # Reconstruction
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     sum_dim = [i for i in range(1, x.dim())]
