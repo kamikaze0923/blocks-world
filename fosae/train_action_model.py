@@ -96,7 +96,7 @@ def run(n_epoch):
     best_loss = float('inf')
     for e in range(n_epoch):
         temp = np.maximum(TEMP_BEGIN * np.exp(-ANNEAL_RATE * e), TEMP_MIN)
-        print("Epoch: {}, Lr: {}".format(e, scheculer.get_last_lr()))
+        print("Epoch: {}, Temperature: {}, Lr: {}".format(e, temp, scheculer.get_last_lr()))
         sys.stdout.flush()
         train_loss = epoch_routine(train_loader, vae, action_model, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
