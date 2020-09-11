@@ -8,7 +8,7 @@ STACKS = 4
 REMOVE_BG = True
 
 N = OBJS + STACKS + (0 if REMOVE_BG else 1)
-P = N
+P = 1
 A = 2
 U = 1
 ACTION_A = 2
@@ -25,7 +25,6 @@ assert IMG_W % 4 == 0
 assert IMG_H % 4 == 0
 FMAP_H = IMG_H // 4
 FMAP_W = IMG_W // 4
-
 
 
 class BaseObjectImageEncoder(nn.Module):
