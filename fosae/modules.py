@@ -3,7 +3,7 @@ from torch import nn
 from fosae.gumble import gumbel_softmax, device
 from fosae.activations import TrinaryStep
 
-OBJS = 2
+OBJS = 1
 STACKS = 4
 REMOVE_BG = True
 
@@ -12,7 +12,7 @@ P = 2
 A = 2
 U = 1
 CONV_CHANNELS = 16
-ENCODER_FC_LAYER_SIZE = 100
+ENCODER_FC_LAYER_SIZE = 200
 DECODER_FC_LAYER_SIZE = 2000
 PRED_BITS = 1
 assert PRED_BITS == 1 or PRED_BITS == 2
@@ -123,7 +123,7 @@ class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A)
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A*3)
         self.step_func = TrinaryStep()
 
     def forward(self, input, temp):
