@@ -14,8 +14,6 @@ N_OBJ = OBJS + STACKS + (0 if REMOVE_BG else 1)
 N_EXAMPLES = 96
 
 
-
-
 def init():
     test_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
     print("View examples {}".format(len(test_set)))
