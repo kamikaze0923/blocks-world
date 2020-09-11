@@ -4,7 +4,7 @@ from fosae.gumble import device
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
@@ -91,7 +91,8 @@ def run(n_epoch):
     vae.eval()
 
     action_model = FoSae_Action().to(device)
-    optimizer = Adam(action_model.parameters(), lr=1e-3)
+    # optimizer = Adam(action_model.parameters(), lr=1e-3)
+    optimizer = SGD(action_model.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):

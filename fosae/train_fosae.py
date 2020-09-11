@@ -4,7 +4,7 @@ from fosae.gumble import device
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
@@ -14,7 +14,7 @@ import os
 TEMP_BEGIN = 5
 TEMP_MIN = 0.1
 ANNEAL_RATE = 0.003
-TRAIN_BZ = 3
+TRAIN_BZ = 2
 TEST_BZ = 12
 BETA = 1
 MARGIN = 1
@@ -110,7 +110,8 @@ def run(n_epoch):
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = FoSae().to(device)
-    optimizer = Adam(vae.parameters(), lr=1e-3)
+    # optimizer = Adam(vae.parameters(), lr=1e-3)
+    optimizer = SGD(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
