@@ -91,7 +91,7 @@ def run(n_epoch):
     vae.eval()
 
     action_model = FoSae_Action().to(device)
-    optimizer = Adam(action_model.parameters(), lr=1e-3, betas=(0.5, 0.99))
+    optimizer = Adam(action_model.parameters(), lr=1e-3)
     # optimizer = SGD(action_model.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
