@@ -15,7 +15,7 @@ import os
 TEMP_BEGIN = 5
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.003
-TRAIN_BZ = 96
+TRAIN_BZ = 1
 ALPHA = 1
 
 os.makedirs("fosae/model_{}".format(PREFIX), exist_ok=True)
@@ -32,7 +32,6 @@ def action_loss_function(preds_next, preds_next_by_action, criterion=nn.MSELoss(
 
 def probs_metric(probs, probs_next):
     return torch.abs(0.5 - probs).mean().detach(), torch.abs(0.5 - probs_next).mean().detach()
-
 
 def epoch_routine(dataloader, vae, action_model, temp, optimizer=None):
     if optimizer is not None:
@@ -75,7 +74,6 @@ def epoch_routine(dataloader, vae, action_model, temp, optimizer=None):
 
     return action_loss / len(dataloader)
 
-
 def run(n_epoch):
     train_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
     print("Training Examples: {}".format(len(train_set)))
@@ -104,7 +102,6 @@ def run(n_epoch):
             torch.save(action_model.state_dict(), "fosae/model_{}/{}.pth".format(PREFIX, ACTION_MODEL_NAME))
             best_loss = test_loss
         scheculer.step()
-
 
 
 if __name__ == "__main__":
