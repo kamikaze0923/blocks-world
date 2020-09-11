@@ -124,12 +124,15 @@ class ActionEncoder(nn.Module):
     def __init__(self):
         super(ActionEncoder, self).__init__()
         self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A*3)
-        self.step_func = TrinaryStep()
+        # self.step_func = TrinaryStep()
 
     def forward(self, input, temp):
         logits = self.state_action_encoder(input)
-        logits = logits.view(-1, N**A, 1)
-        return self.step_func.apply(logits)
+        logits = logits.view(-1, N**A, 3)
+        probs = gumbel_softmax(logits, temp)
+        target = torch.tensor([-1, 0, 1]).expand_as(probs).to(device)
+        change = torch.mul(probs, target).sum(dim=-1, keepdim=True)
+        return change
 
 
 class FoSae_Action(nn.Module):
