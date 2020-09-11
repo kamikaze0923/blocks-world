@@ -1,35 +1,38 @@
 from c_swm.utils import StateTransitionsDataset
-from fosae.modules import FoSae
+from fosae.modules import FoSae, FoSae_Action
 from fosae.gumble import device
 import numpy as np
 from torch.utils.data import DataLoader
 import torch
 from fosae.modules import IMG_H, IMG_W, IMG_C, A, N, U, P
-import pickle
 from fosae.modules import OBJS, STACKS, REMOVE_BG
+from fosae.train_fosae import PREFIX
+from fosae.train_fosae import MODEL_NAME as FOSAE_MODEL_NAME
+from fosae.train_action_model import ACTION_MODEL_NAME
 
 N_OBJ = OBJS + STACKS + (0 if REMOVE_BG else 1)
 N_EXAMPLES = 96
-print("Model is FOSAE")
-MODEL_NAME = "FoSae"
 
 
-temp = args = pickle.load(open("fosae/model/metafile_fosae.pkl", 'rb'))['temp']
-print("Temperature: {}".format(temp))
+
 
 def init():
-
-    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
+    test_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
     print("View examples {}".format(len(test_set)))
 
     view_loader = DataLoader(test_set, batch_size=N_EXAMPLES, shuffle=True)
-    vae = eval(MODEL_NAME)().to(device)
-    vae.load_state_dict(torch.load("fosae/model/{}.pth".format(MODEL_NAME), map_location='cpu'))
+
+    vae = FoSae().to(device)
+    vae.load_state_dict(torch.load("fosae/model_{}/{}.pth".format(PREFIX, FOSAE_MODEL_NAME), map_location='cpu'))
     vae.eval()
 
-    return vae, view_loader
+    action_model = FoSae_Action().to(device)
+    action_model.load_state_dict(torch.load("fosae/model_{}/{}.pth".format(PREFIX, ACTION_MODEL_NAME), map_location='cpu'))
+    action_model.eval()
 
-def run(vae, view_loader):
+    return vae, action_model, view_loader
+
+def run(vae, action_model, view_loader):
 
     with torch.no_grad():
 
@@ -59,11 +62,20 @@ def run(vae, view_loader):
         np.save("fosae/block_data/block_rec_next.npy", recon_batch_np)
         np.save("fosae/block_data/block_preds_next.npy", preds_np)
 
-        # action_np = preds[2].detach().cpu().numpy().reshape(-1, P, N, N)
-        # print(action_np.shape)
-        # np.save("fosae/block_data/block_action.npy", action_np)
+
+        action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
+        batch_idx = torch.arange(action_idx.size()[0])
+        batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
+        action = obj_mask[batch_idx, action_idx, : , :, :].to(device)
+
+        actions = action_model((data, action), 0)
+        action_np = actions.detach().cpu().numpy().reshape(-1, P, N, N)
+        print(action_np.shape)
+        np.save("fosae/block_data/action.npy", action_np)
+
+
 
 
 if __name__ == "__main__":
-    vae, view_loader = init()
-    run(vae, view_loader)
+    vae, action_model, view_loader = init()
+    run(vae, action_model, view_loader)
