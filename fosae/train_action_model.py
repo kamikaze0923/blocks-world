@@ -86,9 +86,10 @@ def run(n_epoch):
     # assert len(test_set) % TEST_BZ == 0
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
-    vae = FoSae().to(device)
-    vae.load_state_dict(torch.load("fosae/model_{}/{}.pth".format(PREFIX, FOSAE_MODEL_NAME), map_location='cpu'))
-    vae.eval()
+    # vae = FoSae().to(device)
+    # vae.load_state_dict(torch.load("fosae/model_{}/{}.pth".format(PREFIX, FOSAE_MODEL_NAME), map_location='cpu'))
+    # vae.eval()
+    vae = None
 
     action_model = FoSae_Action().to(device)
     optimizer = Adam(action_model.parameters(), lr=1e-3)

@@ -123,7 +123,7 @@ class ActionEncoder(nn.Module):
 
     def __init__(self, n_obj):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=A+ACTION_A, out_features=3)
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=A+ACTION_A, out_features=1)
         self.enum_index = torch.cartesian_prod(torch.arange(n_obj), torch.arange(n_obj)).to(device)
         self.step_func = TrinaryStep()
 
@@ -131,7 +131,7 @@ class ActionEncoder(nn.Module):
         state, action = input
         obj_action_tuples = self.enumerate_state_action_tuples(state, action)
         logits = self.state_action_encoder(obj_action_tuples)
-        logits = logits.view(-1, N**A, 3)
+        logits = logits.view(-1, N**A, 1)
         # probs = gumbel_softmax(logits, temp)
         # target = torch.tensor([-1, 0, 1]).expand_as(probs).to(device)
         # change = torch.mul(probs, target).sum(dim=-1, keepdim=True)
