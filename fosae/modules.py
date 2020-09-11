@@ -121,32 +121,44 @@ class FoSae(nn.Module):
 
 class ActionEncoder(nn.Module):
 
-    def __init__(self):
+    def __init__(self, n_obj):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=N+ACTION_A, out_features=N**A*3)
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=A+ACTION_A, out_features=3)
+        self.enum_index = torch.cartesian_prod(torch.arange(n_obj), torch.arange(n_obj)).to(device)
         # self.step_func = TrinaryStep()
 
     def forward(self, input, temp):
-        logits = self.state_action_encoder(input)
+        state, action = input
+        obj_action_tuples = self.enumerate_state_action_tuples(state, action)
+        logits = self.state_action_encoder(obj_action_tuples)
         logits = logits.view(-1, N**A, 3)
         probs = gumbel_softmax(logits, temp)
         target = torch.tensor([-1, 0, 1]).expand_as(probs).to(device)
         change = torch.mul(probs, target).sum(dim=-1, keepdim=True)
         return change
 
+    def enumerate_state_action_tuples(self, state, action):
+        action = action.view(-1, A*IMG_C, IMG_H, IMG_W)
+        all_tuples = []
+        for t in self.enum_index:
+            objs = torch.index_select(state, dim=1, index=t).view(-1, A*IMG_C, IMG_H, IMG_W)
+            all_tuples.append(torch.cat([objs, action], dim=1))
+        all_tuples = torch.stack(all_tuples, dim=1)
+        return all_tuples
+
 
 class FoSae_Action(nn.Module):
 
     def __init__(self):
         super(FoSae_Action, self).__init__()
-        self.action_models = nn.ModuleList([ActionEncoder() for _ in range(P)])
+        self.action_models = nn.ModuleList([ActionEncoder(N) for _ in range(P)])
 
     def forward(self, input, temp):
 
         all_changes = []
 
         for model in self.action_models:
-            preds_change = model(torch.cat(input, dim=1), temp)
+            preds_change = model(input, temp)
             all_changes.append(preds_change)
 
         all_changes = torch.stack(all_changes, dim=1)
