@@ -8,9 +8,10 @@ STACKS = 4
 REMOVE_BG = True
 
 N = OBJS + STACKS + (0 if REMOVE_BG else 1)
-P = 2
+P = N
 A = 2
 U = 1
+ACTION_A = 2
 CONV_CHANNELS = 32
 ENCODER_FC_LAYER_SIZE = 200
 DECODER_FC_LAYER_SIZE = 2000
@@ -19,12 +20,13 @@ assert PRED_BITS == 1 or PRED_BITS == 2
 
 IMG_H = 64
 IMG_W = 96
+IMG_C = 3
 assert IMG_W % 4 == 0
 assert IMG_H % 4 == 0
-FMAP_H = IMG_H //4
-FMAP_W = IMG_W //4
-IMG_C = 3
-ACTION_A = 2
+FMAP_H = IMG_H // 4
+FMAP_W = IMG_W // 4
+
+
 
 class BaseObjectImageEncoder(nn.Module):
 
