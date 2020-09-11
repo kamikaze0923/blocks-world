@@ -25,10 +25,10 @@ print("Training Action Model")
 
 
 # Action similarity in latent space
-def action_loss_function(preds_next, preds_next_by_action, criterion=nn.L1Loss(reduction='none')):
+def action_loss_function(preds_next, preds_next_by_action, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
-    l1 = criterion(preds_next_by_action, preds_next).sum(dim=sum_dim).mean()
-    return l1 * ALPHA
+    mse = criterion(preds_next_by_action, preds_next).sum(dim=sum_dim).mean()
+    return mse * ALPHA
 
 def probs_metric(probs, probs_next):
     return torch.abs(0.5 - probs).mean().detach(), torch.abs(0.5 - probs_next).mean().detach()
