@@ -110,8 +110,8 @@ def run(n_epoch):
     train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
     # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = FoSae().to(device)
-    # optimizer = Adam(vae.parameters(), lr=1e-3)
-    optimizer = SGD(vae.parameters(), lr=1e-3)
+    optimizer = Adam(vae.parameters(), lr=1e-3, betas=(0.5, 0.99))
+    # optimizer = SGD(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
     for e in range(n_epoch):
