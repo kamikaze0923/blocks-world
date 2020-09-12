@@ -7,8 +7,8 @@ from c_swm.utils import save_list_dict_h5py
 
 NUM_EPISODE = 100
 EPISODE_LENGTH = 10
-N_TRAIN = 84
-N_EVAL = 12
+N_TRAIN = 5000
+N_EVAL = 760
 
 np.random.seed(0)
 np.set_printoptions(threshold=np.inf, linewidth=np.inf)
