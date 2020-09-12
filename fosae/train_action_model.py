@@ -111,7 +111,7 @@ def run(n_epoch):
 
 
 if __name__ == "__main__":
-    run(10000)
+    run(50000)
 
 
 
