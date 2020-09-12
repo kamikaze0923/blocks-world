@@ -8,7 +8,7 @@ STACKS = 4
 REMOVE_BG = True
 
 N = OBJS + STACKS + (0 if REMOVE_BG else 1)
-P = 8
+P = 3
 A = 2
 U = 1
 ACTION_A = 2
