@@ -3,12 +3,12 @@ from torch import nn
 from fosae.gumble import gumbel_softmax, device
 from fosae.activations import TrinaryStep
 
-OBJS = 2
+OBJS = 4
 STACKS = 4
 REMOVE_BG = True
 
 N = OBJS + STACKS + (0 if REMOVE_BG else 1)
-P = 3
+P = 8
 A = 2
 U = 1
 ACTION_A = 2
