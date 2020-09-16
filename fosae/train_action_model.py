@@ -28,7 +28,6 @@ print("Training Action Model")
 def get_new_dataloader(dataloader, vae):
 
     all_data = []
-    all_data_next = []
     all_preds = []
     all_preds_next = []
     all_action_mov_obj_index = []
@@ -44,7 +43,6 @@ def get_new_dataloader(dataloader, vae):
             preds, preds_next = preds_all
 
         all_data.append(data.cpu())
-        all_data_next.append(data_next.cpu())
         all_preds.append(preds.cpu())
         all_preds_next.append(preds_next.cpu())
         all_action_mov_obj_index.append(action_mov_obj_index)
@@ -53,7 +51,6 @@ def get_new_dataloader(dataloader, vae):
     new_dataset = StateTransitionsDatasetWithLatent(
         (
             torch.stack(all_data),
-            torch.stack(all_data_next),
             torch.stack(all_action_mov_obj_index),
             torch.stack(all_action_tar_obj_index),
             torch.stack(all_preds),
@@ -82,9 +79,8 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
     action_loss = 0
 
     for i, data in enumerate(dataloader):
-        obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index, preds, preds_next = data
+        obj_mask, action_mov_obj_index, action_tar_obj_index, preds, preds_next = data
         data = obj_mask.to(device)
-        data_next = next_obj_mask.to(device)
 
         action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
         batch_idx = torch.arange(action_idx.size()[0])
