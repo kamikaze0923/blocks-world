@@ -1,4 +1,4 @@
-from c_swm.utils import StateTransitionsDataset
+from c_swm.utils import StateTransitionsDataset, StateTransitionsDatasetWithLatent
 from fosae.modules import FoSae, FoSae_Action
 from fosae.gumble import device
 import torch
@@ -12,16 +12,56 @@ from fosae.train_fosae import PREFIX, OBJS, STACKS, REMOVE_BG
 from fosae.train_fosae import MODEL_NAME as FOSAE_MODEL_NAME
 import os
 
+
 TEMP_BEGIN = 5
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.003
-TRAIN_BZ = 1
+TRAIN_BZ = 10
 ALPHA = 1
 
 os.makedirs("fosae/model_{}".format(PREFIX), exist_ok=True)
 print("Model is FoSae_Action")
 ACTION_MODEL_NAME = "FoSae_Action"
 print("Training Action Model")
+
+
+def get_new_dataloader(dataloader, vae):
+
+    all_data = []
+    all_data_next = []
+    all_preds = []
+    all_preds_next = []
+    all_action_mov_obj_index = []
+    all_action_tar_obj_index = []
+
+    for i, data in enumerate(dataloader):
+        _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
+        data = obj_mask.to(device)
+        data_next = next_obj_mask.to(device)
+
+        with torch.no_grad():
+            _, preds_all = vae((data, data_next), 0)
+            preds, preds_next = preds_all
+
+        all_data.append(data.cpu())
+        all_data_next.append(data_next.cpu())
+        all_preds.append(preds.cpu())
+        all_preds_next.append(preds_next.cpu())
+        all_action_mov_obj_index.append(action_mov_obj_index)
+        all_action_tar_obj_index.append(action_tar_obj_index)
+
+    new_dataset = StateTransitionsDatasetWithLatent(
+        (
+            torch.stack(all_data),
+            torch.stack(all_data_next),
+            torch.stack(all_action_mov_obj_index),
+            torch.stack(all_action_tar_obj_index),
+            torch.stack(all_preds),
+            torch.stack(all_preds_next)
+        )
+    )
+
+    return DataLoader(new_dataset)
 
 
 # Action similarity in latent space
@@ -33,7 +73,7 @@ def action_loss_function(preds_next, preds_next_by_action, criterion=nn.L1Loss(r
 def probs_metric(probs, probs_next):
     return torch.abs(0.5 - probs).mean().detach(), torch.abs(0.5 - probs_next).mean().detach()
 
-def epoch_routine(dataloader, vae, action_model, temp, optimizer=None):
+def epoch_routine(dataloader, action_model, temp, optimizer=None):
     if optimizer is not None:
         action_model.train()
     else:
@@ -42,7 +82,7 @@ def epoch_routine(dataloader, vae, action_model, temp, optimizer=None):
     action_loss = 0
 
     for i, data in enumerate(dataloader):
-        _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
+        obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index, preds, preds_next = data
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
 
@@ -57,18 +97,9 @@ def epoch_routine(dataloader, vae, action_model, temp, optimizer=None):
         if optimizer is None:
             with torch.no_grad():
                 changes = action_model((data+noise1, action+noise2), temp)
-
-                _, preds_all = vae((data, data_next), 0)
-                preds, preds_next = preds_all
-
                 act_loss = action_loss_function(preds_next, preds+changes)
         else:
             changes = action_model((data + noise1, action + noise2), temp)
-
-            with torch.no_grad():
-                _, preds_all = vae((data, data_next), 0)
-            preds, preds_next = preds_all
-
             act_loss = action_loss_function(preds_next, preds + changes)
             loss = act_loss
             optimizer.zero_grad()
@@ -90,6 +121,8 @@ def run(n_epoch):
     vae = FoSae().to(device)
     vae.load_state_dict(torch.load("fosae/model_{}/{}.pth".format(PREFIX, FOSAE_MODEL_NAME), map_location='cpu'))
     vae.eval()
+
+    train_loader = get_new_dataloader(train_loader, vae)
 
     action_model = FoSae_Action().to(device)
     optimizer = Adam(action_model.parameters(), lr=1e-3, betas=(0.99, 0.99))

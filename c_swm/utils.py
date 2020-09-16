@@ -244,6 +244,19 @@ class PathDataset(data.Dataset):
         return observations, actions
 
 
+class StateTransitionsDatasetWithLatent(data.Dataset):
+
+    def __init__(self, data):
+        self.obj_mask, self.next_obj_mask, self.action_mov_obj_index, self.action_tar_obj_index, self.pred, self.pred_next = data
+
+    def __len__(self):
+        return len(self.pred)
+
+    def __getitem__(self, i):
+        return self.obj_mask[i], self.next_obj_mask[i], self.action_mov_obj_index[i], \
+               self.action_tar_obj_index[i], self.pred[i], self.pred_next[i]
+
+
 if __name__ == "__main__":
     from fosae.modules import OBJS, STACKS, REMOVE_BG
     dataset = StateTransitionsDataset(hdf5_file="data/blocks-{}-{}-det_eval.h5".format(OBJS, STACKS), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG, truncate=50)
