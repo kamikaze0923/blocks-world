@@ -93,10 +93,10 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
         if optimizer is None:
             with torch.no_grad():
                 changes = action_model((data+noise1, action+noise2), temp)
-                act_loss = action_loss_function(preds_next, preds+changes)
+                act_loss = action_loss_function(preds_next.to(device), preds.to(device)+changes)
         else:
             changes = action_model((data + noise1, action + noise2), temp)
-            act_loss = action_loss_function(preds_next, preds + changes)
+            act_loss = action_loss_function(preds_next.to(device), preds + changes)
             loss = act_loss
             optimizer.zero_grad()
             loss.backward()
@@ -129,9 +129,9 @@ def run(n_epoch):
         temp = np.maximum(TEMP_BEGIN * np.exp(-ANNEAL_RATE * e), TEMP_MIN)
         print("Epoch: {}, Temperature: {}, Lr: {}".format(e, temp, scheculer.get_last_lr()))
         sys.stdout.flush()
-        train_loss = epoch_routine(train_loader, vae, action_model, temp, optimizer)
+        train_loss = epoch_routine(train_loader, action_model, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
-        test_loss = epoch_routine(train_loader, vae, action_model, temp)
+        test_loss = epoch_routine(train_loader, action_model, temp)
         print('====> Epoch: {} Average test loss: {:.4f}, Best Test loss: {:.4f}'.format(e, test_loss, best_loss))
         if test_loss < best_loss:
             print("Save Model")
