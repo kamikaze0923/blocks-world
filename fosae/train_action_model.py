@@ -15,7 +15,7 @@ import os
 TEMP_BEGIN = 5
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.003
-TRAIN_BZ = 320
+TRAIN_BZ = 10
 ALPHA = 1
 
 os.makedirs("fosae/model_{}".format(PREFIX), exist_ok=True)
@@ -91,7 +91,7 @@ def run(n_epoch):
     vae.eval()
 
     action_model = FoSae_Action().to(device)
-    optimizer = Adam(action_model.parameters(), lr=1e-3)
+    optimizer = Adam(action_model.parameters(), lr=1e-3, betas=(0.95, 0.99))
     # optimizer = SGD(action_model.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
