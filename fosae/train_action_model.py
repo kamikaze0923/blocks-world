@@ -17,6 +17,7 @@ TEMP_BEGIN = 5
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.003
 TRAIN_BZ = 10
+TEST_BZ = 320
 ALPHA = 1
 
 os.makedirs("fosae/model_{}".format(PREFIX), exist_ok=True)
@@ -25,7 +26,7 @@ ACTION_MODEL_NAME = "FoSae_Action"
 print("Training Action Model")
 
 
-def get_new_dataloader(dataloader, vae):
+def get_new_dataset(dataloader, vae):
 
     all_data = []
     all_preds = []
@@ -58,7 +59,7 @@ def get_new_dataloader(dataloader, vae):
         )
     )
 
-    return DataLoader(new_dataset)
+    return new_dataset
 
 
 # Action similarity in latent space
@@ -121,7 +122,9 @@ def run(n_epoch):
     vae.load_state_dict(torch.load("fosae/model_{}/{}.pth".format(PREFIX, FOSAE_MODEL_NAME), map_location='cpu'))
     vae.eval()
 
-    train_loader = get_new_dataloader(train_loader, vae)
+    new_data_set = get_new_dataset(train_loader, vae)
+    train_loader = DataLoader(dataset=new_data_set, batch_size=TRAIN_BZ)
+    test_loader = DataLoader(dataset=new_data_set, batch_size=TEST_BZ)
 
     action_model = FoSae_Action().to(device)
     optimizer = Adam(action_model.parameters(), lr=1e-3, betas=(0.9, 0.99))
@@ -134,7 +137,7 @@ def run(n_epoch):
         sys.stdout.flush()
         train_loss = epoch_routine(train_loader, action_model, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
-        test_loss = epoch_routine(train_loader, action_model, temp)
+        test_loss = epoch_routine(test_loader, action_model, temp)
         print('====> Epoch: {} Average test loss: {:.4f}, Best Test loss: {:.4f}'.format(e, test_loss, best_loss))
         if test_loss < best_loss:
             print("Save Model")
