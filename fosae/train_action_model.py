@@ -90,13 +90,16 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
         noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
         noise2 = torch.normal(mean=0, std=0.2, size=action.size()).to(device)
 
+        preds = preds.to(device)
+        preds_next = preds_next.to(device)
+
         if optimizer is None:
             with torch.no_grad():
                 changes = action_model((data+noise1, action+noise2), temp)
-                act_loss = action_loss_function(preds_next.to(device), preds.to(device)+changes)
+                act_loss = action_loss_function(preds_next, preds+changes)
         else:
             changes = action_model((data + noise1, action + noise2), temp)
-            act_loss = action_loss_function(preds_next.to(device), preds + changes)
+            act_loss = action_loss_function(preds_next, preds+changes)
             loss = act_loss
             optimizer.zero_grad()
             loss.backward()
