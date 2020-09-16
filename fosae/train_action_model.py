@@ -50,11 +50,11 @@ def get_new_dataloader(dataloader, vae):
 
     new_dataset = StateTransitionsDatasetWithLatent(
         (
-            torch.stack(all_data),
-            torch.stack(all_action_mov_obj_index),
-            torch.stack(all_action_tar_obj_index),
-            torch.stack(all_preds),
-            torch.stack(all_preds_next)
+            torch.cat(all_data, dim=0),
+            torch.cat(all_action_mov_obj_index, dim=0),
+            torch.cat(all_action_tar_obj_index, dim=0),
+            torch.cat(all_preds, dim=0),
+            torch.cat(all_preds_next, dim=0)
         )
     )
 
@@ -121,7 +121,7 @@ def run(n_epoch):
     train_loader = get_new_dataloader(train_loader, vae)
 
     action_model = FoSae_Action().to(device)
-    optimizer = Adam(action_model.parameters(), lr=1e-3, betas=(0.99, 0.99))
+    optimizer = Adam(action_model.parameters(), lr=1e-3, betas=(0.9, 0.99))
     # optimizer = SGD(action_model.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
