@@ -123,6 +123,8 @@ def run(n_epoch):
     vae.eval()
 
     new_data_set = get_new_dataset(train_loader, vae)
+
+    del vae
     train_loader = DataLoader(dataset=new_data_set, batch_size=TRAIN_BZ)
     test_loader = DataLoader(dataset=new_data_set, batch_size=TEST_BZ)
 
