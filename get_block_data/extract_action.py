@@ -7,8 +7,10 @@ from c_swm.utils import save_list_dict_h5py
 
 NUM_EPISODE = 100
 EPISODE_LENGTH = 10
-N_TRAIN = 600
-N_EVAL = 120
+N_TRAIN_DICT = {1:10, 2:80, 3:600, 4:5000}
+N_EVAL_DICT = {1:2, 2:16, 3:120, 4:760}
+N_TRAIN = N_TRAIN_DICT[objs]
+N_EVAL = N_EVAL_DICT[objs]
 
 np.random.seed(0)
 np.set_printoptions(threshold=np.inf, linewidth=np.inf)
@@ -112,7 +114,6 @@ def gen_episode(num_episode, episode_length):
         assert target_obj is not None
         assert moving_obj is not None
         replay = {
-            'action_one_hot': [],
             'obs': [],
             'mask': [],
             'obs_obj_index': [],
@@ -122,8 +123,6 @@ def gen_episode(num_episode, episode_length):
             'action_mov_obj_index': [],
             'action_tar_obj_index': []
         }
-
-        replay['action_one_hot'].append(action)
 
         obs_colors = np.unique(np.resize(mask, (-1, mask.shape[-1])), axis=0)
         next_obs_colors = np.unique(np.resize(next_mask, (-1, next_mask.shape[-1])), axis=0)

@@ -3,7 +3,7 @@ from torch import nn
 from fosae.gumble import gumbel_softmax, device
 from fosae.activations import TrinaryStep
 
-OBJS = 4
+OBJS = 1
 STACKS = 4
 REMOVE_BG = True
 

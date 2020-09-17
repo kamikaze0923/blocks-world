@@ -9,6 +9,7 @@ from torch.utils import data
 from torch import nn
 
 import matplotlib.pyplot as plt
+import pickle
 
 
 EPS = 1e-17
@@ -139,7 +140,7 @@ def get_masked_obj(obs, idx, idx_matirx):
 class StateTransitionsDataset(data.Dataset):
     """Create dataset of (o_t, a_t, o_{t+1}) transitions from replay buffer."""
 
-    def __init__(self, hdf5_file, n_obj, remove_bg=True, truncate=float('inf')):
+    def __init__(self, hdf5_file, n_obj, remove_bg=True, truncate=float('inf'), max_n_obj=None):
         """
         Args:
             hdf5_file (string): Path to the hdf5 file that contains experience
@@ -155,8 +156,11 @@ class StateTransitionsDataset(data.Dataset):
         if not remove_bg:
             n_obj += 1
 
+        if not max_n_obj:
+            max_n_obj = n_obj
+
         for ep in range(len(self.experience_buffer)):
-            num_steps = len(self.experience_buffer[ep]['action_one_hot'])
+            num_steps = len(self.experience_buffer[ep]['obs'])
             idx_tuple = [(ep, idx) for idx in range(num_steps)]
             self.idx2episode.extend(idx_tuple)
             step += num_steps
@@ -167,8 +171,8 @@ class StateTransitionsDataset(data.Dataset):
             next_obj_mask_idx = self.experience_buffer[ep]['next_obj_index']
             assert obj_mask_idx.shape == next_obj_mask_idx.shape
 
-            obj_mask_sep = np.zeros(shape=(n_obj, obs.shape[1], obs.shape[2], obs.shape[3]), dtype=np.float32)
-            next_obj_mask_sep = np.zeros(shape=(n_obj, next_obs.shape[1], next_obs.shape[2], next_obs.shape[3]), dtype=np.float32)
+            obj_mask_sep = np.zeros(shape=(max_n_obj, obs.shape[1], obs.shape[2], obs.shape[3]), dtype=np.float32)
+            next_obj_mask_sep = np.zeros(shape=(max_n_obj, next_obs.shape[1], next_obs.shape[2], next_obs.shape[3]), dtype=np.float32)
 
             # plt.gca()
             # plt.imshow(np.transpose(self.experience_buffer[ep]['obs'][0], (1,2,0)))
@@ -200,15 +204,13 @@ class StateTransitionsDataset(data.Dataset):
         obs = to_float(self.experience_buffer[ep]['obs'][step])
         next_obs = to_float(self.experience_buffer[ep]['next_obs'][step])
 
-        action_one_hot = self.experience_buffer[ep]['action_one_hot'][step]
-
         obj_mask = self.experience_buffer[ep]['obj_mask_sep']
         next_obj_mask = self.experience_buffer[ep]['next_obj_mask_sep']
 
         action_mov_obj_index = self.experience_buffer[ep]['action_mov_obj_index'] - (1 if self.remove_bg else 0)
         action_tar_obj_index = self.experience_buffer[ep]['action_tar_obj_index'] - (1 if self.remove_bg else 0)
 
-        return obs, next_obs, action_one_hot, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index
+        return obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index
 
 
 
@@ -257,19 +259,57 @@ class StateTransitionsDatasetWithLatent(data.Dataset):
 
 
 if __name__ == "__main__":
-    from fosae.modules import OBJS, STACKS, REMOVE_BG
-    dataset = StateTransitionsDataset(hdf5_file="data/blocks-{}-{}-det_eval.h5".format(OBJS, STACKS), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG, truncate=50)
-    eval_loader = data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4)
+    from fosae.modules import STACKS, REMOVE_BG
 
-    for batch_idx, data_batch in enumerate(eval_loader):
-        data_batch = [tensor.to('cpu') for tensor in data_batch]
-        obs, next_obs, action_one_hot, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data_batch
-        print(obs.size())
-        print(next_obs.size())
-        print(action_one_hot.size())
-        print(obj_mask.size())
-        print(next_obj_mask.size())
-        print(action_mov_obj_index.size())
-        print(action_tar_obj_index.size())
-        print(obj_mask.dtype)
-        exit(0)
+    all_obs = []
+    all_next_obs = []
+    all_obj_mask = []
+    all_next_obj_mask = []
+    all_action_mov_obj_index = []
+    all_action_tar_obj_index = []
+    all_n_obj = []
+
+    BATCH_SIZE = 200
+    for OBJS in [1,2,3,4]:
+        print(OBJS)
+        dataset = StateTransitionsDataset(hdf5_file="data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG, max_n_obj=8)
+        dataloader = data.DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+        for batch_idx, data_batch in enumerate(dataloader):
+            obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data_batch
+            all_obs.append(obs)
+            all_next_obs.append(next_obs)
+            all_obj_mask.append(obj_mask)
+            all_next_obj_mask.append(next_obj_mask)
+            all_action_mov_obj_index.append(action_mov_obj_index)
+            all_action_tar_obj_index.append(action_tar_obj_index)
+            all_n_obj.append(torch.tensor(OBJS).unsqueeze(0).expand(obs.size(0), -1))
+
+    all_obs = torch.cat(all_obs)
+    all_next_obs = torch.cat(all_next_obs)
+    all_obj_mask = torch.cat(all_obj_mask)
+    all_next_obj_mask = torch.cat(all_next_obj_mask)
+    all_action_mov_obj_index = torch.cat(all_action_mov_obj_index)
+    all_action_tar_obj_index = torch.cat(all_action_tar_obj_index)
+    all_n_obj = torch.cat(all_n_obj)
+
+
+
+    print(all_obs.size())
+    print(all_next_obs.size())
+    print(all_obj_mask.size())
+    print(all_next_obj_mask.size())
+    print(all_action_mov_obj_index.size())
+    print(all_action_tar_obj_index.size())
+    print(all_n_obj.size())
+
+
+    pickle.dump(
+        {
+            'obs': all_obs, 'next_obs': all_next_obs, 'obj_mask': all_obj_mask, 'next_obj_mask': all_next_obj_mask,
+            'action_mov_obj_index': all_action_mov_obj_index, 'action_tar_obj_index': all_action_tar_obj_index,
+            'n_obj': all_n_obj
+        },
+        open("data/blocks-all_size-det_all.pkl", 'wb')
+    )
+
