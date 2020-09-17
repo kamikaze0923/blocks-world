@@ -129,6 +129,12 @@ def run(n_epoch):
     test_loader = DataLoader(dataset=new_data_set, batch_size=TEST_BZ)
 
     action_model = FoSae_Action().to(device)
+    try:
+        action_model.load_state_dict(torch.load("fosae/model_{}/{}.pth".format(PREFIX, ACTION_MODEL_NAME), map_location='cpu'))
+        print("Action Model Loaded")
+    except:
+        print("Action Model Loaded Fail")
+        pass
     optimizer = Adam(action_model.parameters(), lr=1e-3, betas=(0.9, 0.99))
     # optimizer = SGD(action_model.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
