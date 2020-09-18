@@ -51,5 +51,5 @@ pickle.dump(
         'action_mov_obj_index': all_action_mov_obj_index, 'action_tar_obj_index': all_action_tar_obj_index,
         'n_obj': all_n_obj
     },
-    open("c_swm/data/blocks-all-size-det_all.pkl", 'wb')
+    open("c_swm/data/blocks-all-size-det_all.pkl", 'wb'), protocol=4
 )
