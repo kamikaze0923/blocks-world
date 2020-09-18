@@ -13,7 +13,7 @@ all_action_tar_obj_index = []
 all_n_obj = []
 
 BATCH_SIZE = 200
-for OBJS in [1, 2, 3, 4]:
+for OBJS in [1, 2]:
     print(OBJS)
     dataset = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS),
                                       n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9)
@@ -51,5 +51,5 @@ pickle.dump(
         'action_mov_obj_index': all_action_mov_obj_index, 'action_tar_obj_index': all_action_tar_obj_index,
         'n_obj': all_n_obj
     },
-    open("c_swm/data/blocks-all-size-det_all.pkl", 'wb'), protocol=4
+    open("c_swm/data/blocks-half-size-det_all.pkl", 'wb'), protocol=4
 )
