@@ -132,7 +132,7 @@ def unsorted_segment_sum(tensor, segment_ids, num_segments):
 def get_masked_obj(obs, idx, idx_matirx):
     flt = np.stack([(idx_matirx[0] == idx).astype(np.float32) for _ in range(obs.shape[1])])
     prod = np.multiply(flt, obs[0])
-    prod[prod == 0] = 1
+    # prod[prod == 0] = 1
     return prod
 
 class StateTransitionsDataset(data.Dataset):
@@ -267,6 +267,20 @@ class StateTransitionsDatasetDiffNObjs(data.Dataset):
         self.action_mov_obj_index = dict['action_mov_obj_index']
         self.action_tar_obj_index = dict['action_tar_obj_index']
         self.n_obj = dict['n_obj']
+
+        # plt.gca()
+        # plt.imshow(np.transpose(self.obs[0], (1,2,0)))
+        # plt.pause(0.1)
+        # plt.imshow(np.transpose(self.next_obs[0], (1,2,0)))
+        # plt.pause(0.1)
+        # for i in self.obj_mask[0]:
+        #     plt.imshow(np.transpose(i, (1,2,0)))
+        #     plt.pause(0.1)
+        # for i in self.next_obj_mask[0]:
+        #     plt.imshow(np.transpose(i, (1,2,0)))
+        #     plt.pause(0.1)
+        # plt.pause(0.1)
+        # exit(0)
 
     def __len__(self):
         return len(self.obj_mask)
