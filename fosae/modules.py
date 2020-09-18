@@ -55,27 +55,19 @@ class PredicateNetwork(nn.Module):
         return gumbel_softmax(logits, temp)
 
 
-class PredicateGNNLayer(nn.Module):
 
-    def __init__(self, in_features, out_features):
-        super(PredicateGNNLayer, self).__init__()
-        self.w = Variable(torch.zeros(size=(in_features, out_features)))
-        torch.nn.init.normal_(self.w, mean=0, std=0.7)
-
-    def forward(self, h, adj):
-        return  torch.matmul(adj, torch.matmul(h, self.w))
 
 
 class PredicateLearner(nn.Module):
 
     def __init__(self):
         super(PredicateLearner, self).__init__()
-        self.gnn1 = PredicateGNNLayer(in_features=P, out_features=OBJECT_LATENT)
-        self.gnn2 = PredicateGNNLayer(in_features=OBJECT_LATENT, out_features=OBJECT_LATENT)
+        self.fc1 = nn.Linear(in_features=P, out_features=OBJECT_LATENT, bias=False)
+        self.fc2 = nn.Linear(in_features=OBJECT_LATENT, out_features=OBJECT_LATENT, bias=False)
 
     def forward(self, x, adj):
-        a1 = torch.relu(self.gnn1(x, adj))
-        a2 = torch.relu(self.gnn2(a1, adj))
+        a1 = torch.relu(torch.matmul(adj, self.fc1(x)))
+        a2 = torch.relu(torch.matmul(adj, self.fc2(a1)))
         return a2
 
 class ObjectImageDecoder(nn.Module):
