@@ -82,7 +82,7 @@ class PredicateUnit(nn.Module):
                 all_tuples.append(torch.index_select(s, dim=0, index=t).view(A*IMG_C, IMG_H, IMG_W))
                 all_tuples_next.append(torch.index_select(s_n, dim=0, index=t).view(A * IMG_C, IMG_H, IMG_W))
                 all_adjaceny.append(torch.index_fill(adj, dim=0, index=torch.tensor(i), value=1))
-        return torch.stack(all_tuples, dim=0), torch.stack(all_tuples_next, dim=0), torch.cat(all_adjaceny, dim=1)
+        return torch.stack(all_tuples, dim=0), torch.stack(all_tuples_next, dim=0), torch.cat(all_adjaceny, dim=1).to(device)
 
 
 class PredicateDecoder(nn.Module):
