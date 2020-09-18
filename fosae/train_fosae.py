@@ -1,4 +1,4 @@
-from c_swm.utils import StateTransitionsDataset
+from c_swm.utils import StateTransitionsDataset, StateTransitionsDatasetDiffNObjs
 from fosae.modules import FoSae, OBJS, STACKS, REMOVE_BG
 from fosae.gumble import device
 import torch
@@ -14,15 +14,16 @@ import os
 TEMP_BEGIN = 5
 TEMP_MIN = 0.1
 ANNEAL_RATE = 0.003
-TRAIN_BZ = 40
-TEST_BZ = 40
+TRAIN_BZ = 2
+TEST_BZ = 183
 BETA = 1
 MARGIN = 1
 
 print("Model is FOSAE")
 MODEL_NAME = "FoSae"
 
-PREFIX = "blocks-{}-{}-det".format(OBJS, STACKS)
+# PREFIX = "blocks-{}-{}-det".format(OBJS, STACKS)
+PREFIX = "blocks-{}-{}-det".format('all', 'size')
 os.makedirs("fosae/model_{}".format(PREFIX), exist_ok=True)
 print("Training Encoder and Decoder")
 
@@ -30,6 +31,7 @@ torch.manual_seed(0)
 
 # Reconstruction
 def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
+    x = x.sum(dim=1)
     sum_dim = [i for i in range(1, x.dim())]
     BCE = criterion(recon_x, x).sum(dim=sum_dim).mean()
     return BCE
@@ -54,7 +56,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     metric_pred_next = 0
 
     for i, data in enumerate(dataloader):
-        _, _, _, obj_mask, next_obj_mask, _, _ = data
+        _, _, obj_mask, next_obj_mask, _, _, n_obj = data
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
 
@@ -63,13 +65,13 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
 
         if optimizer is None:
             with torch.no_grad():
-                recon_batch, preds = vae((data+noise1, data_next+noise2), temp)
+                recon_batch, preds = vae((data+noise1, data_next+noise2, n_obj), temp)
                 rec_loss0 = rec_loss_function(recon_batch[0], data)
                 rec_loss1 = rec_loss_function(recon_batch[1], data_next)
                 m1, m2 = probs_metric(preds[0], preds[1])
                 ctrs_loss = contrastive_loss_function(preds[0], preds[1])
         else:
-            recon_batch, preds = vae((data+noise1, data_next+noise2), temp)
+            recon_batch, preds = vae((data+noise1, data_next+noise2, n_obj), temp)
             rec_loss0 = rec_loss_function(recon_batch[0], data)
             rec_loss1 = rec_loss_function(recon_batch[1], data_next)
             m1, m2 = probs_metric(preds[0], preds[1])
@@ -103,7 +105,8 @@ def run(n_epoch):
     # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_train.h5", n_obj=9)
     # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_eval.h5", n_obj=9)
     # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
-    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
+    # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
+    train_set = StateTransitionsDatasetDiffNObjs(pk_file="c_swm/data/blocks-all-size-det_all.pkl")
     print("Training Examples: {}".format(len(train_set)))
     assert len(train_set) % TRAIN_BZ == 0
     # assert len(test_set) % TEST_BZ == 0

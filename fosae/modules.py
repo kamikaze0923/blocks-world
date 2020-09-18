@@ -13,6 +13,7 @@ A = 2
 U = 1
 ACTION_A = 2
 CONV_CHANNELS = 16
+OBJECT_LATENT = 16
 ENCODER_FC_LAYER_SIZE = 100
 DECODER_FC_LAYER_SIZE = 1000
 PRED_BITS = 1
@@ -51,7 +52,7 @@ class PredicateNetwork(nn.Module):
         self.predicate_encoder = BaseObjectImageEncoder(in_objects=A, out_features=PRED_BITS)
 
     def forward(self, input, temp):
-        logits = self.predicate_encoder(input).view(-1, N**A, PRED_BITS)
+        logits = self.predicate_encoder(input).view(-1, PRED_BITS)
         return gumbel_softmax(logits, temp)
 
 
@@ -60,36 +61,43 @@ class PredicateUnit(nn.Module):
     def __init__(self, predicate_nets, n_obj):
         super(PredicateUnit, self).__init__()
         self.predicate_nets = predicate_nets
-        self.enum_index = torch.cartesian_prod(torch.arange(n_obj), torch.arange(n_obj)).to(device)
 
-    def forward(self, state, state_next, temp):
+    def forward(self, state, state_next, n_obj, temp):
+        obj_tuples, obj_tuples_next, adj_matirx = self.enumerate_state_tuples(state, state_next, n_obj)
 
-        obj_tuples = self.enumerate_state_tuples(state)
-        preds = torch.stack([pred_net(obj_tuples, temp) for pred_net in self.predicate_nets], dim=1)
+        preds = torch.cat([pred_net(obj_tuples, temp) for pred_net in self.predicate_nets], dim=1)
+        preds_next = torch.cat([pred_net(obj_tuples_next, temp) for pred_net in self.predicate_nets], dim=1)
 
-        obj_tuples_next = self.enumerate_state_tuples(state_next)
-        preds_next = torch.stack([pred_net(obj_tuples_next, temp) for pred_net in self.predicate_nets], dim=1)
+        return preds, preds_next, adj_matirx
 
-        return preds, preds_next
-
-    def enumerate_state_tuples(self, state):
+    def enumerate_state_tuples(self, state, state_next, n_obj):
+        all_adjaceny = []
         all_tuples = []
-        for t in self.enum_index:
-            all_tuples.append(torch.index_select(state, dim=1, index=t).view(-1, A*IMG_C, IMG_H, IMG_W))
-        all_tuples = torch.stack(all_tuples, dim=1)
-        return all_tuples
+        all_tuples_next = []
+        N = state.size()[0]
+        adj = torch.zeros(size=(N,1))
+        for i, (s, s_n, n) in enumerate(zip(state, state_next, n_obj)):
+            enum_index = torch.cartesian_prod(torch.arange(n.item()), torch.arange(n.item())).to(device)
+            for t in enum_index:
+                all_tuples.append(torch.index_select(s, dim=0, index=t).view(A*IMG_C, IMG_H, IMG_W))
+                all_tuples_next.append(torch.index_select(s_n, dim=0, index=t).view(A * IMG_C, IMG_H, IMG_W))
+                all_adjaceny.append(torch.index_fill(adj, dim=0, index=torch.tensor(i), value=1))
+        return torch.stack(all_tuples, dim=0), torch.stack(all_tuples_next, dim=0), torch.cat(all_adjaceny, dim=1)
+
 
 class PredicateDecoder(nn.Module):
 
     def __init__(self):
         super(PredicateDecoder, self).__init__()
-        self.fc1 = nn.Linear(in_features=P*N**A, out_features=DECODER_FC_LAYER_SIZE)
+        self.fc1 = nn.Linear(in_features=P, out_features=OBJECT_LATENT)
         # self.bn1 = nn.BatchNorm1d(1)
-        self.fc2 = nn.Linear(in_features=DECODER_FC_LAYER_SIZE, out_features=N*IMG_C*IMG_H*IMG_W)
+        self.fc2 = nn.Linear(in_features=OBJECT_LATENT, out_features=DECODER_FC_LAYER_SIZE)
+        self.fc3 = nn.Linear(in_features=DECODER_FC_LAYER_SIZE, out_features=IMG_C*IMG_H*IMG_W)
 
-    def forward(self, input):
-        h1 = torch.relu(self.fc1(input.view(-1, 1, P*N**A)))
-        return torch.sigmoid(self.fc2(h1)).view(-1, N, IMG_C, IMG_H, IMG_W)
+    def forward(self, input, adj_matrix):
+        h1 = torch.relu(self.fc1(input))
+        h2 = self.fc2(torch.matmul(adj_matrix, h1))
+        return torch.sigmoid(self.fc3(h2)).view(-1, IMG_C, IMG_H, IMG_W)
 
 class FoSae(nn.Module):
 
@@ -100,22 +108,27 @@ class FoSae(nn.Module):
         self.decoder = PredicateDecoder()
 
     def forward(self, input, temp):
-        state, state_next = input
+        state, state_next, n_obj = input
 
         all_preds = []
         all_preds_next = []
 
-        for pu in self.predicate_units:
-            preds, preds_next = pu(state, state_next, temp)
+        adj_matrix = None
 
+        for pu in self.predicate_units:
+            preds, preds_next, adj = pu(state, state_next, n_obj, temp)
             all_preds.append(preds)
             all_preds_next.append(preds_next)
+            if not adj_matrix:
+                adj_matrix = adj
 
-        all_preds, _ = torch.stack(all_preds, dim=1)[:,:,:,:,[0]].max(dim=1)
-        all_preds_next, _ = torch.stack(all_preds_next, dim=1)[:,:,:,:,[0]].max(dim=1)
+        all_preds = torch.stack(all_preds, dim=1)
+        all_preds_next = torch.stack(all_preds_next, dim=1)
+        all_preds, _ = all_preds.max(dim=1)
+        all_preds_next, _ = all_preds_next.max(dim=1)
 
-        x_hat = self.decoder(all_preds)
-        x_hat_next = self.decoder(all_preds_next)
+        x_hat = self.decoder(all_preds, adj_matrix)
+        x_hat_next = self.decoder(all_preds_next, adj_matrix)
 
         return (x_hat, x_hat_next), (all_preds, all_preds_next)
 

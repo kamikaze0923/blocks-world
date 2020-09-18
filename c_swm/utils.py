@@ -258,58 +258,32 @@ class StateTransitionsDatasetWithLatent(data.Dataset):
         return self.obj_mask[i], self.action_mov_obj_index[i], self.action_tar_obj_index[i], self.pred[i], self.pred_next[i]
 
 
+class StateTransitionsDatasetDiffNObjs(data.Dataset):
+
+    def __init__(self, pk_file):
+        dict = pickle.load(open(pk_file, 'rb'))
+        self.obs = dict['obs']
+        self.next_obs = dict['next_obs']
+        self.obj_mask = dict['obj_mask']
+        self.next_obj_mask = dict['next_obj_mask']
+        self.action_mov_obj_index = dict['action_mov_obj_index']
+        self.action_tar_obj_index = dict['action_tar_obj_index']
+        self.n_obj = dict['n_obj']
+
+    def __len__(self):
+        return len(self.obj_mask)
+
+    def __getitem__(self, i):
+        return self.obs[i], self.next_obs[i], self.obj_mask[i], self.next_obj_mask[i], \
+               self.action_mov_obj_index[i], self.action_tar_obj_index[i], self.n_obj[i]
+
+
 if __name__ == "__main__":
-    from fosae.modules import STACKS, REMOVE_BG
+    dataset = StateTransitionsDatasetDiffNObjs(pk_file="data/blocks-all-size-det_all.pkl")
+    dataloader = data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4)
 
-    all_obs = []
-    all_next_obs = []
-    all_obj_mask = []
-    all_next_obj_mask = []
-    all_action_mov_obj_index = []
-    all_action_tar_obj_index = []
-    all_n_obj = []
-
-    BATCH_SIZE = 200
-    for OBJS in [1,2,3,4]:
-        print(OBJS)
-        dataset = StateTransitionsDataset(hdf5_file="data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG, max_n_obj=8)
-        dataloader = data.DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
-
-        for batch_idx, data_batch in enumerate(dataloader):
-            obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data_batch
-            all_obs.append(obs)
-            all_next_obs.append(next_obs)
-            all_obj_mask.append(obj_mask)
-            all_next_obj_mask.append(next_obj_mask)
-            all_action_mov_obj_index.append(action_mov_obj_index)
-            all_action_tar_obj_index.append(action_tar_obj_index)
-            all_n_obj.append(torch.tensor(OBJS).unsqueeze(0).expand(obs.size(0), -1))
-
-    all_obs = torch.cat(all_obs)
-    all_next_obs = torch.cat(all_next_obs)
-    all_obj_mask = torch.cat(all_obj_mask)
-    all_next_obj_mask = torch.cat(all_next_obj_mask)
-    all_action_mov_obj_index = torch.cat(all_action_mov_obj_index)
-    all_action_tar_obj_index = torch.cat(all_action_tar_obj_index)
-    all_n_obj = torch.cat(all_n_obj)
-
-
-
-    print(all_obs.size())
-    print(all_next_obs.size())
-    print(all_obj_mask.size())
-    print(all_next_obj_mask.size())
-    print(all_action_mov_obj_index.size())
-    print(all_action_tar_obj_index.size())
-    print(all_n_obj.size())
-
-
-    pickle.dump(
-        {
-            'obs': all_obs, 'next_obs': all_next_obs, 'obj_mask': all_obj_mask, 'next_obj_mask': all_next_obj_mask,
-            'action_mov_obj_index': all_action_mov_obj_index, 'action_tar_obj_index': all_action_tar_obj_index,
-            'n_obj': all_n_obj
-        },
-        open("data/blocks-all_size-det_all.pkl", 'wb')
-    )
+    for batch_idx, data_batch in enumerate(dataloader):
+        for i in data_batch:
+            print(i.size())
+        exit(0)
 
