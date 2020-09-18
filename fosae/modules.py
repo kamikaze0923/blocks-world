@@ -5,9 +5,8 @@ from fosae.activations import TrinaryStep
 
 OBJS = 1
 STACKS = 4
-REMOVE_BG = True
+REMOVE_BG = False
 
-N = OBJS + STACKS + (0 if REMOVE_BG else 1)
 P = 3
 A = 2
 U = 1

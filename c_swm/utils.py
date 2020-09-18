@@ -135,8 +135,6 @@ def get_masked_obj(obs, idx, idx_matirx):
     prod[prod == 0] = 1
     return prod
 
-
-
 class StateTransitionsDataset(data.Dataset):
     """Create dataset of (o_t, a_t, o_{t+1}) transitions from replay buffer."""
 

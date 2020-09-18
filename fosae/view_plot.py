@@ -48,8 +48,6 @@ while True:
             axs[5,i].imshow(p_nt, cmap='gray')
             axs[6,i].imshow(a, cmap='gray')
 
-
-
         plt.pause(0.2)
         # a = 1
 
