@@ -55,9 +55,6 @@ class PredicateNetwork(nn.Module):
         return gumbel_softmax(logits, temp)
 
 
-
-
-
 class PredicateLearner(nn.Module):
 
     def __init__(self):
