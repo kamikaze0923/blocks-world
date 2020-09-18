@@ -16,7 +16,7 @@ BATCH_SIZE = 200
 for OBJS in [1, 2, 3, 4]:
     print(OBJS)
     dataset = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS),
-                                      n_obj=OBJS + STACKS, remove_bg=p, max_n_obj=9)
+                                      n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9)
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
     for batch_idx, data_batch in enumerate(dataloader):
