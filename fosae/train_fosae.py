@@ -14,8 +14,8 @@ import os
 TEMP_BEGIN = 5
 TEMP_MIN = 0.1
 ANNEAL_RATE = 0.003
-TRAIN_BZ = 61
-TEST_BZ = 61
+TRAIN_BZ = 108
+TEST_BZ = 108
 
 BETA = 1
 MARGIN = 1
@@ -107,7 +107,7 @@ def run(n_epoch):
     # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_eval.h5", n_obj=9)
     # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
     # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
-    train_set = StateTransitionsDatasetDiffNObjs(pk_file="c_swm/data/blocks-all-size-det_all.pkl")
+    train_set = StateTransitionsDatasetDiffNObjs(pk_file="c_swm/data/blocks-half-size-det_all.pkl")
     print("Training Examples: {}".format(len(train_set)))
     assert len(train_set) % TRAIN_BZ == 0
     # assert len(test_set) % TEST_BZ == 0
