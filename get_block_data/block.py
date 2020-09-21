@@ -3,7 +3,7 @@ import json
 from collections import defaultdict
 from get_block_data.relation import SceneRelation
 
-objs = 1
+objs = 2
 stacks = 4
 det = True
 prefix = "blocks-{}-{}-{}".format(objs, stacks, "det" if det else "")
@@ -94,6 +94,6 @@ def extract_predicate(json_file):
                 clear = False
         if clear:
             relation.clear.add(b.id)
-    return scene_objs, sorted(bottom_pads_objs, key=lambda x: x.n_stack), relation
+    return scene_objs, sorted(bottom_pads_objs, key=lambda x: x.n_stack), state_json['scene_state'], relation
 
 

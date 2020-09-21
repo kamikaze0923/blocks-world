@@ -10,9 +10,11 @@ from torch import nn
 
 import matplotlib.pyplot as plt
 import pickle
+import random
 
 
 EPS = 1e-17
+random.seed(0)
 
 np.set_printoptions(linewidth=np.inf, threshold=np.inf)
 
@@ -157,6 +159,8 @@ class StateTransitionsDataset(data.Dataset):
         if not max_n_obj:
             max_n_obj = n_obj
 
+        self.all_scene_dict = {}
+
         for ep in range(len(self.experience_buffer)):
             num_steps = len(self.experience_buffer[ep]['obs'])
             idx_tuple = [(ep, idx) for idx in range(num_steps)]
@@ -190,8 +194,18 @@ class StateTransitionsDataset(data.Dataset):
 
             self.experience_buffer[ep]['obj_mask_sep'] = obj_mask_sep
             self.experience_buffer[ep]['next_obj_mask_sep'] = next_obj_mask_sep
+            for scene_state, observation, mask in zip(
+                [self.experience_buffer[ep]['scene_state_pre'], self.experience_buffer[ep]['scene_state_suc']],
+                [obs, next_obs],
+                [obj_mask_sep, next_obj_mask_sep]
+            ):
+                scene_state = tuple(scene_state)
+                if scene_state not in self.all_scene_dict:
+                    self.all_scene_dict[scene_state] = (observation, mask)
+
 
         self.num_steps = step
+        self.all_scene_keys = self.all_scene_dict.keys()
 
     def __len__(self):
         return self.num_steps
@@ -208,7 +222,20 @@ class StateTransitionsDataset(data.Dataset):
         action_mov_obj_index = self.experience_buffer[ep]['action_mov_obj_index'] - (1 if self.remove_bg else 0)
         action_tar_obj_index = self.experience_buffer[ep]['action_tar_obj_index'] - (1 if self.remove_bg else 0)
 
-        return obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index
+        rand_other_state_pre = self.sample_diff_key(tuple(self.experience_buffer[ep]['scene_state_pre']))
+        rand_other_state_suc = self.sample_diff_key(tuple(self.experience_buffer[ep]['scene_state_suc']))
+
+        return obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index, \
+               self.all_scene_dict[rand_other_state_pre][0], self.all_scene_dict[rand_other_state_suc][0], \
+               self.all_scene_dict[rand_other_state_pre][1], self.all_scene_dict[rand_other_state_suc][1],
+
+    def sample_diff_key(self, key):
+        keys_list = list(self.all_scene_keys)
+        while True:
+            new_key = keys_list.pop(random.randrange(len(keys_list)))
+            if new_key != key:
+                break
+            return new_key
 
 
 

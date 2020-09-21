@@ -267,6 +267,7 @@ def main(args):
     mask_img_path = mask_img_template % states+".png"
     scene_path = scene_template % states+".json"
     blend_path = blend_template % states
+
     
     hashtable[key] = (img_path, scene_path, blend_path)
 
@@ -299,6 +300,7 @@ def main(args):
     # for o in objects_with_pad:
     #   print(o)
 
+    scene_state_info = (states, len(objects), len(objects_with_pad)-len(objects))
     render_scene(args,
                  output_index=states,
                  output_split=args.split,
@@ -306,7 +308,8 @@ def main(args):
                  output_mask_image=mask_img_path,
                  output_scene=scene_path,
                  # output_blendfile=blend_path,
-                 objects=objects_with_pad)
+                 objects=objects_with_pad,
+                 scene_state_info=scene_state_info)
 
   print(states+1,"states")
 
@@ -416,6 +419,7 @@ def render_scene(args,
     output_scene='render_json',
     output_blendfile=None,
     objects=[],
+    scene_state_info=None
   ):
 
   # Load the main blendfile
@@ -460,6 +464,7 @@ def render_scene(args,
       'image_filename': os.path.basename(output_image),
       'objects': [],
       'directions': {},
+      'scene_state' : scene_state_info
   }
 
   # Put a plane on the ground so we can compute cardinal directions

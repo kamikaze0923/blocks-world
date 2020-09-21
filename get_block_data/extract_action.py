@@ -60,8 +60,8 @@ def gen_episode(num_episode, episode_length):
             replay_buffer = replay_buffer_eval
         pre_json = os.path.join(prefix, "scene_tr", tr_files[i*2])
         suc_json = os.path.join(prefix, "scene_tr", tr_files[i*2+1])
-        pre_objs, pre_bottom_pads, _ = extract_predicate(pre_json)
-        suc_objs, suc_bottom_pads, _ = extract_predicate(suc_json)
+        pre_objs, pre_bottom_pads, pre_state, _ = extract_predicate(pre_json)
+        suc_objs, suc_bottom_pads, suc_state, _ = extract_predicate(suc_json)
         action = None
         target_obj = None
         moving_obj = None
@@ -121,7 +121,9 @@ def gen_episode(num_episode, episode_length):
             'next_mask': [],
             'next_obj_index': [],
             'action_mov_obj_index': [],
-            'action_tar_obj_index': []
+            'action_tar_obj_index': [],
+            'scene_state_pre': [],
+            'scene_state_suc': []
         }
 
         obs_colors = np.unique(np.resize(mask, (-1, mask.shape[-1])), axis=0)
@@ -170,6 +172,14 @@ def gen_episode(num_episode, episode_length):
 
         replay['action_tar_obj_index'].append(
             target_obj.id
+        )
+
+        replay['scene_state_pre'].extend(
+            pre_state
+        )
+
+        replay['scene_state_suc'].extend(
+            suc_state
         )
 
         replay_buffer.append(replay)
