@@ -84,5 +84,5 @@ pickle.dump(
         'obj_mask_tilda': all_obj_mask_tilda, 'next_obj_mask_tilda': all_next_obj_mask_tilda,
         'n_obj': all_n_obj
     },
-    open("c_swm/data/blocks-{}-size-det_all.pkl".format(sys.argv[1]), 'wb'), protocol=4
+    open("c_swm/data/blocks-{}-size-det_all.pkl".format(sys.argv[1]), 'wb'), protocol=2
 )
