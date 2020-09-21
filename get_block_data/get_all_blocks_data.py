@@ -35,7 +35,7 @@ for OBJS in N_OBJS:
     print(OBJS)
     dataset = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS),
                                       n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9)
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     for batch_idx, data_batch in enumerate(dataloader):
         obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index,\
