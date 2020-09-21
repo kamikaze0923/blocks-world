@@ -2,9 +2,15 @@ import os
 import json
 from collections import defaultdict
 from get_block_data.relation import SceneRelation
+import sys
 
-objs = 2
-stacks = 4
+if len(sys.argv) == 1:
+    print("Please specify #objs and #stacks")
+    exit(0)
+else:
+    objs = int(sys.argv[1])
+    stacks = int(sys.argv[2])
+
 det = True
 prefix = "blocks-{}-{}-{}".format(objs, stacks, "det" if det else "")
 print(prefix)

@@ -235,7 +235,7 @@ class StateTransitionsDataset(data.Dataset):
             new_key = keys_list.pop(random.randrange(len(keys_list)))
             if new_key != key:
                 break
-            return new_key
+        return new_key
 
 
 

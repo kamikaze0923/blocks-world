@@ -3,6 +3,18 @@ import torch
 from torch.utils.data import DataLoader
 from c_swm.utils import StateTransitionsDataset
 import pickle
+import sys
+
+if len(sys.argv) == 1:
+    print("Please Specify for 'all' or 'half' for dataset size")
+    exit(0)
+else:
+    if sys.argv[1] == "all":
+        N_OBJS = [1, 2, 3, 4]
+    else:
+        assert sys.argv[1] == "half"
+        N_OBJS = [1, 2]
+
 
 all_obs = []
 all_next_obs = []
@@ -17,7 +29,9 @@ all_action_tar_obj_index = []
 all_n_obj = []
 
 BATCH_SIZE = 200
-for OBJS in [1, 2]:
+
+
+for OBJS in N_OBJS:
     print(OBJS)
     dataset = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS),
                                       n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9)
@@ -70,5 +84,5 @@ pickle.dump(
         'obj_mask_tilda': all_obj_mask_tilda, 'next_obj_mask_tilda': all_next_obj_mask_tilda,
         'n_obj': all_n_obj
     },
-    open("c_swm/data/blocks-half-size-det_all.pkl", 'wb'), protocol=4
+    open("c_swm/data/blocks-{}-size-det_all.pkl".format(sys.argv[1]), 'wb'), protocol=4
 )
