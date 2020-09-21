@@ -286,13 +286,17 @@ class StateTransitionsDatasetWithLatent(data.Dataset):
 class StateTransitionsDatasetDiffNObjs(data.Dataset):
 
     def __init__(self, pk_file):
-        dict = pickle.load(open(pk_file, 'rb'))
+        dict = pickle.load(open(pk_file, 'r'))
         self.obs = dict['obs']
         self.next_obs = dict['next_obs']
         self.obj_mask = dict['obj_mask']
         self.next_obj_mask = dict['next_obj_mask']
         self.action_mov_obj_index = dict['action_mov_obj_index']
         self.action_tar_obj_index = dict['action_tar_obj_index']
+        self.obs_tilda = dict['obs_tilda']
+        self.next_obs_tilda = dict['next_obs_tilda']
+        self.obj_mask_tilda = dict['obj_mask_tilda']
+        self.next_obj_mask_tilda = dict['next_obj_mask_tilda']
         self.n_obj = dict['n_obj']
 
         # plt.gca()
@@ -314,7 +318,9 @@ class StateTransitionsDatasetDiffNObjs(data.Dataset):
 
     def __getitem__(self, i):
         return self.obs[i], self.next_obs[i], self.obj_mask[i], self.next_obj_mask[i], \
-               self.action_mov_obj_index[i], self.action_tar_obj_index[i], self.n_obj[i]
+               self.action_mov_obj_index[i], self.action_tar_obj_index[i], \
+               self.obs_tilda[i], self.next_obs_tilda[i], self.obj_mask_tilda[i], self.next_obj_mask_tilda[i], \
+               self.n_obj[i]
 
 
 if __name__ == "__main__":
