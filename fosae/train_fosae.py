@@ -110,7 +110,7 @@ def run(n_epoch):
     train_set = Concat(
         [StateTransitionsDataset(
             hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9
-        ) for OBJS in [1,2,3,4]]
+        ) for OBJS in [1,2]]
     )
     print("Training Examples: {}".format(len(train_set)))
     assert len(train_set) % TRAIN_BZ == 0
