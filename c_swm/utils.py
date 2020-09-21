@@ -9,7 +9,7 @@ from torch.utils import data
 from torch import nn
 
 import matplotlib.pyplot as plt
-import pickle
+import sys
 import random
 
 
@@ -203,7 +203,6 @@ class StateTransitionsDataset(data.Dataset):
                 if scene_state not in self.all_scene_dict:
                     self.all_scene_dict[scene_state] = (observation, mask)
 
-
         self.num_steps = step
         self.all_scene_keys = self.all_scene_dict.keys()
 
@@ -283,52 +282,42 @@ class StateTransitionsDatasetWithLatent(data.Dataset):
         return self.obj_mask[i], self.action_mov_obj_index[i], self.action_tar_obj_index[i], self.pred[i], self.pred_next[i]
 
 
-class StateTransitionsDatasetDiffNObjs(data.Dataset):
+class Concat(data.Dataset):
 
-    def __init__(self, pk_file):
-        dict = pickle.load(open(pk_file, 'r'))
-        self.obs = dict['obs']
-        self.next_obs = dict['next_obs']
-        self.obj_mask = dict['obj_mask']
-        self.next_obj_mask = dict['next_obj_mask']
-        self.action_mov_obj_index = dict['action_mov_obj_index']
-        self.action_tar_obj_index = dict['action_tar_obj_index']
-        self.obs_tilda = dict['obs_tilda']
-        self.next_obs_tilda = dict['next_obs_tilda']
-        self.obj_mask_tilda = dict['obj_mask_tilda']
-        self.next_obj_mask_tilda = dict['next_obj_mask_tilda']
-        self.n_obj = dict['n_obj']
+    def __init__(self, datasets):
+        self.datasets = datasets
+        self.lengths = [len(d) for d in datasets]
+        self.offsets = np.cumsum(self.lengths)
+        self.length = np.sum(self.lengths)
 
-        # plt.gca()
-        # plt.imshow(np.transpose(self.obs[0], (1,2,0)))
-        # plt.pause(0.1)
-        # plt.imshow(np.transpose(self.next_obs[0], (1,2,0)))
-        # plt.pause(0.1)
-        # for i in self.obj_mask[0]:
-        #     plt.imshow(np.transpose(i, (1,2,0)))
-        #     plt.pause(0.1)
-        # for i in self.next_obj_mask[0]:
-        #     plt.imshow(np.transpose(i, (1,2,0)))
-        #     plt.pause(0.1)
-        # plt.pause(0.1)
-        # exit(0)
+    def __getitem__(self, index):
+        for i, offset in enumerate(self.offsets):
+            if index < offset:
+                if i > 0:
+                    index -= self.offsets[i-1]
+                return self.datasets[i][index]
+        raise IndexError(f'{index} exceeds {self.length}')
 
     def __len__(self):
-        return len(self.obj_mask)
-
-    def __getitem__(self, i):
-        return self.obs[i], self.next_obs[i], self.obj_mask[i], self.next_obj_mask[i], \
-               self.action_mov_obj_index[i], self.action_tar_obj_index[i], \
-               self.obs_tilda[i], self.next_obs_tilda[i], self.obj_mask_tilda[i], self.next_obj_mask_tilda[i], \
-               self.n_obj[i]
-
+        return self.length
 
 if __name__ == "__main__":
-    dataset = StateTransitionsDatasetDiffNObjs(pk_file="data/blocks-all-size-det_all.pkl")
-    dataloader = data.DataLoader(dataset, batch_size=2, shuffle=False, num_workers=4)
-
-    for batch_idx, data_batch in enumerate(dataloader):
-        for i in data_batch:
-            print(i.size())
+    if len(sys.argv) == 1:
+        print("Please Specify for 'all' or 'half' for dataset size")
         exit(0)
+    else:
+        if sys.argv[1] == "all":
+            N_OBJS = [1, 2, 3, 4]
+        else:
+            assert sys.argv[1] == "half"
+            N_OBJS = [1, 2]
 
+    STACKS = 4
+
+    dataset = Concat(
+        [StateTransitionsDataset(
+            hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9
+        ) for OBJS in N_OBJS]
+    )
+
+    print(len(dataset))

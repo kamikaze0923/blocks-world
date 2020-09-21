@@ -1,4 +1,4 @@
-from c_swm.utils import StateTransitionsDataset, StateTransitionsDatasetDiffNObjs
+from c_swm.utils import StateTransitionsDataset, Concat
 from fosae.modules import FoSae, OBJS, STACKS, REMOVE_BG
 from fosae.gumble import device
 import torch
@@ -107,11 +107,15 @@ def run(n_epoch):
     # test_set = StateTransitionsDataset(hdf5_file="c_swm/data/blocks-4-4-det_eval.h5", n_obj=9)
     # print("Training Examples: {}, Testing Examples: {}".format(len(train_set), len(test_set)))
     # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
-    train_set = StateTransitionsDatasetDiffNObjs(pk_file="c_swm/data/blocks-half-size-det_all.pkl")
+    train_set = Concat(
+        [StateTransitionsDataset(
+            hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9
+        ) for OBJS in [1,2,3,4]]
+    )
     print("Training Examples: {}".format(len(train_set)))
     assert len(train_set) % TRAIN_BZ == 0
     # assert len(test_set) % TEST_BZ == 0
-    train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size=TRAIN_BZ, shuffle=True, num_workers=4)
     # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = FoSae().to(device)
     optimizer = Adam(vae.parameters(), lr=1e-3)
