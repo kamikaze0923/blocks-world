@@ -2,7 +2,6 @@ import torch
 from torch import nn
 from fosae.gumble import gumbel_softmax, device
 from fosae.activations import TrinaryStep
-from torch.autograd import Variable
 
 OBJS = 1
 STACKS = 4
