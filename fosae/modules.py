@@ -10,9 +10,9 @@ REMOVE_BG = False
 P = 1
 A = 2
 ACTION_A = 3
-CONV_CHANNELS = 16
+CONV_CHANNELS = 32
 OBJECT_LATENT = 16
-ENCODER_FC_LAYER_SIZE = 100
+ENCODER_FC_LAYER_SIZE = 200
 DECODER_FC_LAYER_SIZE = 1000
 PRED_BITS = 1
 assert PRED_BITS == 1 or PRED_BITS == 2
@@ -144,7 +144,7 @@ class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=A+ACTION_A, out_features=1)
+        self.state_action_encoder = BaseObjectImageEncoder(in_objects=A+ACTION_A, out_features=PRED_BITS)
         self.step_func = TrinaryStep()
 
     def forward(self, input, temp):
