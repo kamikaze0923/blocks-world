@@ -97,7 +97,7 @@ class FoSae(nn.Module):
         obj_cnt = 0
         for i_state, (s, s_n, s_t, n) in enumerate(zip(state, state_next, state_tilda, n_obj)):
             n_pred = n.item() ** 2
-            enum_index = torch.cartesian_prod(torch.arange(n.item()), torch.arange(n.item())).to(device)
+            enum_index = torch.cartesian_prod(torch.arange(n.item()), torch.arange(n.item()))
             for t in enum_index:
                 all_tuples.append(torch.index_select(s, dim=0, index=t).view(A * IMG_C, IMG_H, IMG_W))
                 all_tuples_next.append(torch.index_select(s_n, dim=0, index=t).view(A * IMG_C, IMG_H, IMG_W))
@@ -110,11 +110,11 @@ class FoSae(nn.Module):
 
         pred_adjaceny = torch.cat(pred_adjaceny, dim=1)
         state_adjaceny = torch.cat(state_adjaceny, dim=1)
-        pred_adjaceny = pred_adjaceny / pred_adjaceny.sum(dim=1, keepdim=True).to(device)
-        state_adjaceny = state_adjaceny / state_adjaceny.sum(dim=1, keepdim=True).to(device)
+        pred_adjaceny = pred_adjaceny / pred_adjaceny.sum(dim=1, keepdim=True)
+        state_adjaceny = state_adjaceny / state_adjaceny.sum(dim=1, keepdim=True)
 
-        return torch.stack(all_tuples, dim=0), torch.stack(all_tuples_next, dim=0), torch.stack(all_tuples_tilda, dim=0), \
-               pred_adjaceny, state_adjaceny
+        return torch.stack(all_tuples, dim=0).to(device), torch.stack(all_tuples_next, dim=0).to(device), torch.stack(all_tuples_tilda, dim=0).to(device), \
+               pred_adjaceny.to(device), state_adjaceny.to(device)
 
     def forward(self, input, temp):
         state, state_next, state_tilda, n_obj = input
