@@ -113,6 +113,7 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
         else:
             changes = action_model((data + noise1, action + noise2, n_obj), temp)
             act_loss = action_loss_function(preds_next, preds+changes)
+            m1 = preds_similarity_metric(preds, preds_next)
             loss = act_loss
             optimizer.zero_grad()
             loss.backward()
