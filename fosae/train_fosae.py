@@ -37,9 +37,10 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     return BCE
 
 def probs_metric(probs, probs_next, probs_tilda):
-    return torch.abs(0.5 - probs).mean().detach(), \
-           torch.abs(0.5 - probs_next).mean().detach(), \
-           torch.abs(0.5 - probs_tilda).mean().detach()
+    sum_dim = [i for i in range(1, probs.dim())]
+    return torch.abs(0.5 - probs).sum(sum_dim).mean().detach(), \
+           torch.abs(0.5 - probs_next).sum(sum_dim).mean().detach(), \
+           torch.abs(0.5 - probs_tilda).sum(sum_dim).mean().detach()
 
 def preds_similarity_metric(preds, preds_next, preds_tilda, criterion=nn.L1Loss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
