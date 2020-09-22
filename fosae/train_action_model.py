@@ -1,4 +1,4 @@
-from c_swm.utils import StateTransitionsDataset, StateTransitionsDatasetWithLatent
+from c_swm.utils import StateTransitionsDataset, StateTransitionsDatasetWithLatent, Concat
 from fosae.modules import FoSae, FoSae_Action
 from fosae.gumble import device
 import torch
@@ -32,30 +32,38 @@ def get_new_dataset(dataloader, vae):
     all_preds = []
     all_preds_next = []
     all_action_mov_obj_index = []
+    all_action_from_obj_index = []
     all_action_tar_obj_index = []
+    all_n_obj = []
 
     for i, data in enumerate(dataloader):
-        _, _, obj_mask, next_obj_mask, _, _, _, n_obj, _, _, obj_mask_tilda, _ = data
+        _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_from_obj_index, action_tar_obj_index, \
+        n_obj, _, _, obj_mask_tilda, _ = data
+
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
         data_tilda = obj_mask_tilda.to(device)
 
         with torch.no_grad():
-            preds, preds_next, preds_tilda = vae((data, data_next, data_tilda, n_obj), 0)
+            preds, preds_next, _ = vae((data, data_next, data_tilda, n_obj), 0)
 
         all_data.append(data.cpu())
         all_preds.append(preds.cpu())
         all_preds_next.append(preds_next.cpu())
         all_action_mov_obj_index.append(action_mov_obj_index)
+        all_action_from_obj_index.append(action_from_obj_index)
         all_action_tar_obj_index.append(action_tar_obj_index)
+        all_n_obj.append(n_obj)
 
     new_dataset = StateTransitionsDatasetWithLatent(
         (
             torch.cat(all_data, dim=0),
             torch.cat(all_action_mov_obj_index, dim=0),
+            torch.cat(all_action_from_obj_index, dim=0),
             torch.cat(all_action_tar_obj_index, dim=0),
             torch.cat(all_preds, dim=0),
-            torch.cat(all_preds_next, dim=0)
+            torch.cat(all_preds_next, dim=0),
+            torch.cat(all_n_obj, dim=0)
         )
     )
 
@@ -80,12 +88,13 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
     action_loss = 0
 
     for i, data in enumerate(dataloader):
-        obj_mask, action_mov_obj_index, action_tar_obj_index, preds, preds_next = data
+        obj_mask, action_mov_obj_index, action_from_obj_index, action_tar_obj_index, preds, preds_next, n_obj = data
         data = obj_mask.to(device)
+        n_obj = n_obj.to(device)
 
-        action_idx = torch.cat([action_mov_obj_index, action_tar_obj_index], dim=1).to(device)
+        action_idx = torch.cat([action_mov_obj_index, action_from_obj_index, action_tar_obj_index], dim=1).to(device)
         batch_idx = torch.arange(action_idx.size()[0])
-        batch_idx = torch.stack([batch_idx, batch_idx], dim=1).to(device)
+        batch_idx = torch.stack([batch_idx for _ in range(action_idx.size()[1])], dim=1).to(device)
         action = obj_mask[batch_idx, action_idx, : , :, :].to(device)
 
         noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
@@ -96,10 +105,10 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
 
         if optimizer is None:
             with torch.no_grad():
-                changes = action_model((data+noise1, action+noise2), temp)
+                changes = action_model((data+noise1, action+noise2, n_obj), temp)
                 act_loss = action_loss_function(preds_next, preds+changes)
         else:
-            changes = action_model((data + noise1, action + noise2), temp)
+            changes = action_model((data + noise1, action + noise2, n_obj), temp)
             act_loss = action_loss_function(preds_next, preds+changes)
             loss = act_loss
             optimizer.zero_grad()
@@ -112,7 +121,11 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
 
 
 def run(n_epoch):
-    train_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
+    train_set = Concat(
+        [StateTransitionsDataset(
+            hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9
+        ) for OBJS in [1,2]]
+    )
     print("Training Examples: {}".format(len(train_set)))
     assert len(train_set) % TRAIN_BZ == 0
     # assert len(test_set) % TEST_BZ == 0

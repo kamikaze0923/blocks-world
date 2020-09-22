@@ -277,13 +277,15 @@ class PathDataset(data.Dataset):
 class StateTransitionsDatasetWithLatent(data.Dataset):
 
     def __init__(self, data):
-        self.obj_mask, self.action_mov_obj_index, self.action_tar_obj_index, self.pred, self.pred_next = data
+        self.obj_mask, self.action_mov_obj_index, self.action_from_obj_index, self.action_tar_obj_index, \
+        self.pred, self.pred_next, self.n_obj = data
 
     def __len__(self):
         return len(self.pred)
 
     def __getitem__(self, i):
-        return self.obj_mask[i], self.action_mov_obj_index[i], self.action_tar_obj_index[i], self.pred[i], self.pred_next[i]
+        return self.obj_mask[i], self.action_mov_obj_index[i], self.action_from_obj_index[i], \
+               self.action_tar_obj_index[i], self.pred[i], self.pred_next[i], self.n_obj[i]
 
 
 class Concat(data.Dataset):

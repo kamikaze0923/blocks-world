@@ -92,12 +92,8 @@ class FoSae(nn.Module):
         all_tuples = []
         all_tuples_next = []
         all_tuples_tilda = []
-        state_adj_vec = torch.zeros(
-            size=(state.size()[0],1)
-        )
-        pred_adj_vec = torch.zeros(
-            size=((n_obj **2).sum(), 1)
-        )
+        state_adj_vec = torch.zeros(size=(state.size()[0],1)).to(device)
+        pred_adj_vec = torch.zeros(size=((n_obj **2).sum(), 1)).to(device)
         obj_cnt = 0
         for i_state, (s, s_n, s_t, n) in enumerate(zip(state, state_next, state_tilda, n_obj)):
             n_pred = n.item() ** 2
@@ -112,8 +108,8 @@ class FoSae(nn.Module):
                 )
             obj_cnt += n_pred
 
-        pred_adjaceny = torch.cat(pred_adjaceny, dim=1).to(device)
-        state_adjaceny = torch.cat(state_adjaceny, dim=1).to(device)
+        pred_adjaceny = torch.cat(pred_adjaceny, dim=1)
+        state_adjaceny = torch.cat(state_adjaceny, dim=1)
         pred_adjaceny = pred_adjaceny / pred_adjaceny.sum(dim=1, keepdim=True)
         state_adjaceny = state_adjaceny / state_adjaceny.sum(dim=1, keepdim=True)
 
@@ -137,8 +133,8 @@ class FoSae(nn.Module):
         start_idx = 0
         for i, n in enumerate(n_obj):
             preds_reshape[i, :n**2, :] = preds[start_idx: start_idx+n**2]
-            preds_next_reshape[i, :n ** 2, :] = preds_next[start_idx: start_idx+n**2]
-            preds_tilda_reshape[i, :n ** 2, :] = preds_tilda[start_idx: start_idx+n**2]
+            preds_next_reshape[i, :n**2, :] = preds_next[start_idx: start_idx+n**2]
+            preds_tilda_reshape[i, :n**2, :] = preds_tilda[start_idx: start_idx+n**2]
             start_idx += n**2
 
         return preds_reshape, preds_next_reshape, preds_tilda_reshape
@@ -152,8 +148,8 @@ class ActionEncoder(nn.Module):
         self.step_func = TrinaryStep()
 
     def forward(self, input, temp):
-        state, action = input
-        obj_action_tuples = self.enumerate_state_action_tuples(state, action)
+        state, action, n_obj = input
+        obj_action_tuples = self.enumerate_state_action_tuples(state, action, n_obj)
         logits = self.state_action_encoder(obj_action_tuples)
         logits = logits.view(-1, 1)
         # probs = gumbel_softmax(logits, temp)
@@ -161,14 +157,15 @@ class ActionEncoder(nn.Module):
         # change = torch.mul(probs, target).sum(dim=-1, keepdim=True)
         return self.step_func.apply(logits)
 
-    def enumerate_state_action_tuples(self, state, action):
-        action = action.view(-1, A*IMG_C, IMG_H, IMG_W)
+    def enumerate_state_action_tuples(self, state, action, n_obj):
         all_tuples = []
-        for t in self.enum_index:
-            objs = torch.index_select(state, dim=1, index=t).view(-1, A*IMG_C, IMG_H, IMG_W)
-            all_tuples.append(torch.cat([objs, action], dim=1))
-        all_tuples = torch.stack(all_tuples, dim=1)
-        return all_tuples
+        for s, a, n in zip(state, action, n_obj):
+            a = a.view(ACTION_A * IMG_C, IMG_H, IMG_W)
+            enum_index = torch.cartesian_prod(torch.arange(n.item()), torch.arange(n.item())).to(device)
+            for t in enum_index:
+                objs = torch.index_select(s, dim=0, index=t).view(A*IMG_C, IMG_H, IMG_W)
+                all_tuples.append(torch.cat([objs, a], dim=0))
+        return torch.stack(all_tuples, dim=0)
 
 
 class FoSae_Action(nn.Module):
@@ -178,6 +175,7 @@ class FoSae_Action(nn.Module):
         self.action_models = nn.ModuleList([ActionEncoder() for _ in range(P)])
 
     def forward(self, input, temp):
+        state, action, n_obj = input
 
         all_changes = []
 
@@ -185,6 +183,13 @@ class FoSae_Action(nn.Module):
             preds_change = model(input, temp)
             all_changes.append(preds_change)
 
-        all_changes = torch.stack(all_changes, dim=1)
+        all_changes = torch.cat(all_changes, dim=1)
 
-        return all_changes
+        changes_reshape = torch.zeros(size=(state.size()[0], n_obj.max()**2, P)).to(device)
+
+        start_idx = 0
+        for i, n in enumerate(n_obj):
+            changes_reshape[i, :n**2, :] = all_changes[start_idx: start_idx+n**2]
+            start_idx += n**2
+
+        return changes_reshape
