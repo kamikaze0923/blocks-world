@@ -11,9 +11,9 @@ import sys
 import os
 
 
-TEMP_BEGIN = 0.000001
-TEMP_MIN = 0.000001
-ANNEAL_RATE = 0.1
+TEMP_BEGIN = 5
+TEMP_MIN = 0.1
+ANNEAL_RATE = 0.001
 TRAIN_BZ = 108
 TEST_BZ = 108
 
@@ -44,7 +44,14 @@ def probs_metric(probs, probs_next, probs_tilda):
 
 def preds_similarity_metric(preds, preds_next, preds_tilda, criterion=nn.L1Loss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
-    return criterion(preds, preds_next).sum(dim=sum_dim).mean(), criterion(preds, preds_tilda).sum(dim=sum_dim).mean()
+    l1_1 = criterion(preds, preds_next).sum(dim=sum_dim).mean()
+    l1_2 = criterion(preds, preds_tilda).sum(dim=sum_dim).mean()
+    # preds = preds.squeeze()
+    # preds_next = preds_next.squeeze()
+    # print(preds)
+    # print(preds_next)
+    # exit(0)
+    return l1_1, l1_2
 
 def contrastive_loss_function(pred, preds_tilda, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
@@ -83,7 +90,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
                 m4, m5 = preds_similarity_metric(preds[0], preds[1], preds[2])
                 ctrs_loss = contrastive_loss_function(preds[0], preds[2])
         else:
-            preds = vae((data + noise1, data_next + noise2, data_tilda + noise3, n_obj), temp)
+            preds = vae((data + noise1, data_next + noise2, data_tilda + noise3, n_obj), 0)
             m1, m2, m3 = probs_metric(preds[0], preds[1], preds[2])
             m4, m5 = preds_similarity_metric(preds[0], preds[1], preds[2])
             ctrs_loss = contrastive_loss_function(preds[0], preds[2])
