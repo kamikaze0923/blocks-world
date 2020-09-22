@@ -56,8 +56,6 @@ def get_new_dataset(dataloader, vae):
         all_n_obj.append(n_obj)
 
     m1 = preds_similarity_metric(preds, preds_next)
-    print(m1)
-    exit(0)
 
     new_dataset = StateTransitionsDatasetWithLatent(
         (
