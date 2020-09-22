@@ -97,7 +97,7 @@ class FoSae(nn.Module):
         obj_cnt = 0
         for i_state, (s, s_n, s_t, n) in enumerate(zip(state, state_next, state_tilda, n_obj)):
             n_pred = n.item() ** 2
-            enum_index = torch.cartesian_prod(torch.arange(n.item()), torch.arange(n.item()))
+            enum_index = torch.cartesian_prod(torch.arange(n.item()), torch.arange(n.item())).to(device)
             for t in enum_index:
                 all_tuples.append(torch.index_select(s, dim=0, index=t).view(A * IMG_C, IMG_H, IMG_W))
                 all_tuples_next.append(torch.index_select(s_n, dim=0, index=t).view(A * IMG_C, IMG_H, IMG_W))
