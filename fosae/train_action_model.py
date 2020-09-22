@@ -55,6 +55,10 @@ def get_new_dataset(dataloader, vae):
         all_action_tar_obj_index.append(action_tar_obj_index)
         all_n_obj.append(n_obj)
 
+    m1 = preds_similarity_metric(preds, preds_next)
+    print(m1)
+    exit(0)
+
     new_dataset = StateTransitionsDatasetWithLatent(
         (
             torch.cat(all_data, dim=0),

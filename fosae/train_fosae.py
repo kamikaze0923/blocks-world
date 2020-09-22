@@ -11,8 +11,8 @@ import sys
 import os
 
 
-TEMP_BEGIN = 5
-TEMP_MIN = 0.01
+TEMP_BEGIN = 0.01
+TEMP_MIN = 0.0001
 ANNEAL_RATE = 0.1
 TRAIN_BZ = 108
 TEST_BZ = 108
