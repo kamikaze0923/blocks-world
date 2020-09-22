@@ -36,12 +36,14 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     BCE = criterion(recon_x, x).sum(dim=sum_dim).mean()
     return BCE
 
-def probs_metric(probs, probs_next):
-    return torch.abs(0.5 - probs).mean().detach(), torch.abs(0.5 - probs_next).mean().detach()
+def probs_metric(probs, probs_next, probs_tilda):
+    return torch.abs(0.5 - probs).mean().detach(), \
+           torch.abs(0.5 - probs_next).mean().detach(), \
+           torch.abs(0.5 - probs_tilda).mean().detach()
 
-def contrastive_loss_function(pred, preds_next, criterion=nn.MSELoss(reduction='none')):
+def contrastive_loss_function(pred, preds_tilda, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
-    mse = criterion(pred, preds_next).sum(dim=sum_dim).mean()
+    mse = criterion(pred, preds_tilda).sum(dim=sum_dim).mean()
     return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - mse) * BETA
 
 
@@ -50,56 +52,53 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         vae.train()
     else:
         vae.eval()
-    recon_loss0 = 0
-    recon_loss1 = 0
+
     contrastive_loss = 0
     metric_pred = 0
     metric_pred_next = 0
+    metric_pred_tilda = 0
 
     for i, data in enumerate(dataloader):
-        obs, next_obs, obj_mask, next_obj_mask, _, _, n_obj = data
+        _, _, obj_mask, next_obj_mask, _, _, n_obj, _, _, obj_mask_tilda, _, = data
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
+        data_tilda = obj_mask_tilda.to(device)
 
         noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
         noise2 = torch.normal(mean=0, std=0.2, size=data_next.size()).to(device)
+        noise3 = torch.normal(mean=0, std=0.2, size=data_tilda.size()).to(device)
 
         if optimizer is None:
             with torch.no_grad():
-                recon_batch, preds = vae((data+noise1, data_next+noise2, n_obj), temp)
-                rec_loss0 = rec_loss_function(recon_batch[0], obs.to(device))
-                rec_loss1 = rec_loss_function(recon_batch[1], next_obs.to(device))
-                m1, m2 = probs_metric(preds[0], preds[1])
-                ctrs_loss = contrastive_loss_function(preds[0], preds[1])
+                preds = vae((data+noise1, data_next+noise2, data_tilda+noise3, n_obj), temp)
+                m1, m2, m3 = probs_metric(preds[0], preds[1], preds[2])
+                ctrs_loss = contrastive_loss_function(preds[0], preds[2])
         else:
-            recon_batch, preds = vae((data+noise1, data_next+noise2, n_obj), temp)
-            rec_loss0 = rec_loss_function(recon_batch[0], obs.to(device))
-            rec_loss1 = rec_loss_function(recon_batch[1], next_obs.to(device))
-            m1, m2 = probs_metric(preds[0], preds[1])
-            ctrs_loss = contrastive_loss_function(preds[0], preds[1])
-            loss = rec_loss0 + rec_loss1
+            preds = vae((data + noise1, data_next + noise2, data_tilda + noise3, n_obj), temp)
+            m1, m2, m3 = probs_metric(preds[0], preds[1], preds[2])
+            ctrs_loss = contrastive_loss_function(preds[0], preds[2])
+
+            loss = ctrs_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-        recon_loss0 += rec_loss0.item()
-        recon_loss1 += rec_loss1.item()
         contrastive_loss += ctrs_loss.item()
         metric_pred += m1.item()
         metric_pred_next += m2.item()
+        metric_pred_tilda += m3.item()
 
 
-    print("{:.2f}, {:.2f} | {:.2f}, | {:.2f}, {:.2f}".format
+    print("{:.2f}, | {:.2f}, {:.2f} , {:.2f}".format
         (
-            recon_loss0 / len(dataloader),
-            recon_loss1 / len(dataloader),
             contrastive_loss / len(dataloader),
             metric_pred / len(dataloader),
             metric_pred_next / len(dataloader),
+            metric_pred_tilda / len(dataloader)
         )
     )
 
-    return (recon_loss0 + recon_loss1) / len(dataloader)
+    return contrastive_loss / len(dataloader)
 
 
 def run(n_epoch):

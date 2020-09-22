@@ -83,15 +83,16 @@ class FoSae(nn.Module):
     def __init__(self):
         super(FoSae, self).__init__()
         self.predicate_encoders = nn.ModuleList([PredicateNetwork() for _ in range(P)])
-        self.predicate_learner = PredicateLearner()
-        self.decoder = ObjectImageDecoder()
+        # self.predicate_learner = PredicateLearner()
+        # self.decoder = ObjectImageDecoder()
 
-    def enumerate_state_tuples(self, state, state_next, n_obj):
+    def enumerate_state_tuples(self, state, state_next, state_tilda, n_obj):
         pred_adjaceny = []
         state_adjaceny = []
 
         all_tuples = []
         all_tuples_next = []
+        all_tuples_tilda = []
         state_adj_vec = torch.zeros(
             size=(state.size()[0],1)
         )
@@ -99,12 +100,13 @@ class FoSae(nn.Module):
             size=((n_obj **2).sum(), 1)
         )
         obj_cnt = 0
-        for i_state, (s, s_n, n) in enumerate(zip(state, state_next, n_obj)):
+        for i_state, (s, s_n, s_t, n) in enumerate(zip(state, state_next, state_tilda, n_obj)):
             n_pred = n.item() ** 2
             enum_index = torch.cartesian_prod(torch.arange(n.item()), torch.arange(n.item())).to(device)
             for t in enum_index:
-                all_tuples.append(torch.index_select(s, dim=0, index=t).view(A*IMG_C, IMG_H, IMG_W))
+                all_tuples.append(torch.index_select(s, dim=0, index=t).view(A * IMG_C, IMG_H, IMG_W))
                 all_tuples_next.append(torch.index_select(s_n, dim=0, index=t).view(A * IMG_C, IMG_H, IMG_W))
+                all_tuples_tilda.append(torch.index_select(s_t, dim=0, index=t).view(A * IMG_C, IMG_H, IMG_W))
                 state_adjaceny.append(torch.index_fill(state_adj_vec, dim=0, index=torch.tensor(i_state), value=1))
                 pred_adjaceny.append(
                     torch.index_fill(pred_adj_vec, dim=0, index=torch.arange(start=obj_cnt, end=obj_cnt+n_pred), value=1)
@@ -116,23 +118,20 @@ class FoSae(nn.Module):
         pred_adjaceny = pred_adjaceny / pred_adjaceny.sum(dim=1, keepdim=True)
         state_adjaceny = state_adjaceny / state_adjaceny.sum(dim=1, keepdim=True)
 
-        return torch.stack(all_tuples, dim=0), torch.stack(all_tuples_next, dim=0), pred_adjaceny, state_adjaceny
+        return torch.stack(all_tuples, dim=0), torch.stack(all_tuples_next, dim=0), torch.stack(all_tuples_tilda, dim=0), \
+               pred_adjaceny, state_adjaceny
 
     def forward(self, input, temp):
-        state, state_next, n_obj = input
+        state, state_next, state_tilda, n_obj = input
 
-        obj_tuples, obj_tuples_next, pred_adj, state_adj = self.enumerate_state_tuples(state, state_next, n_obj)
+        obj_tuples, obj_tuples_next, obj_tuples_tilda, pred_adj, state_adj = \
+            self.enumerate_state_tuples(state, state_next, state_tilda, n_obj)
 
         preds = torch.cat([pred_net(obj_tuples, temp) for pred_net in self.predicate_encoders], dim=1)
         preds_next = torch.cat([pred_net(obj_tuples_next, temp) for pred_net in self.predicate_encoders], dim=1)
+        preds_tilda = torch.cat([pred_net(obj_tuples_tilda, temp) for pred_net in self.predicate_encoders], dim=1)
 
-        preds_f = self.predicate_learner(preds, pred_adj)
-        preds_next_f = self.predicate_learner(preds_next, pred_adj)
-
-        x_hat = self.decoder(preds_f, state_adj)
-        x_hat_next = self.decoder(preds_next_f, state_adj)
-
-        return (x_hat, x_hat_next), (preds_f, preds_next_f)
+        return preds, preds_next, preds_tilda
 
 
 class ActionEncoder(nn.Module):

@@ -156,6 +156,8 @@ class StateTransitionsDataset(data.Dataset):
         if not remove_bg:
             n_obj += 1
 
+        self.n_obj = n_obj
+
         if not max_n_obj:
             max_n_obj = n_obj
 
@@ -224,7 +226,7 @@ class StateTransitionsDataset(data.Dataset):
         rand_other_state_pre = self.sample_diff_key(tuple(self.experience_buffer[ep]['scene_state_pre']))
         rand_other_state_suc = self.sample_diff_key(tuple(self.experience_buffer[ep]['scene_state_suc']))
 
-        return obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index, \
+        return obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index, self.n_obj, \
                self.all_scene_dict[rand_other_state_pre][0][step], self.all_scene_dict[rand_other_state_suc][0][step], \
                self.all_scene_dict[rand_other_state_pre][1], self.all_scene_dict[rand_other_state_suc][1],
 
