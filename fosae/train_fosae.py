@@ -41,6 +41,11 @@ def probs_metric(probs, probs_next, probs_tilda):
            torch.abs(0.5 - probs_next).mean().detach(), \
            torch.abs(0.5 - probs_tilda).mean().detach()
 
+def preds_similarity_metric(preds, preds_next, criterion=nn.L1Loss(reduction='none')):
+    sum_dim = [i for i in range(1, preds_next.dim())]
+    l1 = criterion(preds, preds_next).sum(dim=sum_dim).mean()
+    return l1
+
 def contrastive_loss_function(pred, preds_tilda, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
     mse = criterion(pred, preds_tilda).sum(dim=sum_dim).mean()
@@ -57,6 +62,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     metric_pred = 0
     metric_pred_next = 0
     metric_pred_tilda = 0
+    pred_sim_metric = 0
 
     for i, data in enumerate(dataloader):
         _, _, obj_mask, next_obj_mask, _, _, _, n_obj, _, _, obj_mask_tilda, _ = data
@@ -73,10 +79,12 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             with torch.no_grad():
                 preds = vae((data+noise1, data_next+noise2, data_tilda+noise3, n_obj), temp)
                 m1, m2, m3 = probs_metric(preds[0], preds[1], preds[2])
+                m4 = preds_similarity_metric(preds[0], preds[1])
                 ctrs_loss = contrastive_loss_function(preds[0], preds[2])
         else:
             preds = vae((data + noise1, data_next + noise2, data_tilda + noise3, n_obj), temp)
             m1, m2, m3 = probs_metric(preds[0], preds[1], preds[2])
+            m4 = preds_similarity_metric(preds[0], preds[1])
             ctrs_loss = contrastive_loss_function(preds[0], preds[2])
 
             loss = ctrs_loss
@@ -88,14 +96,16 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         metric_pred += m1.item()
         metric_pred_next += m2.item()
         metric_pred_tilda += m3.item()
+        pred_sim_metric += m4.item()
 
 
-    print("{:.2f}, | {:.2f}, {:.2f} , {:.2f}".format
+    print("{:.2f}, | {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
         (
             contrastive_loss / len(dataloader),
             metric_pred / len(dataloader),
             metric_pred_next / len(dataloader),
-            metric_pred_tilda / len(dataloader)
+            metric_pred_tilda / len(dataloader),
+            pred_sim_metric / len(dataloader)
         )
     )
 

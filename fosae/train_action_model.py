@@ -69,15 +69,16 @@ def get_new_dataset(dataloader, vae):
 
     return new_dataset
 
-
 # Action similarity in latent space
 def action_loss_function(preds_next, preds_next_by_action, criterion=nn.L1Loss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
     l1 = criterion(preds_next_by_action, preds_next).sum(dim=sum_dim).mean()
     return l1 * ALPHA
 
-def probs_metric(probs, probs_next):
-    return torch.abs(0.5 - probs).mean().detach(), torch.abs(0.5 - probs_next).mean().detach()
+def preds_similarity_metric(preds, preds_next, criterion=nn.L1Loss(reduction='none')):
+    sum_dim = [i for i in range(1, preds_next.dim())]
+    l1 = criterion(preds, preds_next).sum(dim=sum_dim).mean()
+    return l1
 
 def epoch_routine(dataloader, action_model, temp, optimizer=None):
     if optimizer is not None:
@@ -86,6 +87,7 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
         action_model.eval()
 
     action_loss = 0
+    pred_sim_metric = 0
 
     for i, data in enumerate(dataloader):
         obj_mask, action_mov_obj_index, action_from_obj_index, action_tar_obj_index, preds, preds_next, n_obj = data
@@ -107,6 +109,7 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
             with torch.no_grad():
                 changes = action_model((data+noise1, action+noise2, n_obj), temp)
                 act_loss = action_loss_function(preds_next, preds+changes)
+                m1 = preds_similarity_metric(preds, preds_next)
         else:
             changes = action_model((data + noise1, action + noise2, n_obj), temp)
             act_loss = action_loss_function(preds_next, preds+changes)
@@ -116,6 +119,14 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
             optimizer.step()
 
         action_loss += act_loss.item()
+        pred_sim_metric += m1.item()
+
+    print("{:.2f}, | {:.2f}".format
+        (
+            action_loss / len(dataloader),
+            pred_sim_metric / len(dataloader)
+        )
+    )
 
     return action_loss / len(dataloader)
 
@@ -133,6 +144,7 @@ def run(n_epoch):
     # test_loader = DataLoader(test_set, batch_size=TEST_BZ, shuffle=True)
     vae = FoSae().to(device)
     vae.load_state_dict(torch.load("fosae/model_{}/{}.pth".format(PREFIX, FOSAE_MODEL_NAME), map_location='cpu'))
+    print("fosae/model_{}/{}.pth Loaded".format(PREFIX, FOSAE_MODEL_NAME))
     vae.eval()
 
     new_data_set = get_new_dataset(train_loader, vae)
