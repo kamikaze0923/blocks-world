@@ -12,8 +12,8 @@ import os
 
 
 TEMP_BEGIN = 5
-TEMP_MIN = 0.7
-ANNEAL_RATE = 0.0001
+TEMP_MIN = 0.1
+ANNEAL_RATE = 0.01
 TRAIN_BZ = 108
 TEST_BZ = 108
 
@@ -59,7 +59,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     metric_pred_tilda = 0
 
     for i, data in enumerate(dataloader):
-        _, _, obj_mask, next_obj_mask, _, _, n_obj, _, _, obj_mask_tilda, _, = data
+        _, _, obj_mask, next_obj_mask, _, _, _, n_obj, _, _, obj_mask_tilda, _, = data
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
         data_tilda = obj_mask_tilda.to(device)

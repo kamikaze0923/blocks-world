@@ -221,12 +221,14 @@ class StateTransitionsDataset(data.Dataset):
         next_obj_mask = self.experience_buffer[ep]['next_obj_mask_sep']
 
         action_mov_obj_index = self.experience_buffer[ep]['action_mov_obj_index'] - (1 if self.remove_bg else 0)
+        action_from_obj_index = self.experience_buffer[ep]['action_from_obj_index'] - (1 if self.remove_bg else 0)
         action_tar_obj_index = self.experience_buffer[ep]['action_tar_obj_index'] - (1 if self.remove_bg else 0)
+
 
         rand_other_state_pre = self.sample_diff_key(tuple(self.experience_buffer[ep]['scene_state_pre']))
         rand_other_state_suc = self.sample_diff_key(tuple(self.experience_buffer[ep]['scene_state_suc']))
 
-        return obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index, self.n_obj, \
+        return obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_from_obj_index, action_tar_obj_index, self.n_obj, \
                self.all_scene_dict[rand_other_state_pre][0][step], self.all_scene_dict[rand_other_state_suc][0][step], \
                self.all_scene_dict[rand_other_state_pre][1], self.all_scene_dict[rand_other_state_suc][1],
 

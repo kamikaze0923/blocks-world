@@ -65,6 +65,7 @@ def gen_episode(num_episode, episode_length):
         action = None
         target_obj = None
         moving_obj = None
+        from_obj = None
 
         obs = plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2]))[:,:,:-1]
         next_obs = plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2+1]))[:,:,:-1]
@@ -89,8 +90,9 @@ def gen_episode(num_episode, episode_length):
                 pass
             else:
                 # print("Pick up block {} from stack {},  Drop it on stack {}".format(pre_obj.id, pre_obj.n_stack, suc_obj.n_stack))
-                # print("Moving object {}".format(pre_obj))
+
                 moving_obj = pre_obj
+
                 if suc_obj.floor == 0:
                     target_obj = pre_bottom_pads[suc_obj.n_stack]
                 else:
@@ -98,7 +100,15 @@ def gen_episode(num_episode, episode_length):
                         if obj.floor == suc_obj.floor - 1 and obj.n_stack == suc_obj.n_stack:
                             target_obj = obj
                             break
-                # print("Target object {}".format(target_obj))
+
+                if pre_obj.floor == 0:
+                    from_obj = pre_bottom_pads[pre_obj.n_stack]
+                else:
+                    for obj in pre_objs:
+                        if obj.floor == pre_obj.floor - 1 and obj.n_stack == pre_obj.n_stack:
+                            from_obj = obj
+                            break
+                # print("Moving {} from {} to {}".format(moving_obj, from_obj, target_obj))
                 action = ACTIONS.index((pre_obj.n_stack, suc_obj.n_stack))
 
         for (pre_pad, suc_pad) in zip(pre_bottom_pads, suc_bottom_pads):
@@ -112,7 +122,9 @@ def gen_episode(num_episode, episode_length):
 
         assert action is not None
         assert target_obj is not None
+        assert from_obj is not None
         assert moving_obj is not None
+
         replay = {
             'obs': [],
             'mask': [],
@@ -122,6 +134,7 @@ def gen_episode(num_episode, episode_length):
             'next_obj_index': [],
             'action_mov_obj_index': [],
             'action_tar_obj_index': [],
+            'action_from_obj_index': [],
             'scene_state_pre': [],
             'scene_state_suc': []
         }
@@ -172,6 +185,10 @@ def gen_episode(num_episode, episode_length):
 
         replay['action_tar_obj_index'].append(
             target_obj.id
+        )
+
+        replay['action_from_obj_index'].append(
+            from_obj.id
         )
 
         replay['scene_state_pre'].extend(
