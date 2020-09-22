@@ -16,8 +16,8 @@ import os
 TEMP_BEGIN = 5
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.003
-TRAIN_BZ = 320
-TEST_BZ = 320
+TRAIN_BZ = 108
+TEST_BZ = 108
 ALPHA = 1
 
 os.makedirs("fosae/model_{}".format(PREFIX), exist_ok=True)
@@ -35,13 +35,13 @@ def get_new_dataset(dataloader, vae):
     all_action_tar_obj_index = []
 
     for i, data in enumerate(dataloader):
-        _, _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_tar_obj_index = data
+        _, _, obj_mask, next_obj_mask, _, _, _, n_obj, _, _, obj_mask_tilda, _ = data
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
+        data_tilda = obj_mask_tilda.to(device)
 
         with torch.no_grad():
-            _, preds_all = vae((data, data_next), 0)
-            preds, preds_next = preds_all
+            preds, preds_next, preds_tilda = vae((data, data_next, data_tilda, n_obj), 0)
 
         all_data.append(data.cpu())
         all_preds.append(preds.cpu())

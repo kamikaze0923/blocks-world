@@ -59,10 +59,11 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     metric_pred_tilda = 0
 
     for i, data in enumerate(dataloader):
-        _, _, obj_mask, next_obj_mask, _, _, _, n_obj, _, _, obj_mask_tilda, _, = data
+        _, _, obj_mask, next_obj_mask, _, _, _, n_obj, _, _, obj_mask_tilda, _ = data
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
         data_tilda = obj_mask_tilda.to(device)
+        n_obj = n_obj.to(device)
 
         noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
         noise2 = torch.normal(mean=0, std=0.2, size=data_next.size()).to(device)

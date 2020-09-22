@@ -9,7 +9,7 @@ STACKS = 4
 REMOVE_BG = False
 
 P = 1
-A = 2
+A = 3
 ACTION_A = 2
 CONV_CHANNELS = 16
 OBJECT_LATENT = 16
@@ -131,9 +131,9 @@ class FoSae(nn.Module):
         preds_next = torch.cat([pred_net(obj_tuples_next, temp) for pred_net in self.predicate_encoders], dim=1)
         preds_tilda = torch.cat([pred_net(obj_tuples_tilda, temp) for pred_net in self.predicate_encoders], dim=1)
 
-        preds_reshape = torch.zeros(size=(state.size()[0], n_obj.max()**2, P))
-        preds_next_reshape = torch.zeros(size=(state_next.size()[0], n_obj.max()**2, P))
-        preds_tilda_reshape = torch.zeros(size=(state_tilda.size()[0], n_obj.max()**2, P))
+        preds_reshape = torch.zeros(size=(state.size()[0], n_obj.max()**2, P)).to(device)
+        preds_next_reshape = torch.zeros(size=(state_next.size()[0], n_obj.max()**2, P)).to(device)
+        preds_tilda_reshape = torch.zeros(size=(state_tilda.size()[0], n_obj.max()**2, P)).to(device)
 
         start_idx = 0
         for i, n in enumerate(n_obj):
@@ -147,10 +147,9 @@ class FoSae(nn.Module):
 
 class ActionEncoder(nn.Module):
 
-    def __init__(self, n_obj):
+    def __init__(self):
         super(ActionEncoder, self).__init__()
         self.state_action_encoder = BaseObjectImageEncoder(in_objects=A+ACTION_A, out_features=1)
-        self.enum_index = torch.cartesian_prod(torch.arange(n_obj), torch.arange(n_obj)).to(device)
         self.step_func = TrinaryStep()
 
     def forward(self, input, temp):
@@ -177,7 +176,7 @@ class FoSae_Action(nn.Module):
 
     def __init__(self):
         super(FoSae_Action, self).__init__()
-        self.action_models = nn.ModuleList([ActionEncoder(N) for _ in range(P)])
+        self.action_models = nn.ModuleList([ActionEncoder() for _ in range(P)])
 
     def forward(self, input, temp):
 
