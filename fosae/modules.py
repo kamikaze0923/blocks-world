@@ -92,8 +92,8 @@ class FoSae(nn.Module):
         all_tuples = []
         all_tuples_next = []
         all_tuples_tilda = []
-        state_adj_vec = torch.zeros(size=(state.size()[0],1)).to(device)
-        pred_adj_vec = torch.zeros(size=((n_obj **2).sum(), 1)).to(device)
+        state_adj_vec = torch.zeros(size=(state.size()[0],1))
+        pred_adj_vec = torch.zeros(size=((n_obj **2).sum(), 1))
         obj_cnt = 0
         for i_state, (s, s_n, s_t, n) in enumerate(zip(state, state_next, state_tilda, n_obj)):
             n_pred = n.item() ** 2
@@ -110,8 +110,8 @@ class FoSae(nn.Module):
 
         pred_adjaceny = torch.cat(pred_adjaceny, dim=1)
         state_adjaceny = torch.cat(state_adjaceny, dim=1)
-        pred_adjaceny = pred_adjaceny / pred_adjaceny.sum(dim=1, keepdim=True)
-        state_adjaceny = state_adjaceny / state_adjaceny.sum(dim=1, keepdim=True)
+        pred_adjaceny = pred_adjaceny / pred_adjaceny.sum(dim=1, keepdim=True).to(device)
+        state_adjaceny = state_adjaceny / state_adjaceny.sum(dim=1, keepdim=True).to(device)
 
         return torch.stack(all_tuples, dim=0), torch.stack(all_tuples_next, dim=0), torch.stack(all_tuples_tilda, dim=0), \
                pred_adjaceny, state_adjaceny
