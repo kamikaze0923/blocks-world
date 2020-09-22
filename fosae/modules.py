@@ -8,7 +8,7 @@ OBJS = 1
 STACKS = 4
 REMOVE_BG = False
 
-P = 2
+P = 1
 A = 2
 ACTION_A = 2
 CONV_CHANNELS = 16
@@ -131,7 +131,18 @@ class FoSae(nn.Module):
         preds_next = torch.cat([pred_net(obj_tuples_next, temp) for pred_net in self.predicate_encoders], dim=1)
         preds_tilda = torch.cat([pred_net(obj_tuples_tilda, temp) for pred_net in self.predicate_encoders], dim=1)
 
-        return preds, preds_next, preds_tilda
+        preds_reshape = torch.zeros(size=(state.size()[0], n_obj.max()**2, P))
+        preds_next_reshape = torch.zeros(size=(state_next.size()[0], n_obj.max()**2, P))
+        preds_tilda_reshape = torch.zeros(size=(state_tilda.size()[0], n_obj.max()**2, P))
+
+        start_idx = 0
+        for i, n in enumerate(n_obj):
+            preds_reshape[i, :n**2, :] = preds[start_idx: start_idx+n**2]
+            preds_next_reshape[i, :n ** 2, :] = preds_next[start_idx: start_idx+n**2]
+            preds_tilda_reshape[i, :n ** 2, :] = preds_tilda[start_idx: start_idx+n**2]
+            start_idx += n**2
+
+        return preds_reshape, preds_next_reshape, preds_tilda_reshape
 
 
 class ActionEncoder(nn.Module):
