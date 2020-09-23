@@ -161,6 +161,7 @@ def run(n_epoch):
     except:
         print("Action Model Loaded Fail")
         pass
+    exit(0)
     optimizer = Adam(action_model.parameters(), lr=1e-3, betas=(0.9, 0.99))
     # optimizer = SGD(action_model.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
