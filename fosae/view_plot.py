@@ -14,6 +14,8 @@ data_next = np.load("fosae/block_data/block_data_next.npy")
 preds_next = np.load("fosae/block_data/block_preds_next.npy")
 
 action = np.load("fosae/block_data/action.npy")
+print(action)
+exit(0)
 
 
 fig, axs = plt.subplots(5, MAX_N, figsize=(8, 6))
@@ -24,7 +26,6 @@ plt.gca()
 
 def show_img(ax, arr):
     ax.imshow(np.transpose(arr, (1,2,0)))
-
 
 while True:
     for one_data, one_data_next, one_p, one_p_nt, one_a in zip(
