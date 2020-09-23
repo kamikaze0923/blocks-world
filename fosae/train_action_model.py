@@ -16,8 +16,8 @@ import os
 TEMP_BEGIN = 5
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.003
-TRAIN_BZ = 183
-TEST_BZ = 183
+TRAIN_BZ = 18
+TEST_BZ = 18
 ALPHA = 1
 
 os.makedirs("fosae/model_{}".format(PREFIX), exist_ok=True)

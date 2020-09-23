@@ -19,7 +19,7 @@ def init():
     train_set = Concat(
         [StateTransitionsDataset(
             hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=MAX_N
-        ) for OBJS in [1,2]]
+        ) for OBJS in [1,2,3,4]]
     )
     print("Training Examples: {}".format(len(train_set)))
 
