@@ -99,8 +99,10 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
         batch_idx = torch.stack([batch_idx for _ in range(action_idx.size()[1])], dim=1).to(device)
         action = obj_mask[batch_idx, action_idx, : , :, :].to(device)
 
-        noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
-        noise2 = torch.normal(mean=0, std=0.2, size=action.size()).to(device)
+        # noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
+        # noise2 = torch.normal(mean=0, std=0.2, size=action.size()).to(device)
+        noise1 = 0
+        noise2 = 0
 
         preds = preds.to(device)
         preds_next = preds_next.to(device)
