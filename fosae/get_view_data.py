@@ -11,7 +11,7 @@ from fosae.train_fosae import MODEL_NAME as FOSAE_MODEL_NAME
 from fosae.train_action_model import ACTION_MODEL_NAME
 
 N_OBJ = OBJS + STACKS + (0 if REMOVE_BG else 1)
-N_EXAMPLES = 96
+N_EXAMPLES = 108
 MAX_N = 7
 
 
