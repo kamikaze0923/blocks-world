@@ -12,7 +12,7 @@ from fosae.train_action_model import ACTION_MODEL_NAME
 
 N_OBJ = OBJS + STACKS + (0 if REMOVE_BG else 1)
 N_EXAMPLES = 108
-MAX_N = 7
+MAX_N = 9
 
 
 def init():

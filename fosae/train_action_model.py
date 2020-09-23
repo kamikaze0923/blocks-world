@@ -16,8 +16,8 @@ import os
 TEMP_BEGIN = 5
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.003
-TRAIN_BZ = 108
-TEST_BZ = 108
+TRAIN_BZ = 183
+TEST_BZ = 183
 ALPHA = 1
 
 os.makedirs("fosae/model_{}".format(PREFIX), exist_ok=True)
@@ -138,7 +138,7 @@ def run(n_epoch):
     train_set = Concat(
         [StateTransitionsDataset(
             hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9
-        ) for OBJS in [1,2]]
+        ) for OBJS in [1,2,3,4]]
     )
     print("Training Examples: {}".format(len(train_set)))
     assert len(train_set) % TRAIN_BZ == 0
