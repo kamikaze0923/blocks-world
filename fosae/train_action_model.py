@@ -153,8 +153,8 @@ def run(n_epoch):
     new_data_set = get_new_dataset(train_loader, vae)
 
     del vae
-    train_loader = DataLoader(dataset=new_data_set, batch_size=TRAIN_BZ)
-    test_loader = DataLoader(dataset=new_data_set, batch_size=TEST_BZ)
+    train_loader = DataLoader(dataset=new_data_set, batch_size=TRAIN_BZ, num_workers=4)
+    test_loader = DataLoader(dataset=new_data_set, batch_size=TEST_BZ, num_workers=4)
 
     action_model = FoSae_Action().to(device)
     try:
