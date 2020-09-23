@@ -14,8 +14,7 @@ data_next = np.load("fosae/block_data/block_data_next.npy")
 preds_next = np.load("fosae/block_data/block_preds_next.npy")
 
 action = np.load("fosae/block_data/action.npy")
-print(action)
-exit(0)
+
 
 
 fig, axs = plt.subplots(5, MAX_N, figsize=(8, 6))
