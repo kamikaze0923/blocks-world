@@ -11,9 +11,8 @@ else:
     objs = int(sys.argv[1])
     stacks = int(sys.argv[2])
 
-det = True
 seed = 0
-prefix_dir = "block_img/" + "det" if det else "var"
+prefix_dir = "block_img/"
 prefix = "blocks-{}-{}-{}".format(objs, stacks, seed)
 print(prefix)
 
