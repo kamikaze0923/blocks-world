@@ -131,7 +131,7 @@ def run(n_epoch):
     # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
     train_set = Concat(
         [StateTransitionsDataset(
-            hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=True, max_n_obj=8
+            hdf5_file="c_swm/data/blocks-{}-{}-{}_all.h5".format(OBJS, STACKS, 0), n_obj=OBJS + STACKS, remove_bg=True, max_n_obj=8
         ) for OBJS in [1,2,3,4]]
     )
     print("Training Examples: {}".format(len(train_set)))

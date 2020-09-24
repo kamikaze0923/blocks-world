@@ -33,7 +33,7 @@ else
     render_tile_size="8"
 fi
 
-prefix_dir="block_img/det"
+prefix_dir="block_img"
 prefix="blocks-$objs-$stacks-$seed"
 proj=$(date +%Y%m%d%H%M)-render-$prefix
 
