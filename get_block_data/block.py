@@ -12,10 +12,12 @@ else:
     stacks = int(sys.argv[2])
 
 det = True
-prefix = "blocks-{}-{}-{}".format(objs, stacks, "det" if det else "")
+seed = 0
+prefix_dir = "block_img/" + "det" if det else "var"
+prefix = "blocks-{}-{}-{}".format(objs, stacks, seed)
 print(prefix)
 
-with open((os.path.join(prefix, "{}-init.json".format(prefix)))) as f:
+with open((os.path.join(prefix_dir, prefix, "{}-init.json".format(prefix)))) as f:
     init_json = json.load(f)
 
 STACK_XS = init_json['stack_x']

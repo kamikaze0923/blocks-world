@@ -137,7 +137,7 @@ def epoch_routine(dataloader, action_model, temp, optimizer=None):
 def run(n_epoch):
     train_set = Concat(
         [StateTransitionsDataset(
-            hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9
+            hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=True, max_n_obj=8
         ) for OBJS in [1,2,3,4]]
     )
     print("Training Examples: {}".format(len(train_set)))

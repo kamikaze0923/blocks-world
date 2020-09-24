@@ -23,7 +23,7 @@ This file expects to be run from Blender like this:
 blender --background --python render_images.py -- [arguments to this script]
 """
 
-random.seed(0)
+
 INSIDE_BLENDER = True
 try:
   import bpy, bpy_extras
@@ -50,6 +50,8 @@ def initialize_parser():
   parser = argparse.ArgumentParser()
 
   # Input options
+
+  parser.add_argument('--seed', default=0, type=int)
   parser.add_argument('--base-scene-blendfile', default='data/base_scene.blend',
                       help="Base blender file on which all scenes are based; includes " +
                       "ground plane, lights, and camera.")
@@ -126,13 +128,13 @@ def initialize_parser():
                       help="The width (in pixels) for the rendered images")
   parser.add_argument('--height', default=240, type=int,
                       help="The height (in pixels) for the rendered images")
-  parser.add_argument('--key-light-jitter', default=.0, type=float,
+  parser.add_argument('--key-light-jitter', default=1.0, type=float,
                       help="The magnitude of random jitter to add to the key light position.")
-  parser.add_argument('--fill-light-jitter', default=.0, type=float,
+  parser.add_argument('--fill-light-jitter', default=1.0, type=float,
                       help="The magnitude of random jitter to add to the fill light position.")
-  parser.add_argument('--back-light-jitter', default=.0, type=float,
+  parser.add_argument('--back-light-jitter', default=1.0, type=float,
                       help="The magnitude of random jitter to add to the back light position.")
-  parser.add_argument('--camera-jitter', default=.0, type=float,
+  parser.add_argument('--camera-jitter', default=2.0, type=float,
                       help="The magnitude of random jitter to add to the camera position")
   parser.add_argument('--render-num-samples', default=512, type=int,
                       help="The number of samples to use when rendering. Larger values will " +
@@ -562,6 +564,7 @@ def initialize_objects(args):
 
   # adding objects
   objects         = []
+  random.seed(0)
   for i in range(args.num_objects):
     while True:
       shape_name, shape_path = random_dict(properties['shapes'], nth_obj=i)
@@ -588,7 +591,7 @@ def initialize_objects(args):
         break
     
     objects.append(obj)
-
+  random.seed(args.seed)
   return objects
 
 def initialize_stack_x(args):
@@ -857,10 +860,12 @@ def render_shadeless(blender_objects, path='flat.png', objects_dict_list=None):
 
 if __name__ == '__main__':
   parser = initialize_parser()
+
   if INSIDE_BLENDER:
     # Run normally
     argv = utils.extract_args()
     args = parser.parse_args(argv)
+    random.seed(args.seed)
     main(args)
   elif '--help' in sys.argv or '-h' in sys.argv:
     parser.print_help()

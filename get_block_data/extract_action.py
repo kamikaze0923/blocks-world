@@ -1,5 +1,5 @@
 import os
-from get_block_data.block import Block, prefix, extract_predicate, stacks, objs
+from get_block_data.block import Block, prefix, prefix_dir, extract_predicate, stacks, objs
 import matplotlib.pyplot as plt
 import numpy as np
 from c_swm.utils import save_list_dict_h5py
@@ -16,12 +16,12 @@ np.random.seed(0)
 np.set_printoptions(threshold=np.inf, linewidth=np.inf)
 TRAIN_IDX = np.random.choice(N_TRAIN+N_EVAL, N_TRAIN, replace=False)
 
-# def resize(img, scale=2): # resize by 2
-#     assert len(img.shape) == 3 or len(img.shape) == 2
-#     if len(img.shape) == 3:
-#         img_down_sampled = img[:,::scale,::scale]
+# def resize(block_img, scale=2): # resize by 2
+#     assert len(block_img.shape) == 3 or len(block_img.shape) == 2
+#     if len(block_img.shape) == 3:
+#         img_down_sampled = block_img[:,::scale,::scale]
 #     else:
-#         img_down_sampled = img[::scale, ::scale]
+#         img_down_sampled = block_img[::scale, ::scale]
 #     return img_down_sampled
 
 def resize(img, scale=1):
@@ -35,15 +35,15 @@ def get_index_from_image(img, color):
 
 def gen_episode(num_episode, episode_length):
 
-    tr_files = os.listdir(os.path.join(prefix, "scene_tr"))
+    tr_files = os.listdir(os.path.join(prefix_dir, prefix, "scene_tr"))
     tr_files.sort()
     n_tr = len(tr_files) // 2
     assert N_TRAIN + N_EVAL == n_tr
 
-    img_tr_files = os.listdir(os.path.join(prefix, "image_tr"))
+    img_tr_files = os.listdir(os.path.join(prefix_dir, prefix, "image_tr"))
     img_tr_files.sort()
 
-    mask_tr_files = os.listdir(os.path.join(prefix, "mask_image_tr"))
+    mask_tr_files = os.listdir(os.path.join(prefix_dir, prefix, "mask_image_tr"))
     mask_tr_files.sort()
 
     ACTIONS = [(i, j) for i in range(stacks) for j in range(stacks) if j != i]  # (SOURCE, TARGET)
@@ -58,8 +58,8 @@ def gen_episode(num_episode, episode_length):
             replay_buffer = replay_buffer_train
         else:
             replay_buffer = replay_buffer_eval
-        pre_json = os.path.join(prefix, "scene_tr", tr_files[i*2])
-        suc_json = os.path.join(prefix, "scene_tr", tr_files[i*2+1])
+        pre_json = os.path.join(prefix_dir, prefix, "scene_tr", tr_files[i*2])
+        suc_json = os.path.join(prefix_dir, prefix, "scene_tr", tr_files[i*2+1])
         pre_objs, pre_bottom_pads, pre_state, _ = extract_predicate(pre_json)
         suc_objs, suc_bottom_pads, suc_state, _ = extract_predicate(suc_json)
         action = None
@@ -67,11 +67,11 @@ def gen_episode(num_episode, episode_length):
         moving_obj = None
         from_obj = None
 
-        obs = plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2]))[:,:,:-1]
-        next_obs = plt.imread(os.path.join(prefix, "image_tr", img_tr_files[i*2+1]))[:,:,:-1]
+        obs = plt.imread(os.path.join(prefix_dir, prefix, "image_tr", img_tr_files[i*2]))[:,:,:-1]
+        next_obs = plt.imread(os.path.join(prefix_dir, prefix, "image_tr", img_tr_files[i*2+1]))[:,:,:-1]
 
-        mask = plt.imread(os.path.join(prefix, "mask_image_tr", mask_tr_files[i*2]))[:,:,:-1]
-        next_mask = plt.imread(os.path.join(prefix, "mask_image_tr", mask_tr_files[i*2+1]))[:,:,:-1]
+        mask = plt.imread(os.path.join(prefix_dir, prefix, "mask_image_tr", mask_tr_files[i*2]))[:,:,:-1]
+        next_mask = plt.imread(os.path.join(prefix_dir, prefix, "mask_image_tr", mask_tr_files[i*2+1]))[:,:,:-1]
 
         pre_objs_index_matrix = np.zeros(shape=mask.shape[:2], dtype=np.float32)
         next_objs_index_matrix = np.zeros(shape=next_mask.shape[:2], dtype=np.float32)

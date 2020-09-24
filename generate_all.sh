@@ -17,8 +17,9 @@
 
 objs=${1:-2}
 stacks=${2:-2}
-distributed=${3:-false}
-num_images=${4:-200}
+seed=${3:-2}
+distributed=${4:-false}
+num_images=${5:-200}
 
 nvidia-smi > /dev/null
 gpu=$?
@@ -32,15 +33,17 @@ else
     render_tile_size="8"
 fi
 
-prefix="blocks-$objs-$stacks-det"
+prefix_dir="block_img/det"
+prefix="blocks-$objs-$stacks-$seed"
 proj=$(date +%Y%m%d%H%M)-render-$prefix
 
 submit="jbsub -mem 4g -cores 1+1 -queue x86_1h -proj $proj"
 
 blender="blender -noaudio --background --python render_images.py -- \
-      --output-dir      $prefix                   \
-      --initial-objects $prefix/$prefix-init.json                \
-      --statistics      $prefix/$prefix-stat.json                \
+      --seed            $seed
+      --output-dir      $prefix_dir/$prefix                   \
+      --initial-objects $prefix_dir/$prefix/$prefix-init.json                \
+      --statistics      $prefix_dir/$prefix/$prefix-stat.json                \
       --render-num-samples 300                           \
       --width 96                                        \
       --height 64                                       \
