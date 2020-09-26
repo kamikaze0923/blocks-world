@@ -10,15 +10,14 @@ from fosae.train_fosae import PREFIX
 from fosae.train_fosae import MODEL_NAME as FOSAE_MODEL_NAME
 from fosae.train_action_model import ACTION_MODEL_NAME
 
-N_OBJ = OBJS + STACKS + (0 if REMOVE_BG else 1)
 N_EXAMPLES = 108
-MAX_N = 9
+MAX_N = 8
 
 
 def init():
     train_set = Concat(
         [StateTransitionsDataset(
-            hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=MAX_N
+            hdf5_file="c_swm/data/blocks-{}-{}-{}_all.h5".format(OBJS, STACKS, 0), n_obj=OBJS + STACKS, remove_bg=REMOVE_BG, max_n_obj=MAX_N
         ) for OBJS in [1,2,3,4]]
     )
     print("Training Examples: {}".format(len(train_set)))

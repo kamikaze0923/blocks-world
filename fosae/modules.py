@@ -5,7 +5,7 @@ from fosae.activations import TrinaryStep
 
 OBJS = 1
 STACKS = 4
-REMOVE_BG = False
+REMOVE_BG = True
 
 P = 1
 A = 2

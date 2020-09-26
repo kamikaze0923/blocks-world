@@ -20,8 +20,8 @@ with open((os.path.join(prefix_dir, prefix, "{}-init.json".format(prefix)))) as 
     init_json = json.load(f)
 
 STACK_XS = init_json['stack_x']
-BLCOK_INDIES = [i for i in range(1, 1+objs)]
-PAD_INDIES = [i for i in range(1+objs, 1+objs+stacks)]
+BLCOK_INDIES = [i for i in range(1, objs+1)]
+PAD_INDIES = [i for i in range(objs+1, objs+stacks+1)]
 
 
 class Block:
@@ -85,15 +85,22 @@ def extract_predicate(json_file):
             assert b.shape == "SmoothBottomPad"
             b.set_pad_id(len(bottom_pads_objs))
             bottom_pads_objs.append(b)
+            relation.on_ground.add(b.id)
     for k, v in scene_stacks_ys.items():
         scene_stacks_ys[k] = sorted(v)
     for b in scene_objs:
         b.set_floor(scene_stacks_ys[b.n_stack].index(b.z))
         # b.print_block_scene_position()
+    for p in bottom_pads_objs:
+        relation.clear.add(p.id)
     for b in scene_objs:
         clear = True
         if b.floor == 0:
-            relation.on_ground.add(b.id)
+            for p in bottom_pads_objs:
+                if p.n_stack == b.n_stack:
+                    relation.on_block[b.id] = p.id
+                    relation.clear.remove(p.id)
+                    break
         for other_b in scene_objs:
             if other_b.floor == b.floor - 1:
                 relation.on_block[b.id] = other_b.id
@@ -101,6 +108,8 @@ def extract_predicate(json_file):
                 clear = False
         if clear:
             relation.clear.add(b.id)
+
+
     return scene_objs, sorted(bottom_pads_objs, key=lambda x: x.n_stack), state_json['scene_state'], relation
 
 

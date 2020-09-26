@@ -60,8 +60,16 @@ def gen_episode(num_episode, episode_length):
             replay_buffer = replay_buffer_eval
         pre_json = os.path.join(prefix_dir, prefix, "scene_tr", tr_files[i*2])
         suc_json = os.path.join(prefix_dir, prefix, "scene_tr", tr_files[i*2+1])
-        pre_objs, pre_bottom_pads, pre_state, _ = extract_predicate(pre_json)
-        suc_objs, suc_bottom_pads, suc_state, _ = extract_predicate(suc_json)
+        pre_objs, pre_bottom_pads, pre_state, relation = extract_predicate(pre_json)
+        # print(pre_objs)
+        # print(pre_bottom_pads)
+        # print(pre_state)
+        # print(pre_json)
+        # print(relation.on_ground)
+        # print(relation.clear)
+        # print(relation.on_block)
+        # exit(0)
+        suc_objs, suc_bottom_pads, suc_state, relation = extract_predicate(suc_json)
         action = None
         target_obj = None
         moving_obj = None
