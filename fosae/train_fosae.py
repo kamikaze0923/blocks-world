@@ -66,7 +66,6 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     pred_sim_metric_1 = 0
     pred_sim_metric_2 = 0
 
-
     for i, data in enumerate(dataloader):
         _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_from_obj_index, action_tar_obj_index,\
         state_n_obj, _, _, obj_mask_tilda, _ = data
@@ -162,8 +161,6 @@ def run(n_epoch):
             torch.save(vae.state_dict(), "fosae/model_{}/{}.pth".format(PREFIX, MODEL_NAME))
             best_loss = test_loss
         scheculer.step()
-
-
 
 if __name__ == "__main__":
     run(10000)
