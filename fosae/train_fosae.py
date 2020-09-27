@@ -10,12 +10,12 @@ import numpy as np
 import sys
 import os
 
-
 TEMP_BEGIN = 5
 TEMP_MIN = 0.1
 ANNEAL_RATE = 0.001
-TRAIN_BZ = 183
-TEST_BZ = 183
+TRAIN_BZ = 61
+TEST_BZ = 61
+TRAIN_DATASETS_OBJS = [1,2]
 
 BETA = 1
 MARGIN = 1
@@ -52,11 +52,10 @@ def preds_similarity_metric(preds, preds_next, preds_tilda, criterion=nn.L1Loss(
     # exit(0)
     return l1_1, l1_2
 
-def contrastive_loss_function(pred, preds_tilda, criterion=nn.MSELoss(reduction='none')):
+def contrastive_loss_function(pred, pred_next, preds_tilda, criterion=nn.MSELoss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
     mse = criterion(pred, preds_tilda).sum(dim=sum_dim).mean()
     return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - mse) * BETA
-
 
 def epoch_routine(dataloader, vae, temp, optimizer=None):
     if optimizer is not None:
@@ -65,11 +64,16 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         vae.eval()
 
     contrastive_loss = 0
-    metric_pred = 0
-    metric_pred_next = 0
-    metric_pred_tilda = 0
-    pred_sim_metric_1 = 0
-    pred_sim_metric_2 = 0
+    b_metric_pred = 0
+    b_metric_pred_next = 0
+    b_metric_pred_tilda = 0
+    u_metric_pred = 0
+    u_metric_pred_next = 0
+    u_metric_pred_tilda = 0
+    b_pred_sim_metric_1 = 0
+    b_pred_sim_metric_2 = 0
+    u_pred_sim_metric_1 = 0
+    u_pred_sim_metric_2 = 0
 
     for i, data in enumerate(dataloader):
         _, _, obj_mask, next_obj_mask, _, _, _, n_obj, _, _, obj_mask_tilda, _ = data
@@ -88,14 +92,18 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         if optimizer is None:
             with torch.no_grad():
                 preds = vae((data+noise1, data_next+noise2, data_tilda+noise3, n_obj), temp)
-                m1, m2, m3 = probs_metric(preds[0], preds[1], preds[2])
-                m4, m5 = preds_similarity_metric(preds[0], preds[1], preds[2])
-                ctrs_loss = contrastive_loss_function(preds[0], preds[2])
+                m1, m2, m3 = probs_metric(*(preds[:3]))
+                m4, m5 = preds_similarity_metric(*(preds[:3]))
+                m6, m7, m8 = probs_metric(*(preds[3:]))
+                m9, m10 = preds_similarity_metric(*(preds[3:]))
+                ctrs_loss = contrastive_loss_function(*(preds[:3])) + contrastive_loss_function(*(preds[3:]))
         else:
             preds = vae((data + noise1, data_next + noise2, data_tilda + noise3, n_obj), temp)
-            m1, m2, m3 = probs_metric(preds[0], preds[1], preds[2])
-            m4, m5 = preds_similarity_metric(preds[0], preds[1], preds[2])
-            ctrs_loss = contrastive_loss_function(preds[0], preds[2])
+            m1, m2, m3 = probs_metric(*(preds[:3]))
+            m4, m5 = preds_similarity_metric(*(preds[:3]))
+            m6, m7, m8 = probs_metric(*(preds[3:]))
+            m9, m10 = preds_similarity_metric(*(preds[3:]))
+            ctrs_loss = contrastive_loss_function(*(preds[:3])) + contrastive_loss_function(*(preds[3:]))
 
             loss = ctrs_loss
             optimizer.zero_grad()
@@ -103,21 +111,34 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             optimizer.step()
 
         contrastive_loss += ctrs_loss.item()
-        metric_pred += m1.item()
-        metric_pred_next += m2.item()
-        metric_pred_tilda += m3.item()
-        pred_sim_metric_1 += m4.item()
-        pred_sim_metric_2 += m5.item()
+        b_metric_pred += m1.item()
+        b_metric_pred_next += m2.item()
+        b_metric_pred_tilda += m3.item()
+        b_pred_sim_metric_1 += m4.item()
+        b_pred_sim_metric_2 += m5.item()
+
+        u_metric_pred += m6.item()
+        u_metric_pred_next += m7.item()
+        u_metric_pred_tilda += m8.item()
+        u_pred_sim_metric_1 += m9.item()
+        u_pred_sim_metric_2 += m10.item()
 
 
-    print("{:.2f}, | {:.2f}, {:.2f}, {:.2f}, | {:.2f}, {:.2f}".format
+    print("{:.2f} | {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f} | {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
         (
             contrastive_loss / len(dataloader),
-            metric_pred / len(dataloader),
-            metric_pred_next / len(dataloader),
-            metric_pred_tilda / len(dataloader),
-            pred_sim_metric_1 / len(dataloader),
-            pred_sim_metric_2 / len(dataloader)
+
+            b_metric_pred / len(dataloader),
+            b_metric_pred_next / len(dataloader),
+            b_metric_pred_tilda / len(dataloader),
+            b_pred_sim_metric_1 / len(dataloader),
+            b_pred_sim_metric_2 / len(dataloader),
+
+            u_metric_pred / len(dataloader),
+            u_metric_pred_next / len(dataloader),
+            u_metric_pred_tilda / len(dataloader),
+            u_pred_sim_metric_1 / len(dataloader),
+            u_pred_sim_metric_2 / len(dataloader)
         )
     )
 
@@ -131,8 +152,9 @@ def run(n_epoch):
     # train_set = StateTransitionsDataset(hdf5_file="c_swm/data/{}_all.h5".format(PREFIX), n_obj=OBJS+STACKS, remove_bg=REMOVE_BG)
     train_set = Concat(
         [StateTransitionsDataset(
-            hdf5_file="c_swm/data/blocks-{}-{}-{}_all.h5".format(OBJS, STACKS, 0), n_obj=OBJS + STACKS, remove_bg=REMOVE_BG, max_n_obj=8
-        ) for OBJS in [1,2,3,4]]
+            hdf5_file="c_swm/data/blocks-{}-{}-{}_all.h5".format(OBJS, STACKS, 0),
+            n_obj=OBJS + STACKS, remove_bg=REMOVE_BG, max_n_obj=max(TRAIN_DATASETS_OBJS) + 4
+        ) for OBJS in TRAIN_DATASETS_OBJS]
     )
     print("Training Examples: {}".format(len(train_set)))
     assert len(train_set) % TRAIN_BZ == 0
