@@ -51,7 +51,7 @@ def contrastive_loss_function(pred, pred_next, preds_tilda, change, criterion=nn
         torch.tensor(MARGIN).to(device) - criterion(pred, preds_tilda).sum(dim=sum_dim).mean()
     )
     transition_loss = criterion(pred_next+change, pred_next).sum(dim=sum_dim).mean()
-    return margin_loss + transition_loss
+    return margin_loss, transition_loss
 
 def epoch_routine(dataloader, vae, temp, optimizer=None):
     if optimizer is not None:
@@ -59,7 +59,8 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     else:
         vae.eval()
 
-    contrastive_loss = 0
+    margin_loss = 0
+    transition_loss = 0
     metric_pred = 0
     metric_pred_next = 0
     metric_pred_tilda = 0
@@ -93,19 +94,20 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
                 preds, preds_next, preds_tilda = preds
                 m1, m2, m3 = probs_metric(preds, preds_next, preds_tilda)
                 m4, m5 = preds_similarity_metric(preds, preds_next, preds_tilda)
-                ctrs_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
+                m_loss, t_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
         else:
             preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj), (action_idx, action_n_obj, action_types), temp)
             preds, preds_next, preds_tilda = preds
             m1, m2, m3 = probs_metric(preds, preds_next, preds_tilda)
             m4, m5 = preds_similarity_metric(preds, preds_next, preds_tilda)
-            ctrs_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
-            loss = ctrs_loss
+            m_loss, t_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
+            loss = m_loss + t_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-        contrastive_loss += ctrs_loss.item()
+        margin_loss += m_loss.item()
+        transition_loss += t_loss.item()
         metric_pred += m1.item()
         metric_pred_next += m2.item()
         metric_pred_tilda += m3.item()
@@ -113,9 +115,10 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         pred_sim_metric_2 += m5.item()
 
 
-    print("{:.2f} | {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
+    print("{:.2f}, {:.2f} | {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
         (
-            contrastive_loss / len(dataloader),
+            margin_loss / len(dataloader),
+            transition_loss / len(dataloader),
             metric_pred / len(dataloader),
             metric_pred_next / len(dataloader),
             metric_pred_tilda / len(dataloader),
@@ -124,7 +127,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         )
     )
 
-    return contrastive_loss / len(dataloader)
+    return (margin_loss + transition_loss) / len(dataloader)
 
 
 def run(n_epoch):
