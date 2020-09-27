@@ -165,7 +165,7 @@ def run(n_epoch):
         print('====> Epoch: {} Average test loss: {:.4f}, Best Test loss: {:.4f}'.format(e, test_loss, best_loss))
         if test_loss < best_loss:
             print("Save Model")
-            torch.save(vae.state_dict(), "fosae/model_{}_{}/{}.pth".format(GUMBLE_NOISE, PREFIX, MODEL_NAME))
+            torch.save(vae.state_dict(), "fosae/model_{}/{}_noise_{}.pth".format(PREFIX, MODEL_NAME, GUMBLE_NOISE))
             best_loss = test_loss
         scheculer.step()
 
