@@ -94,13 +94,13 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             with torch.no_grad():
                 preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj), (action_idx, action_n_obj, action_types), temp)
                 preds, preds_next, preds_tilda = preds
-                m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda)
+                m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda, change)
                 m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)
                 m_loss, t_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
         else:
             preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj), (action_idx, action_n_obj, action_types), temp)
             preds, preds_next, preds_tilda = preds
-            m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda)
+            m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda, change)
             m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)
             m_loss, t_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
             loss = m_loss + t_loss
