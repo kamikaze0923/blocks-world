@@ -1,10 +1,10 @@
 from c_swm.utils import StateTransitionsDataset, Concat
-from fosae.modules import FoSae, OBJS, STACKS, REMOVE_BG
+from fosae.modules import FoSae, STACKS, REMOVE_BG, TRAIN_DATASETS_OBJS, MAX_N
 from fosae.gumble import device
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torch.optim import Adam, SGD
+from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
@@ -13,11 +13,8 @@ import os
 TEMP_BEGIN = 5
 TEMP_MIN = 0.1
 ANNEAL_RATE = 0.001
-TRAIN_BZ = 54
-TEST_BZ = 54
-TRAIN_DATASETS_OBJS = [1,2]
-
-BETA = 1
+TRAIN_BZ = 2
+TEST_BZ = 2
 MARGIN = 1
 
 print("Model is FOSAE")
@@ -45,17 +42,16 @@ def preds_similarity_metric(preds, preds_next, preds_tilda, criterion=nn.L1Loss(
     sum_dim = [i for i in range(1, preds_next.dim())]
     l1_1 = criterion(preds, preds_next).sum(dim=sum_dim).mean()
     l1_2 = criterion(preds, preds_tilda).sum(dim=sum_dim).mean()
-    # preds = preds.squeeze()
-    # preds_next = preds_next.squeeze()
-    # print(preds)
-    # print(preds_next)
-    # exit(0)
     return l1_1, l1_2
 
-def contrastive_loss_function(pred, pred_next, preds_tilda, criterion=nn.MSELoss(reduction='none')):
+def contrastive_loss_function(pred, pred_next, preds_tilda, change, criterion=nn.L1Loss(reduction='none')):
     sum_dim = [i for i in range(1, pred.dim())]
-    mse = criterion(pred, preds_tilda).sum(dim=sum_dim).mean()
-    return torch.max(torch.tensor(0.0).to(device), torch.tensor(MARGIN).to(device) - mse) * BETA
+    margin_loss = torch.max(
+        torch.tensor(0.0).to(device),
+        torch.tensor(MARGIN).to(device) - criterion(pred, preds_tilda).sum(dim=sum_dim).mean()
+    )
+    transition_loss = criterion(pred_next+change, pred_next).sum(dim=sum_dim).mean()
+    return margin_loss + transition_loss
 
 def epoch_routine(dataloader, vae, temp, optimizer=None):
     if optimizer is not None:
@@ -64,81 +60,68 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         vae.eval()
 
     contrastive_loss = 0
-    b_metric_pred = 0
-    b_metric_pred_next = 0
-    b_metric_pred_tilda = 0
-    u_metric_pred = 0
-    u_metric_pred_next = 0
-    u_metric_pred_tilda = 0
-    b_pred_sim_metric_1 = 0
-    b_pred_sim_metric_2 = 0
-    u_pred_sim_metric_1 = 0
-    u_pred_sim_metric_2 = 0
+    metric_pred = 0
+    metric_pred_next = 0
+    metric_pred_tilda = 0
+    pred_sim_metric_1 = 0
+    pred_sim_metric_2 = 0
+
 
     for i, data in enumerate(dataloader):
-        _, _, obj_mask, next_obj_mask, _, _, _, n_obj, _, _, obj_mask_tilda, _ = data
+        _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_from_obj_index, action_tar_obj_index,\
+        state_n_obj, _, _, obj_mask_tilda, _ = data
+
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
         data_tilda = obj_mask_tilda.to(device)
-        n_obj = n_obj.to(device)
+        state_n_obj = state_n_obj.to(device)
 
         # noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
         # noise2 = torch.normal(mean=0, std=0.2, size=data_next.size()).to(device)
         # noise3 = torch.normal(mean=0, std=0.2, size=data_tilda.size()).to(device)
+
         noise1 = 0
         noise2 = 0
         noise3 = 0
 
+        action_idx = torch.cat([action_mov_obj_index, action_from_obj_index, action_tar_obj_index], dim=1).to(device)
+        action_types = torch.zeros(size=(action_idx.size()[0],), dtype=torch.int32).to(device)
+        action_n_obj = torch.tensor([3 for _ in range(action_idx.size()[0])]).to(device)
+
         if optimizer is None:
             with torch.no_grad():
-                preds = vae((data+noise1, data_next+noise2, data_tilda+noise3, n_obj), temp)
-                m1, m2, m3 = probs_metric(*(preds[:3]))
-                m4, m5 = preds_similarity_metric(*(preds[:3]))
-                m6, m7, m8 = probs_metric(*(preds[3:]))
-                m9, m10 = preds_similarity_metric(*(preds[3:]))
-                ctrs_loss = contrastive_loss_function(*(preds[:3])) + contrastive_loss_function(*(preds[3:]))
+                preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj), (action_idx, action_n_obj, action_types), temp)
+                preds, preds_next, preds_tilda = preds
+                m1, m2, m3 = probs_metric(preds, preds_next, preds_tilda)
+                m4, m5 = preds_similarity_metric(preds, preds_next, preds_tilda)
+                ctrs_loss = contrastive_loss_function(preds, preds_next, preds_tilda)
         else:
-            preds = vae((data + noise1, data_next + noise2, data_tilda + noise3, n_obj), temp)
-            m1, m2, m3 = probs_metric(*(preds[:3]))
-            m4, m5 = preds_similarity_metric(*(preds[:3]))
-            m6, m7, m8 = probs_metric(*(preds[3:]))
-            m9, m10 = preds_similarity_metric(*(preds[3:]))
-            ctrs_loss = contrastive_loss_function(*(preds[:3])) + contrastive_loss_function(*(preds[3:]))
-
+            preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj), (action_idx, action_n_obj, action_types), temp)
+            preds, preds_next, preds_tilda = preds
+            m1, m2, m3 = probs_metric(preds, preds_next, preds_tilda)
+            m4, m5 = preds_similarity_metric(preds, preds_next, preds_tilda)
+            ctrs_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
             loss = ctrs_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
         contrastive_loss += ctrs_loss.item()
-        b_metric_pred += m1.item()
-        b_metric_pred_next += m2.item()
-        b_metric_pred_tilda += m3.item()
-        b_pred_sim_metric_1 += m4.item()
-        b_pred_sim_metric_2 += m5.item()
-
-        u_metric_pred += m6.item()
-        u_metric_pred_next += m7.item()
-        u_metric_pred_tilda += m8.item()
-        u_pred_sim_metric_1 += m9.item()
-        u_pred_sim_metric_2 += m10.item()
+        metric_pred += m1.item()
+        metric_pred_next += m2.item()
+        metric_pred_tilda += m3.item()
+        pred_sim_metric_1 += m4.item()
+        pred_sim_metric_2 += m5.item()
 
 
-    print("{:.2f} | {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f} | {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
+    print("{:.2f} | {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
         (
             contrastive_loss / len(dataloader),
-
-            b_metric_pred / len(dataloader),
-            b_metric_pred_next / len(dataloader),
-            b_metric_pred_tilda / len(dataloader),
-            b_pred_sim_metric_1 / len(dataloader),
-            b_pred_sim_metric_2 / len(dataloader),
-
-            u_metric_pred / len(dataloader),
-            u_metric_pred_next / len(dataloader),
-            u_metric_pred_tilda / len(dataloader),
-            u_pred_sim_metric_1 / len(dataloader),
-            u_pred_sim_metric_2 / len(dataloader)
+            metric_pred / len(dataloader),
+            metric_pred_next / len(dataloader),
+            metric_pred_tilda / len(dataloader),
+            pred_sim_metric_1 / len(dataloader),
+            pred_sim_metric_2 / len(dataloader)
         )
     )
 
@@ -153,7 +136,7 @@ def run(n_epoch):
     train_set = Concat(
         [StateTransitionsDataset(
             hdf5_file="c_swm/data/blocks-{}-{}-{}_all.h5".format(OBJS, STACKS, 0),
-            n_obj=OBJS + STACKS, remove_bg=REMOVE_BG, max_n_obj=max(TRAIN_DATASETS_OBJS) + 4
+            n_obj=OBJS + STACKS, remove_bg=REMOVE_BG, max_n_obj=MAX_N
         ) for OBJS in TRAIN_DATASETS_OBJS]
     )
     print("Training Examples: {}".format(len(train_set)))

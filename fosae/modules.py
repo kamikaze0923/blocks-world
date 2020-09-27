@@ -3,14 +3,16 @@ from torch import nn
 from fosae.gumble import gumbel_softmax, device
 from fosae.activations import TrinaryStep
 
-OBJS = 1
 STACKS = 4
 REMOVE_BG = True
+TRAIN_DATASETS_OBJS = [1,2]
+MAX_N = max(TRAIN_DATASETS_OBJS) + STACKS + (0 if REMOVE_BG else 1)
 
-P1 = 1
-P2 = 1
-ACTION_A = 3
+Ps = [1,1] # how may predicates learned for each arity
+As = [3] # how many arity for each arity
+
 CONV_CHANNELS = 16
+SEMANTICS_LATENT = 4
 ENCODER_FC_LAYER_SIZE = 100
 PRED_BITS = 1
 assert PRED_BITS == 1 or PRED_BITS == 2
@@ -23,10 +25,11 @@ assert IMG_H % 4 == 0
 FMAP_H = IMG_H // 4
 FMAP_W = IMG_W // 4
 
-class BaseObjectImageEncoder(nn.Module):
+
+class PredicateNetwork(nn.Module):
 
     def __init__(self, in_objects, out_features):
-        super(BaseObjectImageEncoder, self).__init__()
+        super(PredicateNetwork, self).__init__()
         self.in_objects = in_objects
         self.conv1 = nn.Conv2d(in_channels=in_objects*IMG_C, out_channels=CONV_CHANNELS, kernel_size=(8,8), stride=(4,4), padding=2)
         # self.bn1 = nn.BatchNorm2d(CONV_CHANNELS)
@@ -34,163 +37,151 @@ class BaseObjectImageEncoder(nn.Module):
         # self.bn2 = nn.BatchNorm1d(1)
         self.fc3 = nn.Linear(in_features=ENCODER_FC_LAYER_SIZE, out_features=out_features)
 
-    def forward(self, input):
+    def forward(self, input, temp):
         h1 = torch.relu(self.conv1(input.view(-1, self.in_objects * IMG_C, IMG_H, IMG_W)))
         h1 = h1.view(-1, 1, CONV_CHANNELS * FMAP_H * FMAP_W)
         h2 = torch.relu(self.fc2(h1))
-        return self.fc3(h2)
+        return gumbel_softmax(self.fc3(h2), temp).view(-1, 1)
+
+class SemanticEncoder(nn.Module):
+
+    def __init__(self, in_objects, out_features):
+        super(SemanticEncoder, self).__init__()
+        self.fc1 = nn.Linear(in_features=in_objects * MAX_N, out_features=out_features)
+        self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
+
+    def forward(self, state):
+        a1 = torch.relu(self.fc1(state))
+        return torch.relu(self.fc2(a1))
+
+class StateChangePredictor(nn.Module):
+
+    def __init__(self, in_features, out_features):
+        super(StateChangePredictor, self).__init__()
+        self.fc1 = nn.Linear(in_features=in_features, out_features=in_features)
+        self.fc2 = nn.Linear(in_features=in_features, out_features=PRED_BITS)
+        self.step_func = TrinaryStep()
+
+    def forward(self, input):
+        a1 = torch.relu(self.fc1(input))
+        return self.step_func.apply(self.fc2(a1))
 
 
-class PredicateNetwork(nn.Module):
-
-    def __init__(self, in_objects):
-        super(PredicateNetwork, self).__init__()
-        self.predicate_encoder = BaseObjectImageEncoder(in_objects=in_objects, out_features=PRED_BITS)
-
-    def forward(self, input, temp):
-        logits = self.predicate_encoder(input).view(-1, PRED_BITS)
-        return gumbel_softmax(logits, temp)
-
-
-class FoSae(nn.Module):
+class StateEncoder(nn.Module):
 
     def __init__(self):
-        super(FoSae, self).__init__()
-        self.unary_predicate_encoders = nn.ModuleList([PredicateNetwork(in_objects=1) for _ in range(P1)])
-        self.binary_predicate_encoders = nn.ModuleList([PredicateNetwork(in_objects=2) for _ in range(P2)])
-        # self.predicate_learner = PredicateLearner()
-        # self.decoder = ObjectImageDecoder()
+        super(StateEncoder, self).__init__()
+        list_of_predicate_module = []
+        list_of_semantics_module = []
+        list_of_changes_module = []
 
-    def enumerate_state_singles_tuples(self, state, state_next, state_tilda, n_obj):
-        pred_adjaceny = []
-        state_adjaceny = []
+        for i, p in enumerate(Ps):
+            arity = i + 1
+            list_of_predicate_module.append(nn.ModuleList([PredicateNetwork(in_objects=arity, out_features=PRED_BITS) for _ in range(p)]))
+            list_of_semantics_module.append(nn.ModuleList([SemanticEncoder(in_objects=arity, out_features=SEMANTICS_LATENT) for _ in range(p)]))
+            list_of_changes_module.append(nn.ModuleList([StateChangePredictor(in_features=SEMANTICS_LATENT*2, out_features=PRED_BITS) for _ in range(p)]))
 
-        all_tuples = []
-        all_tuples_next = []
-        all_tuples_tilda = []
-        all_singles = []
-        all_singles_next = []
-        all_singles_tilda = []
-        state_adj_vec = torch.zeros(size=(state.size()[0],1))
-        pred_adj_vec = torch.zeros(size=((n_obj **2).sum(), 1))
-        obj_cnt = 0
-        for i_state, (s, s_n, s_t, n) in enumerate(zip(state, state_next, state_tilda, n_obj)):
-            for t in range(n):
-                all_singles.append(s[t])
-                all_singles_next.append(s_n[t])
-                all_singles_tilda.append(s_t[t])
-            n_pred = n.item() ** 2
-            enum_index = torch.cartesian_prod(torch.arange(n.item()), torch.arange(n.item())).to(device)
-            for t in enum_index:
-                all_tuples.append(torch.index_select(s, dim=0, index=t).view(2 * IMG_C, IMG_H, IMG_W))
-                all_tuples_next.append(torch.index_select(s_n, dim=0, index=t).view(2 * IMG_C, IMG_H, IMG_W))
-                all_tuples_tilda.append(torch.index_select(s_t, dim=0, index=t).view(2 * IMG_C, IMG_H, IMG_W))
-                state_adjaceny.append(torch.index_fill(state_adj_vec, dim=0, index=torch.tensor(i_state), value=1))
-                pred_adjaceny.append(
-                    torch.index_fill(pred_adj_vec, dim=0, index=torch.arange(start=obj_cnt, end=obj_cnt+n_pred), value=1)
-                )
-            obj_cnt += n_pred
-
-        pred_adjaceny = torch.cat(pred_adjaceny, dim=1)
-        state_adjaceny = torch.cat(state_adjaceny, dim=1)
-        pred_adjaceny = pred_adjaceny / pred_adjaceny.sum(dim=1, keepdim=True)
-        state_adjaceny = state_adjaceny / state_adjaceny.sum(dim=1, keepdim=True)
-
-        return torch.stack(all_tuples, dim=0).to(device), torch.stack(all_tuples_next, dim=0).to(device), torch.stack(all_tuples_tilda, dim=0).to(device),\
-               torch.stack(all_singles, dim=0).to(device), torch.stack(all_singles_next, dim=0).to(device), torch.stack(all_singles_tilda, dim=0).to(device),\
-               pred_adjaceny.to(device), state_adjaceny.to(device)
-
-    def forward(self, input, temp):
-        state, state_next, state_tilda, n_obj = input
-
-        obj_tuples, obj_tuples_next, obj_tuples_tilda, obj_singles, obj_singles_next, obj_singles_tilda, _, _ = \
-            self.enumerate_state_singles_tuples(state, state_next, state_tilda, n_obj)
+        self.state_predicate_encoder = nn.ModuleList(list_of_predicate_module)
+        self.state_semantic_encoder = nn.ModuleList(list_of_semantics_module)
+        self.state_change_predictor = nn.ModuleList(list_of_changes_module)
 
 
-        binary_preds = torch.cat([pred_net(obj_tuples, temp) for pred_net in self.binary_predicate_encoders], dim=1)
-        binary_preds_next = torch.cat([pred_net(obj_tuples_next, temp) for pred_net in self.binary_predicate_encoders], dim=1)
-        binary_preds_tilda = torch.cat([pred_net(obj_tuples_tilda, temp) for pred_net in self.binary_predicate_encoders], dim=1)
+    def enumerate_state(self, state, state_next, state_tilda, n_obj):
 
-        binary_preds_reshape = torch.zeros(size=(state.size()[0], n_obj.max()**2, P2)).to(device)
-        binary_preds_next_reshape = torch.zeros(size=(state_next.size()[0], n_obj.max()**2, P2)).to(device)
-        binary_preds_tilda_reshape = torch.zeros(size=(state_tilda.size()[0], n_obj.max()**2, P2)).to(device)
+        all_objs = [[] for _ in range(len(Ps))]
+        all_next_objs = [[] for _ in range(len(Ps))]
+        all_tilda_objs = [[] for _ in range(len(Ps))]
+        all_one_hots = [[] for _ in range(len(Ps))]
 
-        start_idx = 0
-        for i, n in enumerate(n_obj):
-            binary_preds_reshape[i, :n**2, :] = binary_preds[start_idx: start_idx+n**2]
-            binary_preds_next_reshape[i, :n**2, :] = binary_preds_next[start_idx: start_idx+n**2]
-            binary_preds_tilda_reshape[i, :n**2, :] = binary_preds_tilda[start_idx: start_idx+n**2]
-            start_idx += n**2
+        for s, s_n, s_t, n in zip(state, state_next, state_tilda, n_obj):
+            for i, p in enumerate(Ps):
+                arity = i + 1
+                enum_index = torch.cartesian_prod(*[torch.arange(n.item()) for _ in range(arity)]).to(device)
+                one_hots = torch.zeros(size=(MAX_N*arity,)).to(device)
+                for t in enum_index:
+                    all_objs[i].append(torch.index_select(s, dim=0, index=t).view(arity * IMG_C, IMG_H, IMG_W))
+                    all_next_objs[i].append(torch.index_select(s_n, dim=0, index=t).view(arity * IMG_C, IMG_H, IMG_W))
+                    all_tilda_objs[i].append(torch.index_select(s_t, dim=0, index=t).view(arity * IMG_C, IMG_H, IMG_W))
+                    all_one_hots[i].append(torch.index_fill(one_hots, dim=0, index=t, value=1))
 
-        unary_preds = torch.cat([pred_net(obj_singles, temp) for pred_net in self.unary_predicate_encoders], dim=1)
-        unary_preds_next = torch.cat([pred_net(obj_singles_next, temp) for pred_net in self.unary_predicate_encoders], dim=1)
-        unary_preds_tilda = torch.cat([pred_net(obj_singles_tilda, temp) for pred_net in self.unary_predicate_encoders], dim=1)
 
-        unary_preds_reshape = torch.zeros(size=(state.size()[0], n_obj.max(), P1)).to(device)
-        unary_preds_next_reshape = torch.zeros(size=(state_next.size()[0], n_obj.max(), P1)).to(device)
-        unary_preds_tilda_reshape = torch.zeros(size=(state_tilda.size()[0], n_obj.max(), P1)).to(device)
+        all_objs = [torch.stack(x, dim=0).to(device) for x in all_objs]
+        all_next_objs = [torch.stack(x, dim=0).to(device) for x in all_next_objs]
+        all_tilda_objs = [torch.stack(x, dim=0).to(device) for x in all_tilda_objs]
+        all_one_hots = [torch.stack(x, dim=0).to(device) for x in all_one_hots]
 
-        start_idx = 0
-        for i, n in enumerate(n_obj):
-            unary_preds_reshape[i, :n, :] = unary_preds[start_idx: start_idx+n]
-            unary_preds_next_reshape[i, :n, :] = unary_preds_next[start_idx: start_idx+n]
-            unary_preds_tilda_reshape[i, :n, :] = unary_preds_tilda[start_idx: start_idx+n]
-            start_idx += n
+        # for i in [0,1]:
+        #     print(all_objs[i].size())
+        #     print(all_next_objs[i].size())
+        #     print(all_tilda_objs[i].size())
+        #     print(all_one_hots[i].size())
 
-        return binary_preds_reshape, binary_preds_next_reshape, binary_preds_tilda_reshape, \
-               unary_preds_reshape, unary_preds_next_reshape, unary_preds_tilda_reshape
+        return (all_objs, all_next_objs, all_tilda_objs), all_one_hots
+
+    def forward(self, state_input, action_latent, temp):
+        state, state_next, state_tilda, n_obj = state_input
+
+        n_state = state.size()[0]
+
+        objs, one_hots = self.enumerate_state(state, state_next, state_tilda, n_obj)
+
+        p_slots = [[] for _ in range(3)]
+        change_slot = []
+
+
+        for i, (p, p_module_list, s_module_list, c_module_list) in enumerate(
+                zip(Ps, self.state_predicate_encoder, self.state_semantic_encoder, self.state_change_predictor)
+        ):
+            arity = i + 1
+            for (o, p_slot) in zip(objs, p_slots):
+                preds = torch.cat([net(o[i], temp) for net in p_module_list], dim=0)
+                preds_reshape = torch.zeros(size=(n_state, p * n_obj.max() ** arity, PRED_BITS)).to(device)
+                start_idx = 0
+                for j, n in enumerate(n_obj):
+                    fill_length = p * n ** arity
+                    preds_reshape[j, :fill_length, :] = preds[start_idx: start_idx + fill_length, :]
+                    start_idx += fill_length
+                p_slot.append(preds_reshape)
+
+            semantics = torch.cat([net(one_hots[i]) for net in s_module_list], dim=0)
+            semantics_reshape = torch.zeros(size=(n_state, p * n_obj.max() ** arity, SEMANTICS_LATENT)).to(device)
+            start_idx = 0
+            for j, n in enumerate(n_obj):
+                fill_length = p * n ** arity
+                semantics_reshape[j, :fill_length, :] = semantics[start_idx: start_idx + fill_length, :]
+                start_idx += fill_length
+
+            full_semantics = torch.cat([semantics_reshape, action_latent.unsqueeze(1).expand_as(semantics_reshape)], dim=2)
+            change_slot.extend([net(full_semantics) for net in c_module_list])
+
+        return (torch.cat(x, dim=1) for x in p_slots), torch.cat(change_slot, dim=1)
 
 
 class ActionEncoder(nn.Module):
 
     def __init__(self):
         super(ActionEncoder, self).__init__()
-        self.state_action_encoder = BaseObjectImageEncoder(in_objects=2+ACTION_A, out_features=PRED_BITS)
-        self.step_func = TrinaryStep()
+        self.action_semantic_encoder = nn.ModuleList([SemanticEncoder(in_objects=a, out_features=SEMANTICS_LATENT) for a in As])
 
-    def forward(self, input, temp):
-        state, action, n_obj = input
-        obj_action_tuples = self.enumerate_state_action_tuples(state, action, n_obj)
-        logits = self.state_action_encoder(obj_action_tuples)
-        logits = logits.view(-1, 1)
-        # probs = gumbel_softmax(logits, temp)
-        # target = torch.tensor([-1, 0, 1]).expand_as(probs).to(device)
-        # change = torch.mul(probs, target).sum(dim=-1, keepdim=True)
-        return self.step_func.apply(logits)
+    def index_to_one_hot(self, idx):
+        idx = idx.view(-1, 1)
+        source = torch.zeros(size=(idx.size()[0], MAX_N)).to(device)
+        return torch.scatter(source, dim=1, index=idx, value=1).view(-1, MAX_N*max(As))
 
-    def enumerate_state_action_tuples(self, state, action, n_obj):
-        all_tuples = []
-        for s, a, n in zip(state, action, n_obj):
-            a = a.view(ACTION_A * IMG_C, IMG_H, IMG_W)
-            enum_index = torch.cartesian_prod(torch.arange(n.item()), torch.arange(n.item())).to(device)
-            for t in enum_index:
-                objs = torch.index_select(s, dim=0, index=t).view(2*IMG_C, IMG_H, IMG_W)
-                all_tuples.append(torch.cat([objs, a], dim=0))
-        return torch.stack(all_tuples, dim=0)
+    def forward(self, action_input):
+        action_indecies, action_n_obj, action_types = action_input
+        all_action_latent = []
+        for a, n, t in zip(self.index_to_one_hot(action_indecies), action_n_obj, action_types):
+            all_action_latent.append(self.action_semantic_encoder[t.item()](a[:n*MAX_N]))
+        return torch.stack(all_action_latent)
 
-
-class FoSae_Action(nn.Module):
+class FoSae(nn.Module):
 
     def __init__(self):
-        super(FoSae_Action, self).__init__()
-        self.action_models = nn.ModuleList([ActionEncoder() for _ in range(P2)])
+        super(FoSae, self).__init__()
+        self.state_encoders = StateEncoder()
+        self.action_encoders = ActionEncoder()
 
-    def forward(self, input, temp):
-        state, action, n_obj = input
-
-        all_changes = []
-
-        for model in self.action_models:
-            preds_change = model(input, temp)
-            all_changes.append(preds_change)
-
-        all_changes = torch.cat(all_changes, dim=1)
-
-        changes_reshape = torch.zeros(size=(state.size()[0], n_obj.max()**2, P)).to(device)
-
-        start_idx = 0
-        for i, n in enumerate(n_obj):
-            changes_reshape[i, :n**2, :] = all_changes[start_idx: start_idx+n**2]
-            start_idx += n**2
-
-        return changes_reshape
+    def forward(self, state_input, action_input, temp):
+        action_latent = self.action_encoders(action_input)
+        return self.state_encoders(state_input, action_latent, temp)
