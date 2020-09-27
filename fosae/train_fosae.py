@@ -93,7 +93,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
                 preds, preds_next, preds_tilda = preds
                 m1, m2, m3 = probs_metric(preds, preds_next, preds_tilda)
                 m4, m5 = preds_similarity_metric(preds, preds_next, preds_tilda)
-                ctrs_loss = contrastive_loss_function(preds, preds_next, preds_tilda)
+                ctrs_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
         else:
             preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj), (action_idx, action_n_obj, action_types), temp)
             preds, preds_next, preds_tilda = preds
