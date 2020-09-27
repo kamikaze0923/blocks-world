@@ -51,7 +51,7 @@ def contrastive_loss_function(pred, pred_next, preds_tilda, change, criterion=nn
         torch.tensor(0.0).to(device),
         torch.tensor(MARGIN).to(device) - criterion(pred, preds_tilda).sum(dim=sum_dim).mean()
     )
-    transition_loss = criterion(pred_next+change, pred_next).sum(dim=sum_dim).mean()
+    transition_loss = criterion(pred+change, pred_next).sum(dim=sum_dim).mean()
     return margin_loss, transition_loss
 
 def epoch_routine(dataloader, vae, temp, optimizer=None):
