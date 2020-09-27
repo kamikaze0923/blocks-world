@@ -1,6 +1,6 @@
 import torch
-from torch.nn import functional as F
 
+GUMBLE_NOISE = True
 if torch.cuda.is_available():
     device = 'cuda:0'
     print("Using GPU")
@@ -12,7 +12,7 @@ def sample_gumbel(shape, eps=1e-20):
     U = torch.rand(shape).to(device)
     return -torch.log(-torch.log(U + eps) + eps)
 
-def gumbel_softmax_sample(logits, temperature, add_noise=False):
+def gumbel_softmax_sample(logits, temperature, add_noise=GUMBLE_NOISE):
     if logits.size()[-1] == 1:
         if temperature == 0: # make it to sigmoid if it is a bit choice
             ret = (logits > 0.5).float()

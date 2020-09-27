@@ -8,7 +8,7 @@ from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
-from fosae.train_fosae import PREFIX, OBJS, STACKS, REMOVE_BG
+from fosae.train_fosae import PREFIX, STACKS, REMOVE_BG
 from fosae.train_fosae import MODEL_NAME as FOSAE_MODEL_NAME
 import os
 

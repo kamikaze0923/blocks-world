@@ -1,6 +1,6 @@
 from c_swm.utils import StateTransitionsDataset, Concat
 from fosae.modules import FoSae, STACKS, REMOVE_BG, TRAIN_DATASETS_OBJS, MAX_N
-from fosae.gumble import device
+from fosae.gumble import device, GUMBLE_NOISE
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -51,7 +51,7 @@ def contrastive_loss_function(pred, pred_next, preds_tilda, change, criterion=nn
         torch.tensor(0.0).to(device),
         torch.tensor(MARGIN).to(device) - criterion(pred, preds_tilda).sum(dim=sum_dim).mean()
     )
-    transition_loss = criterion(pred+change, pred_next).sum(dim=sum_dim).mean()
+    transition_loss = criterion(pred + change, pred_next).sum(dim=sum_dim).mean()
     return margin_loss, transition_loss
 
 def epoch_routine(dataloader, vae, temp, optimizer=None):
@@ -165,7 +165,7 @@ def run(n_epoch):
         print('====> Epoch: {} Average test loss: {:.4f}, Best Test loss: {:.4f}'.format(e, test_loss, best_loss))
         if test_loss < best_loss:
             print("Save Model")
-            torch.save(vae.state_dict(), "fosae/model_{}/{}.pth".format(PREFIX, MODEL_NAME))
+            torch.save(vae.state_dict(), "fosae/model_{}_{}/{}.pth".format(GUMBLE_NOISE, PREFIX, MODEL_NAME))
             best_loss = test_loss
         scheculer.step()
 
