@@ -33,10 +33,11 @@ def rec_loss_function(recon_x, x, criterion=nn.BCELoss(reduction='none')):
     BCE = criterion(recon_x, x).sum(dim=sum_dim).mean()
     return BCE
 
-def probs_metric(probs, probs_next, probs_tilda):
+def probs_metric(probs, probs_next, probs_tilda, change):
     return torch.abs(0.5 - probs).mean().detach(), \
            torch.abs(0.5 - probs_next).mean().detach(), \
-           torch.abs(0.5 - probs_tilda).mean().detach()
+           torch.abs(0.5 - probs_tilda).mean().detach(), \
+           torch.abs(change).mean().detach()
 
 def preds_similarity_metric(preds, preds_next, preds_tilda, criterion=nn.L1Loss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
@@ -64,6 +65,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     metric_pred = 0
     metric_pred_next = 0
     metric_pred_tilda = 0
+    metric_change = 0
     pred_sim_metric_1 = 0
     pred_sim_metric_2 = 0
 
@@ -92,14 +94,14 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             with torch.no_grad():
                 preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj), (action_idx, action_n_obj, action_types), temp)
                 preds, preds_next, preds_tilda = preds
-                m1, m2, m3 = probs_metric(preds, preds_next, preds_tilda)
-                m4, m5 = preds_similarity_metric(preds, preds_next, preds_tilda)
+                m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda)
+                m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)
                 m_loss, t_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
         else:
             preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj), (action_idx, action_n_obj, action_types), temp)
             preds, preds_next, preds_tilda = preds
-            m1, m2, m3 = probs_metric(preds, preds_next, preds_tilda)
-            m4, m5 = preds_similarity_metric(preds, preds_next, preds_tilda)
+            m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda)
+            m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)
             m_loss, t_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
             loss = m_loss + t_loss
             optimizer.zero_grad()
@@ -111,17 +113,19 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         metric_pred += m1.item()
         metric_pred_next += m2.item()
         metric_pred_tilda += m3.item()
-        pred_sim_metric_1 += m4.item()
-        pred_sim_metric_2 += m5.item()
+        metric_change += m4.item()
+        pred_sim_metric_1 += m5.item()
+        pred_sim_metric_2 += m6.item()
 
 
-    print("{:.2f}, {:.2f} | {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}".format
+    print("{:.2f}, {:.2f} | {:.2f}, {:.2f}, {:.2f}, {:.2f} | {:.2f}, {:.2f}".format
         (
             margin_loss / len(dataloader),
             transition_loss / len(dataloader),
             metric_pred / len(dataloader),
             metric_pred_next / len(dataloader),
             metric_pred_tilda / len(dataloader),
+            metric_change / len(dataloader),
             pred_sim_metric_1 / len(dataloader),
             pred_sim_metric_2 / len(dataloader)
         )
