@@ -64,7 +64,7 @@ class StateChangePredictor(nn.Module):
 
     def forward(self, input):
         a1 = torch.relu(self.fc1(input))
-        return self.step_func.apply(self.fc2(a1))
+        return torch.tanh(self.fc2(a1))
 
 
 class StateEncoder(nn.Module):
