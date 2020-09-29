@@ -199,6 +199,7 @@ def run(n_epoch):
     # optimizer = SGD(vae.parameters(), lr=1e-3)
     scheculer = LambdaLR(optimizer, lambda e: 1 if e < 100 else 0.1)
     best_loss = float('inf')
+    best_tmp = None
     for e in range(n_epoch):
         temp = np.maximum(TEMP_BEGIN * np.exp(-ANNEAL_RATE * e), TEMP_MIN)
         print("Epoch: {}, Temperature: {}, Lr: {}".format(e, temp, scheculer.get_last_lr()))
@@ -206,11 +207,12 @@ def run(n_epoch):
         train_loss = epoch_routine(train_loader, vae, temp, optimizer)
         print('====> Epoch: {} Average train loss: {:.4f}'.format(e, train_loss))
         test_loss = epoch_routine(train_loader, vae, temp)
-        print('====> Epoch: {} Average test loss: {:.4f}, Best Test loss: {:.4f}'.format(e, test_loss, best_loss))
+        print('====> Epoch: {} Average test loss: {:.4f}, Best Test loss: {:.4f}, Best temp {:.4f}'.format(e, test_loss, best_loss, best_tmp))
         if test_loss < best_loss:
             print("Save Model")
             torch.save(vae.state_dict(), "fosae/model_{}/{}.pth".format(PREFIX, MODEL_NAME))
             best_loss = test_loss
+            best_tmp = temp
         scheculer.step()
 
 if __name__ == "__main__":
