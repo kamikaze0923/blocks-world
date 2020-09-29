@@ -137,7 +137,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             # m_loss, t_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
             p1_loss, p2_loss, a_loss = action_supervision_loss(preds, preds_next, change, supervision)
 
-            loss = p1_loss + p2_loss + a_loss
+            loss = p1_loss + a_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
