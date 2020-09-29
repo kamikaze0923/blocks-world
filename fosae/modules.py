@@ -4,9 +4,9 @@ from fosae.activations import TrinaryStep
 from fosae.domain_info.blocks_world import *
 
 
-CONV_CHANNELS = 16
+CONV_CHANNELS = 32
 SEMANTICS_LATENT = 4
-ENCODER_FC_LAYER_SIZE = 100
+ENCODER_FC_LAYER_SIZE = 200
 PRED_BITS = 1
 assert PRED_BITS == 1 or PRED_BITS == 2
 
