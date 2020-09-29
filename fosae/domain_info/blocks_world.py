@@ -1,4 +1,5 @@
 import torch
+from fosae.gumble import device
 
 STACKS = 4
 REMOVE_BG = True
@@ -10,8 +11,8 @@ As = [3] # how many arity for each arity
 
 class MoveAction:
 
-    CLEAR = torch.cartesian_prod(torch.arange(MAX_N))
-    ON = torch.cartesian_prod(torch.arange(MAX_N), torch.arange(MAX_N))
+    CLEAR = torch.cartesian_prod(torch.arange(MAX_N)).to(device)
+    ON = torch.cartesian_prod(torch.arange(MAX_N), torch.arange(MAX_N)).to(device)
 
     def get_precondition(self, moving_obj, from_obj, target_obj):
 
