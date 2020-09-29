@@ -12,7 +12,7 @@ import os
 
 TEMP_BEGIN = 1
 TEMP_MIN = 0.01
-ANNEAL_RATE = 0.001
+ANNEAL_RATE = 0.0001
 TRAIN_BZ = 2
 TEST_BZ = 2
 MARGIN = 1
@@ -214,7 +214,7 @@ def run(n_epoch):
         scheculer.step()
 
 if __name__ == "__main__":
-    run(10000)
+    run(50000)
 
 
 
