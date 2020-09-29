@@ -74,6 +74,7 @@ def action_supervision_loss(
         pred_next_unchange = torch.index_select(pred_next.squeeze(), dim=1, index=diff)
         p2_loss += criterion_2(pred_unchange, pred_next_unchange).sum(dim=1).mean()
     a_loss = criterion_2(pred.detach()+change, pred_next.detach()).sum(dim=(1,2)).mean()
+
     return p1_loss, p2_loss, a_loss
 
 
@@ -131,6 +132,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
                 p1_loss, p2_loss, a_loss = action_supervision_loss(preds, preds_next, change, supervision)
         else:
             preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj, back_grounds+noise4), action_input, temp)
+
             preds, preds_next, preds_tilda = preds
             m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda, change)
             m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)

@@ -50,7 +50,7 @@ class StateChangePredictor(nn.Module):
 
     def __init__(self, in_features, out_features):
         super(StateChangePredictor, self).__init__()
-        self.fc1 = nn.Linear(in_features=in_features, out_features=in_features)
+        self.fc1 = nn.Linear(in_features=in_features, out_features=out_features)
         # self.fc2 = nn.Linear(in_features=in_features, out_features=out_features)
         self.step_func = TrinaryStep()
 
@@ -150,7 +150,7 @@ class StateEncoder(nn.Module):
             full_semantics = torch.cat([semantics_reshape, action_latent.unsqueeze(1).expand_as(semantics_reshape)], dim=2)
             change_slot.extend([net(full_semantics) for net in c_module_list])
 
-        return (torch.cat(x, dim=1) for x in p_slots), torch.cat(change_slot, dim=1)
+        return (torch.cat(x, dim=1) for x in p_slots),  torch.cat(change_slot, dim=1)
 
 
 class ActionEncoder(nn.Module):
