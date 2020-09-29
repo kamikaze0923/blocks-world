@@ -40,7 +40,7 @@ class MoveAction:
         clear_from = torch.argmax((self.CLEAR == from_obj).int())
         not_clear_tar = torch.argmax((self.CLEAR == target_obj).int())
         on_mov_tar = torch.argmax((self.ON == torch.stack([moving_obj, target_obj])).all(dim=1).int())
-        not_on_mov_tar = torch.argmax((self.ON == torch.cat([moving_obj, from_obj])).all(dim=1).int())
+        not_on_mov_tar = torch.argmax((self.ON == torch.stack([moving_obj, from_obj])).all(dim=1).int())
 
         return torch.tensor([clear_from, not_clear_tar, on_mov_tar + MAX_N, not_on_mov_tar + MAX_N]), torch.tensor([1,0,1,0]).float()
 
