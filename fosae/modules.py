@@ -2,14 +2,8 @@ import torch
 from torch import nn
 from fosae.gumble import gumbel_softmax, device
 from fosae.activations import TrinaryStep
+from fosae.domain_info.blocks_world import *
 
-STACKS = 4
-REMOVE_BG = True
-TRAIN_DATASETS_OBJS = [1,2]
-MAX_N = max(TRAIN_DATASETS_OBJS) + STACKS + (0 if REMOVE_BG else 1)
-
-Ps = [1,1] # how may predicates learned for each arity
-As = [3] # how many arity for each arity
 
 CONV_CHANNELS = 16
 SEMANTICS_LATENT = 4
@@ -64,8 +58,7 @@ class StateChangePredictor(nn.Module):
 
     def forward(self, input):
         a1 = torch.relu(self.fc1(input))
-        return torch.tanh(self.fc2(a1))
-
+        return self.step_func.apply(self.fc2(a1))
 
 class StateEncoder(nn.Module):
 
@@ -185,3 +178,22 @@ class FoSae(nn.Module):
     def forward(self, state_input, action_input, temp):
         action_latent = self.action_encoders(action_input)
         return self.state_encoders(state_input, action_latent, temp)
+
+    def get_supervise_signal(self, action_input):
+        pre_ind = []
+        pre_label = []
+        eff_ind = []
+        eff_label = []
+        for idx, n_obj, type in zip(*action_input):
+            assert idx.dim() == 1
+            assert type.dim() == 0
+            assert n_obj.dim() == 0
+            idx = [i for i in idx]
+            pre_signal = ACTION_FUNC[type.item()].get_precondition(*idx[:n_obj.item()])
+            eff_signal = ACTION_FUNC[type.item()].get_effect(*idx[:n_obj.item()])
+            pre_ind.append(pre_signal[0])
+            pre_label.append(pre_signal[1])
+            eff_ind.append(eff_signal[0])
+            eff_label.append(eff_signal[1])
+        return torch.stack(pre_ind).to(device), torch.stack(pre_label).to(device), \
+               torch.stack(eff_ind).to(device), torch.stack(eff_label).to(device)

@@ -9,12 +9,12 @@ NUM_EPISODE = 100
 EPISODE_LENGTH = 10
 N_TRAIN_DICT = {1:10, 2:80, 3:600, 4:5000}
 N_EVAL_DICT = {1:2, 2:16, 3:120, 4:760}
-N_TRAIN = N_TRAIN_DICT[objs]
-N_EVAL = N_EVAL_DICT[objs]
+# N_TRAIN = N_TRAIN_DICT[objs]
+# N_EVAL = N_EVAL_DICT[objs]
 
 np.random.seed(0)
 np.set_printoptions(threshold=np.inf, linewidth=np.inf)
-TRAIN_IDX = np.random.choice(N_TRAIN+N_EVAL, N_TRAIN, replace=False)
+# TRAIN_IDX = np.random.choice(N_TRAIN+N_EVAL, N_TRAIN, replace=False)
 
 # def resize(block_img, scale=2): # resize by 2
 #     assert len(block_img.shape) == 3 or len(block_img.shape) == 2
@@ -38,7 +38,7 @@ def gen_episode(num_episode, episode_length):
     tr_files = os.listdir(os.path.join(prefix_dir, prefix, "scene_tr"))
     tr_files.sort()
     n_tr = len(tr_files) // 2
-    assert N_TRAIN + N_EVAL == n_tr
+    # assert N_TRAIN + N_EVAL == n_tr
 
     img_tr_files = os.listdir(os.path.join(prefix_dir, prefix, "image_tr"))
     img_tr_files.sort()
@@ -50,25 +50,22 @@ def gen_episode(num_episode, episode_length):
 
     replay_buffer_train = []
     replay_buffer_eval = []
+    replay_buffer = []
 
     for i in range(n_tr):
         if i % 100 == 0:
             print(i)
-        if i in TRAIN_IDX:
-            replay_buffer = replay_buffer_train
+        if i == 3 or i == 53:
+            pass
         else:
-            replay_buffer = replay_buffer_eval
+            continue
+        # if i in TRAIN_IDX:
+        #     replay_buffer = replay_buffer_train
+        # else:
+        #     replay_buffer = replay_buffer_eval
         pre_json = os.path.join(prefix_dir, prefix, "scene_tr", tr_files[i*2])
         suc_json = os.path.join(prefix_dir, prefix, "scene_tr", tr_files[i*2+1])
         pre_objs, pre_bottom_pads, pre_state, relation = extract_predicate(pre_json)
-        # print(pre_objs)
-        # print(pre_bottom_pads)
-        # print(pre_state)
-        # print(pre_json)
-        # print(relation.on_ground)
-        # print(relation.clear)
-        # print(relation.on_block)
-        # exit(0)
         suc_objs, suc_bottom_pads, suc_state, relation = extract_predicate(suc_json)
         action = None
         target_obj = None
@@ -209,16 +206,12 @@ def gen_episode(num_episode, episode_length):
 
         replay_buffer.append(replay)
 
-    save_list_dict_h5py(replay_buffer_train, "{}/{}/{}".format("c_swm", "data", "{}_train.h5".format(prefix)))
-    save_list_dict_h5py(replay_buffer_eval, "{}/{}/{}".format("c_swm", "data", "{}_eval.h5".format(prefix)))
-    save_list_dict_h5py(replay_buffer_eval + replay_buffer_train, "{}/{}/{}".format("c_swm", "data", "{}_all.h5".format(prefix)))
+    # save_list_dict_h5py(replay_buffer_train, "{}/{}/{}".format("c_swm", "data", "{}_train.h5".format(prefix)))
+    # save_list_dict_h5py(replay_buffer_eval, "{}/{}/{}".format("c_swm", "data", "{}_eval.h5".format(prefix)))
+    print(len(replay_buffer))
+    # save_list_dict_h5py(replay_buffer_eval + replay_buffer_train, "{}/{}/{}".format("c_swm", "data", "{}_special2.h5".format(prefix)))
+    save_list_dict_h5py(replay_buffer, "{}/{}/{}".format("c_swm", "data", "{}_special2.h5".format(prefix)))
 
 
 if __name__ == "__main__":
     gen_episode(NUM_EPISODE, EPISODE_LENGTH)
-
-
-
-
-
-

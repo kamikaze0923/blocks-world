@@ -188,11 +188,10 @@ class StateTransitionsDataset(data.Dataset):
             for i in range(n_obj):
                 obj_mask_sep[i] = get_masked_obj(obs, i+(1 if remove_bg else 0), obj_mask_idx)
                 next_obj_mask_sep[i] = get_masked_obj(next_obs, i+(1 if remove_bg else 0), next_obj_mask_idx)
-            #     plt.imshow(np.transpose(obj_mask_sep[i], (1,2,0)))
-            #     plt.pause(0.1)
-            #     plt.imshow(np.transpose(next_obj_mask_sep[i], (1,2,0)))
-            #     plt.pause(0.1)
-            # exit(0)
+                # plt.imshow(np.transpose(obj_mask_sep[i], (1,2,0)))
+                # plt.pause(0.1)
+                # plt.imshow(np.transpose(next_obj_mask_sep[i], (1,2,0)))
+                # plt.pause(0.1)
 
             self.experience_buffer[ep]['obj_mask_sep'] = obj_mask_sep
             self.experience_buffer[ep]['next_obj_mask_sep'] = next_obj_mask_sep
