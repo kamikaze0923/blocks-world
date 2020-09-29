@@ -184,10 +184,10 @@ class StateTransitionsDataset(data.Dataset):
             for i in range(n_obj):
                 obj_mask_sep[i] = get_masked_obj(obs, i+1, obj_mask_idx)
                 next_obj_mask_sep[i] = get_masked_obj(next_obs, i+1, next_obj_mask_idx)
-                plt.imshow(np.transpose(obj_mask_sep[i], (1,2,0)))
-                plt.pause(0.1)
-                plt.imshow(np.transpose(next_obj_mask_sep[i], (1,2,0)))
-                plt.pause(0.1)
+                # plt.imshow(np.transpose(obj_mask_sep[i], (1,2,0)))
+                # plt.pause(0.1)
+                # plt.imshow(np.transpose(next_obj_mask_sep[i], (1,2,0)))
+                # plt.pause(0.1)
 
             self.experience_buffer[ep]['obj_mask_sep'] = obj_mask_sep
             self.experience_buffer[ep]['next_obj_mask_sep'] = next_obj_mask_sep
@@ -196,10 +196,10 @@ class StateTransitionsDataset(data.Dataset):
             bg_next = get_masked_obj(next_obs, 0, next_obj_mask_idx)
             self.experience_buffer[ep]['obj_mask_background'] = np.expand_dims(bg, 0)
             self.experience_buffer[ep]['next_obj_mask_background'] = np.expand_dims(bg_next, 0)
-            plt.imshow(np.transpose(bg, (1,2,0)))
-            plt.pause(0.1)
-            plt.imshow(np.transpose(bg_next, (1,2,0)))
-            plt.pause(0.1)
+            # plt.imshow(np.transpose(bg, (1,2,0)))
+            # plt.pause(0.1)
+            # plt.imshow(np.transpose(bg_next, (1,2,0)))
+            # plt.pause(0.1)
 
             for scene_state, observation, mask, background in zip(
                 [self.experience_buffer[ep]['scene_state_pre'], self.experience_buffer[ep]['scene_state_suc']],
