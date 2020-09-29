@@ -140,7 +140,7 @@ def get_masked_obj(obs, idx, idx_matirx):
 class StateTransitionsDataset(data.Dataset):
     """Create dataset of (o_t, a_t, o_{t+1}) transitions from replay buffer."""
 
-    def __init__(self, hdf5_file, n_obj, remove_bg=True, truncate=float('inf'), max_n_obj=None):
+    def __init__(self, hdf5_file, n_obj, truncate=float('inf'), max_n_obj=None):
         """
         Args:
             hdf5_file (string): Path to the hdf5 file that contains experience
@@ -150,11 +150,7 @@ class StateTransitionsDataset(data.Dataset):
 
         # Build table for conversion between linear idx -> episode/step idx
         self.idx2episode = list()
-        self.remove_bg = remove_bg
         step = 0
-
-        if not remove_bg:
-            n_obj += 1
 
         self.n_obj = n_obj
 
@@ -186,23 +182,34 @@ class StateTransitionsDataset(data.Dataset):
 
             # 0's channel is the background, skip it if remove_bg
             for i in range(n_obj):
-                obj_mask_sep[i] = get_masked_obj(obs, i+(1 if remove_bg else 0), obj_mask_idx)
-                next_obj_mask_sep[i] = get_masked_obj(next_obs, i+(1 if remove_bg else 0), next_obj_mask_idx)
-                # plt.imshow(np.transpose(obj_mask_sep[i], (1,2,0)))
-                # plt.pause(0.1)
-                # plt.imshow(np.transpose(next_obj_mask_sep[i], (1,2,0)))
-                # plt.pause(0.1)
+                obj_mask_sep[i] = get_masked_obj(obs, i+1, obj_mask_idx)
+                next_obj_mask_sep[i] = get_masked_obj(next_obs, i+1, next_obj_mask_idx)
+                plt.imshow(np.transpose(obj_mask_sep[i], (1,2,0)))
+                plt.pause(0.1)
+                plt.imshow(np.transpose(next_obj_mask_sep[i], (1,2,0)))
+                plt.pause(0.1)
 
             self.experience_buffer[ep]['obj_mask_sep'] = obj_mask_sep
             self.experience_buffer[ep]['next_obj_mask_sep'] = next_obj_mask_sep
-            for scene_state, observation, mask in zip(
+
+            bg = get_masked_obj(obs, 0, obj_mask_idx)
+            bg_next = get_masked_obj(next_obs, 0, next_obj_mask_idx)
+            self.experience_buffer[ep]['obj_mask_background'] = np.expand_dims(bg, 0)
+            self.experience_buffer[ep]['next_obj_mask_background'] = np.expand_dims(bg_next, 0)
+            plt.imshow(np.transpose(bg, (1,2,0)))
+            plt.pause(0.1)
+            plt.imshow(np.transpose(bg_next, (1,2,0)))
+            plt.pause(0.1)
+
+            for scene_state, observation, mask, background in zip(
                 [self.experience_buffer[ep]['scene_state_pre'], self.experience_buffer[ep]['scene_state_suc']],
                 [obs, next_obs],
-                [obj_mask_sep, next_obj_mask_sep]
+                [obj_mask_sep, next_obj_mask_sep],
+                [self.experience_buffer[ep]['obj_mask_background'], self.experience_buffer[ep]['next_obj_mask_background']]
             ):
                 scene_state = tuple(scene_state)
                 if scene_state not in self.all_scene_dict:
-                    self.all_scene_dict[scene_state] = (observation, mask)
+                    self.all_scene_dict[scene_state] = (observation, mask, background)
 
         self.num_steps = step
         self.all_scene_keys = self.all_scene_dict.keys()
@@ -219,17 +226,21 @@ class StateTransitionsDataset(data.Dataset):
         obj_mask = self.experience_buffer[ep]['obj_mask_sep']
         next_obj_mask = self.experience_buffer[ep]['next_obj_mask_sep']
 
-        action_mov_obj_index = self.experience_buffer[ep]['action_mov_obj_index'] - (1 if self.remove_bg else 0)
-        action_from_obj_index = self.experience_buffer[ep]['action_from_obj_index'] - (1 if self.remove_bg else 0)
-        action_tar_obj_index = self.experience_buffer[ep]['action_tar_obj_index'] - (1 if self.remove_bg else 0)
+        action_mov_obj_index = self.experience_buffer[ep]['action_mov_obj_index'] - 1
+        action_from_obj_index = self.experience_buffer[ep]['action_from_obj_index'] - 1
+        action_tar_obj_index = self.experience_buffer[ep]['action_tar_obj_index'] - 1
 
+        obj_background = self.experience_buffer[ep]['obj_mask_background']
+        next_obj_background = self.experience_buffer[ep]['next_obj_mask_background']
 
         rand_other_state_pre = self.sample_diff_key(tuple(self.experience_buffer[ep]['scene_state_pre']))
         rand_other_state_suc = self.sample_diff_key(tuple(self.experience_buffer[ep]['scene_state_suc']))
 
-        return obs, next_obs, obj_mask, next_obj_mask, action_mov_obj_index, action_from_obj_index, action_tar_obj_index, self.n_obj, \
+        return obs, next_obs, obj_mask, next_obj_mask, obj_background, next_obj_background, \
+               action_mov_obj_index, action_from_obj_index, action_tar_obj_index, self.n_obj, \
                self.all_scene_dict[rand_other_state_pre][0][step], self.all_scene_dict[rand_other_state_suc][0][step], \
-               self.all_scene_dict[rand_other_state_pre][1], self.all_scene_dict[rand_other_state_suc][1],
+               self.all_scene_dict[rand_other_state_pre][1], self.all_scene_dict[rand_other_state_suc][1], \
+               self.all_scene_dict[rand_other_state_pre][2], self.all_scene_dict[rand_other_state_suc][2],
 
     def sample_diff_key(self, key):
         keys_list = list(self.all_scene_keys)

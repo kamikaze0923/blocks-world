@@ -1,6 +1,5 @@
-import torch
 from torch import nn
-from fosae.gumble import gumbel_softmax, device
+from fosae.gumble import gumbel_softmax
 from fosae.activations import TrinaryStep
 from fosae.domain_info.blocks_world import *
 
@@ -70,7 +69,7 @@ class StateEncoder(nn.Module):
 
         for i, p in enumerate(Ps):
             arity = i + 1
-            list_of_predicate_module.append(nn.ModuleList([PredicateNetwork(in_objects=arity, out_features=PRED_BITS) for _ in range(p)]))
+            list_of_predicate_module.append(nn.ModuleList([PredicateNetwork(in_objects=arity+1, out_features=PRED_BITS) for _ in range(p)]))
             list_of_semantics_module.append(nn.ModuleList([SemanticEncoder(in_objects=arity, out_features=SEMANTICS_LATENT) for _ in range(p)]))
             list_of_changes_module.append(nn.ModuleList([StateChangePredictor(in_features=SEMANTICS_LATENT*2, out_features=PRED_BITS) for _ in range(p)]))
 
@@ -79,22 +78,34 @@ class StateEncoder(nn.Module):
         self.state_change_predictor = nn.ModuleList(list_of_changes_module)
 
 
-    def enumerate_state(self, state, state_next, state_tilda, n_obj):
+    def enumerate_state(self, state, state_next, state_tilda, n_obj, backgrounds):
 
         all_objs = [[] for _ in range(len(Ps))]
         all_next_objs = [[] for _ in range(len(Ps))]
         all_tilda_objs = [[] for _ in range(len(Ps))]
         all_one_hots = [[] for _ in range(len(Ps))]
 
-        for s, s_n, s_t, n in zip(state, state_next, state_tilda, n_obj):
+        for s, s_n, s_t, n, bg in zip(state, state_next, state_tilda, n_obj, backgrounds):
             for i, p in enumerate(Ps):
                 arity = i + 1
                 enum_index = torch.cartesian_prod(*[torch.arange(n.item()) for _ in range(arity)]).to(device)
                 one_hots = torch.zeros(size=(MAX_N*arity,)).to(device)
                 for t in enum_index:
-                    all_objs[i].append(torch.index_select(s, dim=0, index=t).view(arity * IMG_C, IMG_H, IMG_W))
-                    all_next_objs[i].append(torch.index_select(s_n, dim=0, index=t).view(arity * IMG_C, IMG_H, IMG_W))
-                    all_tilda_objs[i].append(torch.index_select(s_t, dim=0, index=t).view(arity * IMG_C, IMG_H, IMG_W))
+                    all_objs[i].append(
+                        torch.cat([
+                            torch.index_select(s, dim=0, index=t), bg[0].unsqueeze(0)
+                        ], dim=0).view((arity+1) * IMG_C, IMG_H, IMG_W)
+                    )
+                    all_next_objs[i].append(
+                        torch.cat([
+                            torch.index_select(s_n, dim=0, index=t), bg[1].unsqueeze(0)
+                        ], dim=0).view((arity+1) * IMG_C, IMG_H, IMG_W)
+                    )
+                    all_tilda_objs[i].append(
+                        torch.cat([
+                            torch.index_select(s_t, dim=0, index=t), bg[2].unsqueeze(0)
+                        ], dim=0).view((arity+1) * IMG_C, IMG_H, IMG_W)
+                    )
                     all_one_hots[i].append(torch.index_fill(one_hots, dim=0, index=t, value=1))
 
 
@@ -103,20 +114,14 @@ class StateEncoder(nn.Module):
         all_tilda_objs = [torch.stack(x, dim=0).to(device) for x in all_tilda_objs]
         all_one_hots = [torch.stack(x, dim=0).to(device) for x in all_one_hots]
 
-        # for i in [0,1]:
-        #     print(all_objs[i].size())
-        #     print(all_next_objs[i].size())
-        #     print(all_tilda_objs[i].size())
-        #     print(all_one_hots[i].size())
-
         return (all_objs, all_next_objs, all_tilda_objs), all_one_hots
 
     def forward(self, state_input, action_latent, temp):
-        state, state_next, state_tilda, n_obj = state_input
+        state, state_next, state_tilda, n_obj, backgrounds = state_input
 
         n_state = state.size()[0]
 
-        objs, one_hots = self.enumerate_state(state, state_next, state_tilda, n_obj)
+        objs, one_hots = self.enumerate_state(state, state_next, state_tilda, n_obj, backgrounds)
 
         p_slots = [[] for _ in range(3)]
         change_slot = []

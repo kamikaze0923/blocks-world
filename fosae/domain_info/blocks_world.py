@@ -2,9 +2,8 @@ import torch
 from fosae.gumble import device
 
 STACKS = 4
-REMOVE_BG = True
 TRAIN_DATASETS_OBJS = [1,2]
-MAX_N = max(TRAIN_DATASETS_OBJS) + STACKS + (0 if REMOVE_BG else 1)
+MAX_N = max(TRAIN_DATASETS_OBJS) + STACKS
 
 Ps = [1,1] # how may predicates learned for each arity
 As = [3] # how many arity for each arity

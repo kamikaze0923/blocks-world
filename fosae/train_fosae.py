@@ -1,5 +1,5 @@
 from c_swm.utils import StateTransitionsDataset, Concat
-from fosae.modules import FoSae, STACKS, REMOVE_BG, TRAIN_DATASETS_OBJS, MAX_N
+from fosae.modules import FoSae, STACKS, TRAIN_DATASETS_OBJS, MAX_N
 from fosae.gumble import device, GUMBLE_NOISE
 import torch
 import torch.nn as nn
@@ -10,11 +10,11 @@ import numpy as np
 import sys
 import os
 
-TEMP_BEGIN = 5
+TEMP_BEGIN = 1
 TEMP_MIN = 0.1
 ANNEAL_RATE = 0.001
-TRAIN_BZ = 27
-TEST_BZ = 27
+TRAIN_BZ = 2
+TEST_BZ = 2
 MARGIN = 1
 
 print("Model is FOSAE")
@@ -92,13 +92,15 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
     pred_sim_metric_2 = 0
 
     for i, data in enumerate(dataloader):
-        _, _, obj_mask, next_obj_mask, action_mov_obj_index, action_from_obj_index, action_tar_obj_index,\
-        state_n_obj, _, _, obj_mask_tilda, _ = data
+        _, _, obj_mask, next_obj_mask, obj_background, next_obj_background, action_mov_obj_index, action_from_obj_index, action_tar_obj_index,\
+        state_n_obj, _, _, obj_mask_tilda, _, obj_background_tilda, _ = data
 
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
         data_tilda = obj_mask_tilda.to(device)
         state_n_obj = state_n_obj.to(device)
+
+        back_grounds = torch.cat([obj_background, next_obj_background, obj_background_tilda], dim=1).to(device)
 
         # noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
         # noise2 = torch.normal(mean=0, std=0.2, size=data_next.size()).to(device)
@@ -107,6 +109,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         noise1 = 0
         noise2 = 0
         noise3 = 0
+        noise4 = 0
 
         action_idx = torch.cat([action_mov_obj_index, action_from_obj_index, action_tar_obj_index], dim=1).to(device)
         action_types = torch.zeros(size=(action_idx.size()[0],), dtype=torch.int32).to(device)
@@ -116,13 +119,13 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
 
         if optimizer is None:
             with torch.no_grad():
-                preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj), action_input, temp)
+                preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj, back_grounds+noise4), action_input, temp)
                 preds, preds_next, preds_tilda = preds
                 m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda, change)
                 m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)
                 p1_loss, p2_loss, a_loss = action_supervision_loss(preds, preds_next, change, supervision)
         else:
-            preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj), action_input, temp)
+            preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj, back_grounds+noise4), action_input, temp)
             preds, preds_next, preds_tilda = preds
             m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda, change)
             m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)
@@ -176,7 +179,7 @@ def run(n_epoch):
     train_set = Concat(
         [StateTransitionsDataset(
             hdf5_file="c_swm/data/blocks-{}-{}-{}_all.h5".format(OBJS, STACKS, 0),
-            n_obj=OBJS + STACKS, remove_bg=REMOVE_BG, max_n_obj=MAX_N
+            n_obj=OBJS + STACKS, max_n_obj=MAX_N
         ) for OBJS in TRAIN_DATASETS_OBJS]
     )
     print("Training Examples: {}".format(len(train_set)))
