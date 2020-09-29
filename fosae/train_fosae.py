@@ -64,7 +64,7 @@ def action_supervision_loss(pred, pred_next, change, supervision, criterion_1=nn
     p2_loss = 0
     for p, p_n, a_idx in zip(pred.squeeze(), pred_next.squeeze(), all_ind):
         u_ind = a_idx.unique()
-        diff = torch.tensor(list(n_pred.difference([i.item() for i in u_ind])))
+        diff = torch.tensor(list(n_pred.difference([i.item() for i in u_ind]))).to(device)
         pred_unchange = torch.index_select(pred.squeeze(), dim=1, index=diff)
         pred_next_unchange = torch.index_select(pred.squeeze(), dim=1, index=diff)
         p2_loss += criterion_2(pred_unchange, pred_next_unchange).sum(dim=1).mean()
