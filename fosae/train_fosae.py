@@ -54,7 +54,12 @@ def preds_similarity_metric(preds, preds_next, preds_tilda, criterion=nn.L1Loss(
 #     transition_loss = criterion(pred + change, pred_next).sum(dim=sum_dim).mean()
 #     return margin_loss, transition_loss
 
-def action_supervision_loss(pred, pred_next, change, supervision, criterion_1=nn.BCELoss(reduction='none'), criterion_2=nn.MSELoss(reduction='none')):
+def action_supervision_loss(
+        pred, pred_next, change, supervision,
+        criterion_1=nn.BCELoss(reduction='none'),
+        criterion_2=nn.MSELoss(reduction='none'),
+        criterion_3=nn.L1Loss(reduction='none')
+    ):
     n_pred = set([i.item() for i in torch.arange(pred_next.size()[1])])
     pre_ind, pre_label, eff_ind, eff_label = supervision
     pred_selected = torch.gather(pred.squeeze(), dim=1, index=pre_ind)
@@ -66,7 +71,7 @@ def action_supervision_loss(pred, pred_next, change, supervision, criterion_1=nn
         u_ind = a_idx.unique()
         diff = torch.tensor(list(n_pred.difference([i.item() for i in u_ind]))).to(device)
         pred_unchange = torch.index_select(pred.squeeze(), dim=1, index=diff)
-        pred_next_unchange = torch.index_select(pred.squeeze(), dim=1, index=diff)
+        pred_next_unchange = torch.index_select(pred_next.squeeze(), dim=1, index=diff)
         p2_loss += criterion_2(pred_unchange, pred_next_unchange).sum(dim=1).mean()
     a_loss = criterion_2(pred.detach()+change, pred_next.detach()).sum(dim=(1,2)).mean()
     return p1_loss, p2_loss, a_loss
