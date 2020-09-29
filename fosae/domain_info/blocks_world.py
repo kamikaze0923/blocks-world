@@ -2,7 +2,7 @@ import torch
 from fosae.gumble import device
 
 STACKS = 4
-TRAIN_DATASETS_OBJS = [1,2]
+TRAIN_DATASETS_OBJS = [1]
 MAX_N = max(TRAIN_DATASETS_OBJS) + STACKS
 
 Ps = [1,1] # how may predicates learned for each arity
