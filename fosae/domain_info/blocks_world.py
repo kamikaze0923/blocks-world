@@ -25,7 +25,7 @@ class MoveAction:
         clear_tar = torch.argmax((self.CLEAR == target_obj).int())
         on_mov_from = torch.argmax((self.ON == torch.stack([moving_obj, from_obj])).all(dim=1).int())
 
-        return torch.tensor([clear_mov, clear_tar, on_mov_from + MAX_N]), torch.tensor([0,0,0]).float()
+        return torch.tensor([clear_mov, clear_tar, on_mov_from + MAX_N]), torch.tensor([1,1,1]).float()
 
     def get_effect(self, moving_obj, from_obj, target_obj):
 
