@@ -13,8 +13,8 @@ import os
 TEMP_BEGIN = 1
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.001
-TRAIN_BZ = 2
-TEST_BZ = 2
+TRAIN_BZ = 12
+TEST_BZ = 12
 MARGIN = 1
 
 print("Model is FOSAE")
@@ -142,7 +142,16 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             loss = p1_loss + p2_loss + a_loss
             optimizer.zero_grad()
             loss.backward()
+            print("-"*20 + "action semantics grad" + "-"*20)
+            print(vae.action_encoders.action_semantic_encoder[0].fc1.weight.grad)
+            print("-"*20 + "state semantics grad" + "-"*20)
+            print(vae.state_encoders.state_semantic_encoder[0][0].fc1.weight.grad)
+            print(vae.state_encoders.state_semantic_encoder[1][0].fc1.weight.grad)
+            print("-"*20 + "change predictor grad" + "-"*20)
+            print(vae.state_encoders.state_change_predictor[0][0].fc1.weight.grad)
+            print(vae.state_encoders.state_change_predictor[1][0].fc1.weight.grad)
             optimizer.step()
+            # print(vae.action_encoders.action_semantic_encoder[0].fc1.weight.grad)
 
         # margin_loss += m_loss.item()
         # transition_loss += t_loss.item()
