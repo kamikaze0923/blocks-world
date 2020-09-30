@@ -162,7 +162,6 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             optimizer.step()
             # print(vae.action_encoders.action_semantic_encoder[0].fc1.weight.grad)
 
-        time.sleep(2)
 
         # margin_loss += m_loss.item()
         # transition_loss += t_loss.item()
@@ -192,6 +191,8 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             pred_sim_metric_2 / len(dataloader)
         )
     )
+    if optimizer is not None:
+        time.sleep(4)
 
     return (predicate_supervision_loss + predicate_similarity_loss + action_loss) / len(dataloader)
 
