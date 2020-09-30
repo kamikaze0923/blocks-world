@@ -56,6 +56,7 @@ class StateChangePredictor(nn.Module):
         self.step_func = TrinaryStep()
 
     def forward(self, input):
+        # print(input.size())
         ret = self.step_func.apply(self.fc1(input))
         # ret = torch.tanh(self.fc1(input))
         return ret
@@ -72,7 +73,7 @@ class StateEncoder(nn.Module):
             arity = i + 1
             list_of_predicate_module.append(nn.ModuleList([PredicateNetwork(in_objects=arity+1, out_features=PRED_BITS) for _ in range(p)]))
             list_of_semantics_module.append(nn.ModuleList([SemanticEncoder(in_objects=arity, out_features=SEMANTICS_LATENT) for _ in range(p)]))
-            list_of_changes_module.append(nn.ModuleList([StateChangePredictor(in_features=SEMANTICS_LATENT*2, out_features=PRED_BITS) for _ in range(p)]))
+            list_of_changes_module.append(nn.ModuleList([StateChangePredictor(in_features=SEMANTICS_LATENT, out_features=PRED_BITS) for _ in range(p)]))
 
         self.state_predicate_encoder = nn.ModuleList(list_of_predicate_module)
         self.state_semantic_encoder = nn.ModuleList(list_of_semantics_module)
@@ -150,10 +151,10 @@ class StateEncoder(nn.Module):
                 start_idx += fill_length
 
             # print(semantics_reshape)
-            full_semantics = torch.cat([semantics_reshape, action_latent.unsqueeze(1).expand_as(semantics_reshape)], dim=2)
+            # full_semantics = torch.cat([semantics_reshape, action_latent.unsqueeze(1).expand_as(semantics_reshape)], dim=2)
+            full_semantics = torch.cat([action_latent.unsqueeze(1).expand_as(semantics_reshape)], dim=2)
             # print(full_semantics)
             change_slot.extend([net(full_semantics) for net in c_module_list])
-        # exit(0)
 
         return (torch.cat(x, dim=1) for x in p_slots),  torch.cat(change_slot, dim=1)
 

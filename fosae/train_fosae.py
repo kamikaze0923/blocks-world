@@ -189,10 +189,10 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             pred_sim_metric_2 / len(dataloader)
         )
     )
-    if optimizer is not None:
-        print(torch.round(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N) - preds.view(TRAIN_BZ, MAX_N + 1, MAX_N)))
-        print(change.view(TRAIN_BZ, MAX_N + 1, MAX_N))
-        time.sleep(4)
+    # if optimizer is not None:
+    #     print(torch.round(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N) - preds.view(TRAIN_BZ, MAX_N + 1, MAX_N)))
+    #     print(change.view(TRAIN_BZ, MAX_N + 1, MAX_N))
+    #     time.sleep(4)
 
     return (predicate_supervision_loss + predicate_similarity_loss + action_loss) / len(dataloader)
 
