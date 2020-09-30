@@ -41,10 +41,10 @@ class SemanticEncoder(nn.Module):
     def __init__(self, in_objects, out_features):
         super(SemanticEncoder, self).__init__()
         self.fc1 = nn.Linear(in_features=in_objects * MAX_N, out_features=out_features)
-        self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
+        # self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
 
     def forward(self, state):
-        return torch.tanh(self.fc2(torch.tanh(self.fc1(state))))
+        return torch.relu(self.fc1(state))
 
 
 class StateChangePredictor(nn.Module):
@@ -52,12 +52,12 @@ class StateChangePredictor(nn.Module):
     def __init__(self, in_features, out_features):
         super(StateChangePredictor, self).__init__()
         self.fc1 = nn.Linear(in_features=in_features, out_features=out_features)
-        self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
+        # self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
         self.step_func = TrinaryStep()
 
     def forward(self, input):
-        # ret = self.step_func.apply(self.fc1(input))
-        ret = torch.tanh(self.fc2(torch.tanh(self.fc1(input))))
+        ret = self.step_func.apply(self.fc1(input))
+        # ret = torch.tanh(self.fc1(input))
         return ret
 
 class StateEncoder(nn.Module):
@@ -149,8 +149,11 @@ class StateEncoder(nn.Module):
                 semantics_reshape[j, :fill_length, :] = semantics[start_idx: start_idx + fill_length, :]
                 start_idx += fill_length
 
+            # print(semantics_reshape)
             full_semantics = torch.cat([semantics_reshape, action_latent.unsqueeze(1).expand_as(semantics_reshape)], dim=2)
+            # print(full_semantics)
             change_slot.extend([net(full_semantics) for net in c_module_list])
+        # exit(0)
 
         return (torch.cat(x, dim=1) for x in p_slots),  torch.cat(change_slot, dim=1)
 
