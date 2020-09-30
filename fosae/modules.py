@@ -120,7 +120,7 @@ class StateEncoder(nn.Module):
         all_tilda_objs = [torch.stack(x, dim=0).to(device) for x in all_tilda_objs]
 
         if not self.all_one_hots:
-            all_one_hots = [torch.stack(x, dim=0).to(device) for x in self.all_one_hots]
+            self.all_one_hots = [torch.stack(x, dim=0).to(device) for x in self.all_one_hots]
 
         return (all_objs, all_next_objs, all_tilda_objs), self.all_one_hots
 
