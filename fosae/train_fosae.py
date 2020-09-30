@@ -9,6 +9,7 @@ from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 import sys
 import os
+import time
 
 TEMP_BEGIN = 1
 TEMP_MIN = 0.01
@@ -142,7 +143,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             preds, preds_next, preds_tilda = preds
             print(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N))
             print(preds.view(TRAIN_BZ, MAX_N + 1, MAX_N))
-            print(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N) - preds.view(TRAIN_BZ, MAX_N + 1, MAX_N))
+            print(torch.round(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N) - preds.view(TRAIN_BZ, MAX_N + 1, MAX_N)))
             print(change.view(TRAIN_BZ, MAX_N + 1, MAX_N))
             m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda, change)
             m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)
@@ -160,6 +161,8 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             # has_grad(vae.state_encoders.state_change_predictor[0][0].fc1.weight.grad, vae.state_encoders.state_change_predictor[1][0].fc1.weight.grad)
             optimizer.step()
             # print(vae.action_encoders.action_semantic_encoder[0].fc1.weight.grad)
+
+        time.sleep(2)
 
         # margin_loss += m_loss.item()
         # transition_loss += t_loss.item()
