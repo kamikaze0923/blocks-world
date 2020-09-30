@@ -77,7 +77,6 @@ class StateEncoder(nn.Module):
         self.state_predicate_encoder = nn.ModuleList(list_of_predicate_module)
         self.state_semantic_encoder = nn.ModuleList(list_of_semantics_module)
         self.state_change_predictor = nn.ModuleList(list_of_changes_module)
-        self.all_one_hots = None
 
 
     def enumerate_state(self, state, state_next, state_tilda, n_obj, backgrounds):
@@ -85,14 +84,13 @@ class StateEncoder(nn.Module):
         all_objs = [[] for _ in range(len(Ps))]
         all_next_objs = [[] for _ in range(len(Ps))]
         all_tilda_objs = [[] for _ in range(len(Ps))]
-
-        if not self.all_one_hots:
-            self.all_one_hots = [[] for _ in range(len(Ps))]
+        all_one_hots = [[] for _ in range(len(Ps))]
 
         for s, s_n, s_t, n, bg in zip(state, state_next, state_tilda, n_obj, backgrounds):
             for i, p in enumerate(Ps):
                 arity = i + 1
                 enum_index = torch.cartesian_prod(*[torch.arange(n.item()) for _ in range(arity)]).to(device)
+                one_hots = torch.zeros(size=(MAX_N * arity,)).to(device)
                 for t in enum_index:
                     all_objs[i].append(
                         torch.cat([
@@ -109,20 +107,14 @@ class StateEncoder(nn.Module):
                             torch.index_select(s_t, dim=0, index=t), bg[2].unsqueeze(0)
                         ], dim=0).view((arity+1) * IMG_C, IMG_H, IMG_W)
                     )
-                if not self.all_one_hots:
-                    one_hots = torch.zeros(size=(MAX_N * arity,)).to(device)
-                    for t in enum_index:
-                        self.all_one_hots[i].append(torch.index_fill(one_hots, dim=0, index=t, value=1))
-
+                    all_one_hots[i].append(torch.index_fill(one_hots, dim=0, index=t, value=1))
 
         all_objs = [torch.stack(x, dim=0).to(device) for x in all_objs]
         all_next_objs = [torch.stack(x, dim=0).to(device) for x in all_next_objs]
         all_tilda_objs = [torch.stack(x, dim=0).to(device) for x in all_tilda_objs]
+        all_one_hots = [torch.stack(x, dim=0).to(device) for x in all_one_hots]
 
-        if not self.all_one_hots:
-            self.all_one_hots = [torch.stack(x, dim=0).to(device) for x in self.all_one_hots]
-
-        return (all_objs, all_next_objs, all_tilda_objs), self.all_one_hots
+        return (all_objs, all_next_objs, all_tilda_objs), all_one_hots
 
     def forward(self, state_input, action_latent, temp):
         state, state_next, state_tilda, n_obj, backgrounds = state_input
