@@ -11,7 +11,7 @@ import sys
 import os
 
 TEMP_BEGIN = 1
-TEMP_MIN = 0.1
+TEMP_MIN = 0.01
 ANNEAL_RATE = 0.001
 TRAIN_BZ = 36
 TEST_BZ = 36
@@ -73,7 +73,7 @@ def action_supervision_loss(
         pred_unchange = torch.index_select(pred.squeeze(), dim=1, index=diff)
         pred_next_unchange = torch.index_select(pred_next.squeeze(), dim=1, index=diff)
         p2_loss += criterion_2(pred_unchange, pred_next_unchange).sum(dim=1).mean()
-    a_loss = criterion_2(pred.detach()+change, pred_next.detach()).sum(dim=(1,2)).mean()
+    a_loss = criterion_2(torch.round(pred).detach()+change, torch.round(pred_next).detach()).sum(dim=(1,2)).mean()
 
     return p1_loss, p2_loss, a_loss
 
@@ -150,14 +150,12 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         predicate_similarity_loss += p2_loss.item()
         action_loss += a_loss.item()
 
-
         metric_pred += m1.item()
         metric_pred_next += m2.item()
         metric_pred_tilda += m3.item()
         metric_change += m4.item()
         pred_sim_metric_1 += m5.item()
         pred_sim_metric_2 += m6.item()
-
 
     print("{:.2f}, {:.2f}, {:.2f} | {:.2f}, {:.2f}, {:.2f}, {:.2f} | {:.2f}, {:.2f}".format
         (

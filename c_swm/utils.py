@@ -13,6 +13,7 @@ import sys
 import random
 
 
+
 EPS = 1e-17
 random.seed(0)
 
@@ -318,22 +319,14 @@ class Concat(data.Dataset):
         return self.length
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        print("Please Specify for 'all' or 'half' for dataset size")
-        exit(0)
-    else:
-        if sys.argv[1] == "all":
-            N_OBJS = [1, 2, 3, 4]
-        else:
-            assert sys.argv[1] == "half"
-            N_OBJS = [1, 2]
 
-    STACKS = 4
+    from fosae.modules import STACKS, TRAIN_DATASETS_OBJS, MAX_N
 
-    dataset = Concat(
+    train_set = Concat(
         [StateTransitionsDataset(
-            hdf5_file="c_swm/data/blocks-{}-{}-det_all.h5".format(OBJS, STACKS), n_obj=OBJS + STACKS, remove_bg=False, max_n_obj=9
-        ) for OBJS in N_OBJS]
+            hdf5_file="c_swm/data/blocks-{}-{}-{}_all.h5".format(OBJS, STACKS, 0),
+            n_obj=OBJS + STACKS, max_n_obj=MAX_N
+        ) for OBJS in TRAIN_DATASETS_OBJS]
     )
 
-    print(len(dataset))
+    print(len(train_set))
