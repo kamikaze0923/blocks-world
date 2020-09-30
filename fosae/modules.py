@@ -55,7 +55,9 @@ class StateChangePredictor(nn.Module):
         self.step_func = TrinaryStep()
 
     def forward(self, input):
-        return self.step_func.apply(self.fc1(input))
+        # ret = self.step_func.apply(self.fc1(input))
+        ret = torch.tanh(self.fc1(input))
+        return ret
 
 class StateEncoder(nn.Module):
 
