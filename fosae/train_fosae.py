@@ -1,6 +1,6 @@
 from c_swm.utils import StateTransitionsDataset, Concat
 from fosae.modules import FoSae, STACKS, TRAIN_DATASETS_OBJS, MAX_N
-from fosae.gumble import device, GUMBLE_NOISE
+from fosae.gumble import device
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -73,7 +73,7 @@ def action_supervision_loss(
         pred_unchange = torch.index_select(pred.squeeze(), dim=1, index=diff)
         pred_next_unchange = torch.index_select(pred_next.squeeze(), dim=1, index=diff)
         p2_loss += criterion_2(pred_unchange, pred_next_unchange).sum(dim=1).mean()
-    a_loss = criterion_3(torch.round(pred).detach()+change, torch.round(pred_next).detach()).sum(dim=(1,2)).mean()
+    a_loss = criterion_3(torch.round(pred_next - pred).detach(), change).sum(dim=(1,2)).mean()
 
     return p1_loss, p2_loss, a_loss
 
@@ -140,8 +140,9 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         else:
             preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj, back_grounds+noise4), action_input, temp)
             preds, preds_next, preds_tilda = preds
-            print(preds.view(TRAIN_BZ, MAX_N + 1, MAX_N))
             print(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N))
+            print(preds.view(TRAIN_BZ, MAX_N + 1, MAX_N))
+            print(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N) - preds.view(TRAIN_BZ, MAX_N + 1, MAX_N))
             print(change.view(TRAIN_BZ, MAX_N + 1, MAX_N))
             m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda, change)
             m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)
