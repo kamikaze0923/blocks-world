@@ -52,7 +52,7 @@ class StateChangePredictor(nn.Module):
     def __init__(self, in_features, out_features):
         super(StateChangePredictor, self).__init__()
         self.fc1 = nn.Linear(in_features=in_features, out_features=out_features)
-        self.fc2 = nn.Linear(in_features=in_features, out_features=out_features)
+        self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
         self.step_func = TrinaryStep()
 
     def forward(self, input):
