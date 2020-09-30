@@ -141,10 +141,8 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         else:
             preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj, back_grounds+noise4), action_input, temp)
             preds, preds_next, preds_tilda = preds
-            print(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N))
-            print(preds.view(TRAIN_BZ, MAX_N + 1, MAX_N))
-            print(torch.round(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N) - preds.view(TRAIN_BZ, MAX_N + 1, MAX_N)))
-            print(change.view(TRAIN_BZ, MAX_N + 1, MAX_N))
+            # print(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N))
+            # print(preds.view(TRAIN_BZ, MAX_N + 1, MAX_N))
             m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda, change)
             m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)
             # m_loss, t_loss = contrastive_loss_function(preds, preds_next, preds_tilda, change)
@@ -192,6 +190,8 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         )
     )
     if optimizer is not None:
+        print(torch.round(preds_next.view(TRAIN_BZ, MAX_N + 1, MAX_N) - preds.view(TRAIN_BZ, MAX_N + 1, MAX_N)))
+        print(change.view(TRAIN_BZ, MAX_N + 1, MAX_N))
         time.sleep(4)
 
     return (predicate_supervision_loss + predicate_similarity_loss + action_loss) / len(dataloader)
