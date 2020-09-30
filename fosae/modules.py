@@ -41,22 +41,23 @@ class SemanticEncoder(nn.Module):
     def __init__(self, in_objects, out_features):
         super(SemanticEncoder, self).__init__()
         self.fc1 = nn.Linear(in_features=in_objects * MAX_N, out_features=out_features)
-        # self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
+        self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
 
     def forward(self, state):
-        return torch.tanh(self.fc1(state))
+        return torch.tanh(self.fc2(torch.tanh(self.fc1(state))))
+
 
 class StateChangePredictor(nn.Module):
 
     def __init__(self, in_features, out_features):
         super(StateChangePredictor, self).__init__()
         self.fc1 = nn.Linear(in_features=in_features, out_features=out_features)
-        # self.fc2 = nn.Linear(in_features=in_features, out_features=out_features)
+        self.fc2 = nn.Linear(in_features=in_features, out_features=out_features)
         self.step_func = TrinaryStep()
 
     def forward(self, input):
         # ret = self.step_func.apply(self.fc1(input))
-        ret = torch.tanh(self.fc1(input))
+        ret = torch.tanh(self.fc2(torch.tanh(self.fc1(input))))
         return ret
 
 class StateEncoder(nn.Module):
