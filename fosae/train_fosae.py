@@ -77,6 +77,13 @@ def action_supervision_loss(
 
     return p1_loss, p2_loss, a_loss
 
+def has_grad(*tensor):
+    b = [(t != 0).any() for t in tensor]
+    if len(b) == 1:
+        print(b[0])
+    else:
+        assert len(b) == 2
+        print(torch.logical_or(b[0], b[1]))
 
 
 def epoch_routine(dataloader, vae, temp, optimizer=None):
@@ -132,7 +139,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
                 p1_loss, p2_loss, a_loss = action_supervision_loss(preds, preds_next, change, supervision)
         else:
             preds, change = vae((data+noise1, data_next+noise2, data_tilda+noise3, state_n_obj, back_grounds+noise4), action_input, temp)
-
+            # print(change.view(TRAIN_BZ, MAX_N+1, MAX_N))
             preds, preds_next, preds_tilda = preds
             m1, m2, m3, m4 = probs_metric(preds, preds_next, preds_tilda, change)
             m5, m6 = preds_similarity_metric(preds, preds_next, preds_tilda)
@@ -142,14 +149,12 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
             loss = p1_loss + p2_loss + a_loss
             optimizer.zero_grad()
             loss.backward()
-            print("-"*20 + "action semantics grad" + "-"*20)
-            print(vae.action_encoders.action_semantic_encoder[0].fc1.weight.grad)
-            print("-"*20 + "state semantics grad" + "-"*20)
-            print(vae.state_encoders.state_semantic_encoder[0][0].fc1.weight.grad)
-            print(vae.state_encoders.state_semantic_encoder[1][0].fc1.weight.grad)
-            print("-"*20 + "change predictor grad" + "-"*20)
-            print(vae.state_encoders.state_change_predictor[0][0].fc1.weight.grad)
-            print(vae.state_encoders.state_change_predictor[1][0].fc1.weight.grad)
+            # print("-"*20 + "action semantics grad" + "-"*20)
+            # has_grad(vae.action_encoders.action_semantic_encoder[0].fc1.weight.grad)
+            # print("-"*20 + "state semantics grad" + "-"*20)
+            # has_grad(vae.state_encoders.state_semantic_encoder[0][0].fc1.weight.grad, vae.state_encoders.state_semantic_encoder[1][0].fc1.weight.grad)
+            # print("-"*20 + "change predictor grad" + "-"*20)
+            # has_grad(vae.state_encoders.state_change_predictor[0][0].fc1.weight.grad, vae.state_encoders.state_change_predictor[1][0].fc1.weight.grad)
             optimizer.step()
             # print(vae.action_encoders.action_semantic_encoder[0].fc1.weight.grad)
 

@@ -44,7 +44,7 @@ class SemanticEncoder(nn.Module):
         # self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
 
     def forward(self, state):
-        return torch.relu(self.fc1(state))
+        return torch.tanh(self.fc1(state))
 
 class StateChangePredictor(nn.Module):
 
