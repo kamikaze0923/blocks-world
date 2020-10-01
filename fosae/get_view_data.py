@@ -5,7 +5,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 import torch
 from fosae.modules import IMG_H, IMG_W, IMG_C
-from fosae.train_fosae import PREFIX
+from fosae.train_fosae import PREFIX, TEMP_MIN
 from fosae.train_fosae import MODEL_NAME as FOSAE_MODEL_NAME
 from fosae.modules import STACKS, TRAIN_DATASETS_OBJS, MAX_N
 
@@ -55,27 +55,30 @@ def run(vae, view_loader):
 
         preds, change = vae(
             (data, data_next, data_tilda, state_n_obj, back_grounds), action_input,
-            0)
+            TEMP_MIN)
         preds, preds_next, _ = preds
 
         print(preds.size(), preds_next.size(), change.size())
+        # print(preds)
+        # print(preds_next)
+        # exit(0)
 
 
         data_np = data.view(-1, MAX_N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        preds_np = preds.squeeze().detach().cpu().numpy().reshape(-1, MAX_N+1, MAX_N)
+        preds_np = preds.detach().cpu().numpy().reshape(-1, MAX_N+1, MAX_N)
 
         print(data_np.shape, preds_np.shape)
         np.save("fosae/block_data/block_data.npy", data_np)
         np.save("fosae/block_data/block_preds.npy", preds_np)
 
         data_next_np = data_next.view(-1, MAX_N, IMG_C, IMG_H, IMG_W).detach().cpu().numpy()
-        preds_next_np = preds_next.squeeze().detach().cpu().numpy().reshape(-1, MAX_N+1, MAX_N)
+        preds_next_np = preds_next.detach().cpu().numpy().reshape(-1, MAX_N+1, MAX_N)
 
         print(data_next_np.shape, preds_next_np.shape)
         np.save("fosae/block_data/block_data_next.npy", data_next_np)
         np.save("fosae/block_data/block_preds_next.npy", preds_next_np)
 
-        change_np = change.squeeze().detach().cpu().numpy().reshape(-1, MAX_N+1, MAX_N)
+        change_np = change.detach().cpu().numpy().reshape(-1, MAX_N+1, MAX_N)
         print(change_np.shape)
         np.save("fosae/block_data/change.npy", change_np)
 

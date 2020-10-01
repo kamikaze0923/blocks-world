@@ -46,15 +46,6 @@ def preds_similarity_metric(preds, preds_next, preds_tilda, criterion=nn.L1Loss(
     l1_2 = criterion(preds, preds_tilda).sum(dim=sum_dim).mean()
     return l1_1, l1_2
 
-# def contrastive_loss_function(pred, pred_next, preds_tilda, change, criterion=nn.L1Loss(reduction='none')):
-#     sum_dim = [i for i in range(1, pred.dim())]
-#     margin_loss = torch.max(
-#         torch.tensor(0.0).to(device),
-#         torch.tensor(MARGIN).to(device) - criterion(pred, preds_tilda).sum(dim=sum_dim).mean()
-#     )
-#     transition_loss = criterion(pred + change, pred_next).sum(dim=sum_dim).mean()
-#     return margin_loss, transition_loss
-
 def action_supervision_loss(
         pred, pred_next, change, supervision,
         criterion_1=nn.BCELoss(reduction='none'),
