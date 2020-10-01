@@ -60,13 +60,12 @@ class StateEncoder(nn.Module):
         self.state_predicate_encoder = nn.ModuleList(list_of_predicate_module)
 
 
-    def enumerate_state(self, state, state_next, state_tilda, n_obj, backgrounds):
+    def enumerate_state(self, state, state_next, n_obj, backgrounds):
 
         all_objs = [[] for _ in range(len(Ps))]
         all_next_objs = [[] for _ in range(len(Ps))]
-        all_tilda_objs = [[] for _ in range(len(Ps))]
 
-        for s, s_n, s_t, n, bg in zip(state, state_next, state_tilda, n_obj, backgrounds):
+        for s, s_n, n, bg in zip(state, state_next, n_obj, backgrounds):
             for i, p in enumerate(Ps):
                 arity = i + 1
                 enum_index = torch.cartesian_prod(*[torch.arange(n.item()) for _ in range(arity)]).to(device)
@@ -81,31 +80,26 @@ class StateEncoder(nn.Module):
                             torch.index_select(s_n, dim=0, index=t), bg[1].unsqueeze(0)
                         ], dim=0).view((arity+1) * IMG_C, IMG_H, IMG_W)
                     )
-                    all_tilda_objs[i].append(
-                        torch.cat([
-                            torch.index_select(s_t, dim=0, index=t), bg[2].unsqueeze(0)
-                        ], dim=0).view((arity+1) * IMG_C, IMG_H, IMG_W)
-                    )
 
         all_objs = [torch.stack(x, dim=0).to(device) for x in all_objs]
         all_next_objs = [torch.stack(x, dim=0).to(device) for x in all_next_objs]
-        all_tilda_objs = [torch.stack(x, dim=0).to(device) for x in all_tilda_objs]
-        return (all_objs, all_next_objs, all_tilda_objs)
+
+        return (all_objs, all_next_objs)
 
     def forward(self, state_input, temp):
-        state, state_next, state_tilda, n_obj, backgrounds = state_input
+        state, state_next, n_obj, backgrounds = state_input
 
         n_state = state.size()[0]
 
-        objs = self.enumerate_state(state, state_next, state_tilda, n_obj, backgrounds)
+        objs = self.enumerate_state(state, state_next, n_obj, backgrounds)
 
-        p_slots = [[] for _ in range(3)]
+        p_slots = [[] for _ in range(2)]
 
         for i, (p, p_module_list) in enumerate(zip(Ps, self.state_predicate_encoder)):
             arity = i + 1
             for (o, p_slot) in zip(objs, p_slots):
                 preds = torch.cat([net(o[i], temp) for net in p_module_list], dim=0)
-                preds_reshape = torch.zeros(size=(n_state, p * n_obj.max() ** arity)).to(device)
+                preds_reshape = torch.zeros(size=(n_state, p * MAX_N ** arity)).to(device)
                 start_idx = 0
                 for j, n in enumerate(n_obj):
                     fill_length = p * n ** arity
