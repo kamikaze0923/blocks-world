@@ -14,8 +14,8 @@ import time
 TEMP_BEGIN = 1
 TEMP_MIN = 0.01
 ANNEAL_RATE = 0.001
-TRAIN_BZ = 2
-TEST_BZ = 12
+TRAIN_BZ = 36
+TEST_BZ = 183
 MARGIN = 1
 
 print("Model is FOSAE")
