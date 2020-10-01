@@ -63,18 +63,18 @@ def action_supervision_loss(
     ):
     n_pred = set([i.item() for i in torch.arange(pred_next.size()[1])])
     pre_ind, pre_label, eff_ind, eff_label = supervision
-    pred_selected = torch.gather(pred.squeeze(), dim=1, index=pre_ind)
-    pred_next_selected = torch.gather(pred_next.squeeze(), dim=1, index=eff_ind)
+    pred_selected = torch.gather(pred, dim=1, index=pre_ind)
+    pred_next_selected = torch.gather(pred_next, dim=1, index=eff_ind)
     p1_loss = criterion_1(pred_selected, pre_label).sum(dim=1).mean() + criterion_1(pred_next_selected, eff_label).sum(dim=1).mean()
     all_ind = torch.cat([pre_ind, eff_ind], dim=1)
     p2_loss = 0
-    for p, p_n, a_idx in zip(pred.squeeze(), pred_next.squeeze(), all_ind):
+    for p, p_n, a_idx in zip(pred, pred_next, all_ind):
         u_ind = a_idx.unique()
         diff = torch.tensor(list(n_pred.difference([i.item() for i in u_ind]))).to(device)
-        pred_unchange = torch.index_select(pred.squeeze(), dim=1, index=diff)
-        pred_next_unchange = torch.index_select(pred_next.squeeze(), dim=1, index=diff)
+        pred_unchange = torch.index_select(pred, dim=1, index=diff)
+        pred_next_unchange = torch.index_select(pred_next, dim=1, index=diff)
         p2_loss += criterion_2(pred_unchange, pred_next_unchange).sum(dim=1).mean()
-    a_loss = criterion_3(torch.round(pred_next - pred).detach(), change).sum(dim=(1,2)).mean()
+    a_loss = criterion_3(torch.round(pred_next - pred).detach(), change).sum(dim=1).mean()
 
     return p1_loss, p2_loss, a_loss
 
