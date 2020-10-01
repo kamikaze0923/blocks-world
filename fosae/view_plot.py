@@ -15,7 +15,7 @@ preds_next = np.load("fosae/block_data/block_preds_next.npy")
 
 action = np.load("fosae/block_data/change.npy")
 
-fig, axs = plt.subplots(5, MAX_N, figsize=(4, 3))
+fig, axs = plt.subplots(5, MAX_N, figsize=(8, 6))
 for _, ax in np.ndenumerate(axs):
     ax.set_xticks([])
     ax.set_yticks([])

@@ -35,14 +35,13 @@ def run(vae, view_loader):
         data = view_loader.__iter__().__next__()
 
         _, _, obj_mask, next_obj_mask, obj_background, next_obj_background, action_mov_obj_index, action_from_obj_index, action_tar_obj_index,\
-        state_n_obj, _, _, obj_mask_tilda, _, obj_background_tilda, _ = data
+        state_n_obj, _, _, _, _, _, _ = data
 
         data = obj_mask.to(device)
         data_next = next_obj_mask.to(device)
-        data_tilda = obj_mask_tilda.to(device)
         state_n_obj = state_n_obj.to(device)
 
-        back_grounds = torch.cat([obj_background, next_obj_background, obj_background_tilda], dim=1).to(device)
+        back_grounds = torch.cat([obj_background, next_obj_background], dim=1).to(device)
 
         # noise1 = torch.normal(mean=0, std=0.2, size=data.size()).to(device)
         # noise2 = torch.normal(mean=0, std=0.2, size=data_next.size()).to(device)
@@ -54,9 +53,9 @@ def run(vae, view_loader):
         action_input = (action_idx, action_n_obj, action_types)
 
         preds, change = vae(
-            (data, data_next, data_tilda, state_n_obj, back_grounds), action_input,
+            (data, data_next, state_n_obj, back_grounds), action_input,
             TEMP_MIN)
-        preds, preds_next, _ = preds
+        preds, preds_next = preds
 
         print(preds.size(), preds_next.size(), change.size())
         # print(preds)
