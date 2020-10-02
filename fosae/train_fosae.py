@@ -53,8 +53,6 @@ def action_supervision_loss(
     pred_selected = torch.gather(pred, dim=1, index=pre_ind)
     pred_next_selected = torch.gather(pred_next, dim=1, index=eff_ind)
     p1_loss = criterion_2(torch.cat([pred_selected, pred_next_selected], dim=1), torch.cat([pre_label, eff_label], dim=1))
-
-    p1_loss = p1_loss.sum(dim=1).mean()
     p2_loss = 0
     for p, p_n, u_ind in zip(pred, pred_next, eff_ind):
         diff = torch.tensor(list(n_pred.difference([i.item() for i in u_ind]))).to(device)
@@ -65,7 +63,7 @@ def action_supervision_loss(
     print((pred_next - pred).detach())
     print(p1_loss)
 
-    return p1_loss, p2_loss, a_loss
+    return p1_loss.sum(dim=1).mean(), p2_loss, a_loss
 
 def has_grad(*tensor):
     b = [(t != 0).any() for t in tensor]
