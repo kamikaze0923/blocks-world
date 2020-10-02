@@ -62,7 +62,7 @@ def action_supervision_loss(
         diff = torch.tensor(list(n_pred.difference([i.item() for i in u_ind]))).to(device)
         pred_unchange = torch.index_select(pred, dim=1, index=diff)
         pred_next_unchange = torch.index_select(pred_next, dim=1, index=diff)
-        p2_loss += criterion_2(pred_unchange, pred_next_unchange).sum(dim=1).mean()
+        p2_loss += criterion_3(pred_unchange, pred_next_unchange).sum(dim=1).mean()
     a_loss = criterion_3((pred_next - pred).detach(), change).sum(dim=1).mean()
 
     return p1_loss, p2_loss, a_loss
