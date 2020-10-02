@@ -39,14 +39,12 @@ class StateChangePredictor(nn.Module):
 
     def __init__(self, in_features, out_features):
         super(StateChangePredictor, self).__init__()
-        self.fc1 = nn.Linear(in_features=in_features, out_features=out_features, bias=False)
-        # self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
+        self.fc1 = nn.Linear(in_features=in_features, out_features=out_features)
+        self.fc2 = nn.Linear(in_features=out_features, out_features=out_features)
         self.step_func = TrinaryStep()
 
     def forward(self, input):
-        # print(input.size())
-        ret = self.step_func.apply(self.fc1(input))
-        # ret = torch.tanh(self.fc1(input))
+        ret = self.step_func.apply(self.fc2(torch.relu(self.fc1(input))))
         return ret
 
 class StateEncoder(nn.Module):
