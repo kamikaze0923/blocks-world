@@ -62,6 +62,8 @@ def action_supervision_loss(
         pred_next_unchange = torch.index_select(pred_next, dim=1, index=diff)
         p2_loss += criterion_3(pred_unchange, pred_next_unchange).sum(dim=1).mean()
     a_loss = criterion_2((pred_next - pred).detach(), change).sum(dim=1).mean()
+    print(pred)
+    print(pred_next)
     print(change)
 
     return p1_loss, p2_loss, a_loss
