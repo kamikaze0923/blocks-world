@@ -38,7 +38,7 @@ def probs_metric(probs, probs_next, change):
            torch.abs(0.5 - probs_next).mean().detach(), \
            torch.abs(change).mean().detach()
 
-def preds_similarity_metric(preds, preds_next, criterion=nn.L1Loss(reduction='none')):
+def preds_similarity_metric(preds, preds_next, criterion=nn.SmoothL1Loss(reduction='none')):
     sum_dim = [i for i in range(1, preds_next.dim())]
     return criterion(preds, preds_next).sum(dim=sum_dim).mean()
 

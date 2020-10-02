@@ -1,6 +1,6 @@
 import torch
 
-GUMBLE_NOISE = True
+GUMBLE_NOISE = False
 if torch.cuda.is_available():
     device = 'cuda:0'
     print("Using GPU")
