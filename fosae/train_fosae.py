@@ -46,7 +46,7 @@ def action_supervision_loss(
         pred, pred_next, change, supervision,
         criterion_1=nn.BCELoss(reduction='none'),
         criterion_2=nn.MSELoss(reduction='none'),
-        criterion_3=nn.L1Loss(reduction='none')
+        criterion_3=nn.SmoothL1Loss(reduction='none')
     ):
     n_pred = set([i.item() for i in torch.arange(pred_next.size()[1])])
     pre_ind, pre_label, eff_ind, eff_label = supervision
