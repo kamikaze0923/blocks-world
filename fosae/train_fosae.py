@@ -52,10 +52,10 @@ def action_supervision_loss(
     pre_ind, pre_label, eff_ind, eff_label = supervision
     pred_selected = torch.gather(pred, dim=1, index=pre_ind)
     pred_next_selected = torch.gather(pred_next, dim=1, index=eff_ind)
-    p1_loss_1 = criterion_1(pred_selected, pre_label).sum(dim=1).mean()
-    p1_loss_2 = criterion_1(pred_next_selected, eff_label).sum(dim=1).mean()
-    print(p1_loss_1.item(), p1_loss_2.item())
-    p1_loss = p1_loss_1 + p1_loss_2
+    p1_loss_1 = criterion_1(pred_selected, pre_label)
+    p1_loss_2 = criterion_1(pred_next_selected, eff_label)
+    print(p1_loss_1, p1_loss_2)
+    p1_loss = p1_loss_1.sum(dim=1).mean() + p1_loss_2.sum(dim=1).mean()
     all_ind = torch.cat([pre_ind, eff_ind], dim=1)
     p2_loss = 0
     for p, p_n, a_idx in zip(pred, pred_next, all_ind):
