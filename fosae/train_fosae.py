@@ -52,8 +52,8 @@ def action_supervision_loss(
     pre_ind, pre_label, eff_ind, eff_label = supervision
     pred_selected = torch.gather(pred, dim=1, index=pre_ind)
     pred_next_selected = torch.gather(pred_next, dim=1, index=eff_ind)
-    p1_loss_1 = criterion_3(pred_selected, pre_label)
-    p1_loss_2 = criterion_3(pred_next_selected, eff_label)
+    p1_loss_1 = criterion_2(pred_selected, pre_label)
+    p1_loss_2 = criterion_2(pred_next_selected, eff_label)
     print(p1_loss_1, p1_loss_2)
     p1_loss = p1_loss_1.mean() + p1_loss_2.mean()
     p2_loss = 0
@@ -62,7 +62,7 @@ def action_supervision_loss(
         pred_unchange = torch.index_select(pred, dim=1, index=diff)
         pred_next_unchange = torch.index_select(pred_next, dim=1, index=diff)
         p2_loss += criterion_3(pred_unchange, pred_next_unchange).sum(dim=1).mean()
-    a_loss = criterion_3((pred_next - pred).detach(), change).sum(dim=1).mean()
+    a_loss = criterion_2((pred_next - pred).detach(), change).sum(dim=1).mean()
 
     return p1_loss, p2_loss, a_loss
 
