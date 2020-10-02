@@ -148,6 +148,7 @@ def epoch_routine(dataloader, vae, temp, optimizer=None):
         # margin_loss += m_loss.item()
         # transition_loss += t_loss.item()
         predicate_supervision_loss += p1_loss.item()
+        print(p1_loss.item())
         predicate_similarity_loss += p2_loss.item()
         action_loss += a_loss.item()
 

@@ -76,6 +76,9 @@ def run(vae, view_loader):
         print(data_next_np.shape, preds_next_np.shape)
         np.save("fosae/block_data/block_data_next.npy", data_next_np)
         np.save("fosae/block_data/block_preds_next.npy", preds_next_np)
+        print(preds_np)
+        print(preds_next_np)
+        exit(0)
 
         change_np = change.detach().cpu().numpy().reshape(-1, MAX_N+1, MAX_N)
         print(change_np.shape)

@@ -36,9 +36,12 @@ while True:
         axs[2,0].imshow(one_p, cmap='gray')
         axs[3,0].imshow(one_p_nt, cmap='gray')
         axs[4,0].imshow(one_a, cmap='gray')
-        print(one_p)
-        print(one_p_nt)
+        print(np.abs(0.5-one_p) > 0.49)
+        print("-"*20)
+        print(np.abs(0.5-one_p_nt) > 0.49)
+        print("-"*20)
         print(one_a)
+        print("-"*20)
 
         plt.pause(0.2)
         # a = 1
